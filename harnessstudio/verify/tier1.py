@@ -82,6 +82,12 @@ def run_tier1(name: str, policy: str) -> dict:
     caps = pa.CAPABILITIES
     checks = [_check("registration", lambda: validate(method).name),
               _check("capabilities", lambda: require_method(method, pa) or "ok")]
+    if getattr(pa, "SUPPORTED_SLOTS", None) is not None and not checks[1]["passed"]:
+        # Policies that restrict slots (kinetix-flow) refuse an incompatible method at run time; its synthetic
+        # checks would run under a capability set it cannot use and fail spuriously. GR00T/Pi0.5 (no
+        # SUPPORTED_SLOTS) keep running every check, so their reports are unchanged.
+        return {"method": name, "policy": pa.NAME, "tier": 1, "synthetic": True, "passed": False, "checks": checks,
+                "skipped": "incompatible with this policy; synthetic checks not run"}
 
     def null_derivation():
         base, brows = _run(method, Arm.BASELINE, caps)
