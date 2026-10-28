@@ -1,0 +1,11 @@
+{
+  "upstream": "github.com/hf618/ChunkTrust@a9fd57412b3a19a0728cd726b0558dd89395fb84 src/chunktrust/gr00t_ahs.py",
+  "copied_from": "runs/chunktrust-beat-20261026/harnesses/chunktrust_ahs/source/v2_2",
+  "files": {
+    "chunktrust_gr00t_ahs.py": "afccc1b0b0bc34cb54ba89586e8cd00ca5f323f40e0ace24e051aa855b9690c7",
+    "horizon.py": "a8c58f8644710bd1bb0d329b0ca74dc4e721c205695fad211f66cba42e762afc",
+    "CHUNKTRUST_LICENSE": "47c664305ab01245635e7f055f77c45a48f701807190ab4bcd5765eb54332ac2"
+  },
+  "paper": "arXiv:2609.39754v2",
+  "note": "Byte-identical copies. Never edit; a change needs a new method version and new provenance."
+}

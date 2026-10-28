@@ -1,0 +1,36 @@
+{
+  "vendored_at": "2026-10-28",
+  "from": "RoboMetaHarness (robometaharness/), now owned by HarnessStudio",
+  "files": {
+    "common.py": {
+      "source": "robometaharness/benchmarking/common.py",
+      "source_sha256": "db2624e1757079744efe1b68ed98890c1b9e8b50f4f54b55dfb808805534640c",
+      "change": "none"
+    },
+    "resources.py": {
+      "source": "robometaharness/resources.py",
+      "source_sha256": "6a87d61d422d93bf3014af19e26cd0e03d6d484685db8421f1c7a4df7922adf5",
+      "change": "none"
+    },
+    "evaluation.py": {
+      "source": "robometaharness/evaluation.py",
+      "source_sha256": "b368bc4467c55371ceb8b53e62544e336b07705569fb120bf7cb923417de6e93",
+      "change": "none"
+    },
+    "registry.py": {
+      "source": "robometaharness/benchmarking/registry.py",
+      "source_sha256": "562140c8b52c266caee70b3437e86830cf68ef75a1249232de56e5053127e00a",
+      "change": "paths from harnessstudio.config; child PYTHONPATH = harnessstudio source; registry probe = harnessstudio.bench.groot_native"
+    },
+    "runner_util.py": {
+      "source": "robometaharness/benchmarking/runner.py lines 1-198",
+      "source_sha256": "5ac72cc03c644f112be9276f7322eb515e01fbc6a133f9e0ce1ea9191ee85bb3",
+      "change": "docstring; registry/resources imports made package-relative"
+    },
+    "groot_native.py": {
+      "source": "robometaharness/benchmarking/groot_worker.py (helpers, PublicVideo, registry)",
+      "source_sha256": "fd26d49bf81c4f4a18811ae99cd57447e867c83113966dc5c323bab82358a3c4",
+      "change": "selected functions only; registry-only main()"
+    }
+  }
+}

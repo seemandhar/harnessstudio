@@ -1,0 +1,21 @@
+{
+  "paper": "CycleVLA: Proactive Self-Correcting Vision-Language-Action Models via Subtask Backtracking and Minimum Bayes Risk Decoding",
+  "arxiv": "2601.02295v2",
+  "versions": {"v1": "2026-01-05", "v2": "2026-07-28"},
+  "url_abs": "https://arxiv.org/abs/2601.02295",
+  "url_html": "https://arxiv.org/html/2601.02295",
+  "read_at": "2026-10-27",
+  "read_by": "HarnessStudio build (main session), WebFetch of the v2 HTML",
+  "mbr_rule": {
+    "section": "IV-B Sampling Actions and Ranking via MBR; V-A experimental setup; Table V metric ablation",
+    "selection": "argmin over N hypotheses of the mean pairwise distance to the other hypotheses",
+    "feature": "accumulate translational and rotational end-effector deltas into a trajectory in R^(6H)",
+    "excluded": "gripper signal (and stop/progress signals)",
+    "normalization": "none described",
+    "metric": "L2 (best in Table V vs L1, Linf, cosine, correlation)",
+    "num_samples": 8,
+    "trained_components": "none in the MBR step (candidates come from the frozen stochastic policy)"
+  },
+  "not_included_in_medoid_bon": ["progress-aware VLA (fine-tuned)", "VLM failure predictor and planner", "subtask backtracking"],
+  "note": "Source provenance for the HarnessStudio method only. It is not a reviewed RoboMetaHarness knowledge card; adding one requires the research pipeline's independent review."
+}

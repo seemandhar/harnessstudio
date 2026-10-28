@@ -1,0 +1,38 @@
+{
+  "crn.py": {
+    "source": "runs/chunktrust-beat-20261026/harnesses/chunktrust_ahs/source/v2_2/crn.py",
+    "sha256": "69742a552864c889df4316d3b1019ba5051874388b1b294f387381ce060c59d6"
+  },
+  "evaluator_log.py": {
+    "source": "runs/chunktrust-beat-20261026/harnesses/chunktrust_ahs/source/v2_2/evaluator_log.py",
+    "sha256": "df5e8ed946aff71a07651fa48cfed8bb21adabb6b25f8b14030f2243fea243a8"
+  },
+  "np_attribution_v2.py": {
+    "source": "runs/chunktrust-beat-20261026/control/discovery/gate/np_attribution_v2.py",
+    "sha256": "433cb737c87f8ad09e22d20b655c93501b473f1b1bac1b8dd17a5ce5b5e5ef3c"
+  },
+  "parity.py": {
+    "source": "runs/chunktrust-beat-20261026/harnesses/chunktrust_ahs/source/v2_2/parity.py",
+    "sha256": "db7b26fa850a201fdfb7211807f135dc605ef07628b8d57205753796c1c2052a"
+  },
+  "protocol_v2_n1.json": {
+    "source": "runs/chunktrust-beat-20261026/harnesses/chunktrust_ahs/config/protocol_v2_n1.json",
+    "sha256": "8e9346aff71377b5a2eac91a9fa89e17bab232410add3de61ae23b79af62a36a"
+  },
+  "render_context_fix.py": {
+    "source": "runs/chunktrust-beat-20261026/harnesses/chunktrust_ahs/source/v2_2/render_context_fix.py",
+    "sha256": "9d93bbeb690fe0b0bc0a255c41665963dcddec5d203385574a0a561cc78242eb"
+  },
+  "ri_scan.py": {
+    "source": "runs/chunktrust-beat-20261026/harnesses/h1_dwell_retreat/logs/evaluator/ri_scan.py",
+    "sha256": "b550037ca451a9500425774506b1d75e1339b6ad4a0a00372ad8fd6b76ed9c10"
+  },
+  "scene_determinism.py": {
+    "source": "runs/chunktrust-beat-20261026/harnesses/chunktrust_ahs/source/v2_2/scene_determinism.py",
+    "sha256": "be83b72351ce4e540a16bcc02cecf722a594233d68c5ac8c487612dab132ebe1"
+  },
+  "velocity_trace.py": {
+    "source": "runs/chunktrust-beat-20261026/harnesses/chunktrust_ahs/source/v2_2/velocity_trace.py",
+    "sha256": "6148036a34000dbc86eaa161290ef6404e44d4985357de687bbe653485f6461c"
+  }
+}

@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "harnessstudio"
+version = "0.1.0"
+description = "Training-free harnesses around frozen robot policies: slot-filling methods, two-tier verification, paired evaluation"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+test = ["numpy"]
+
+[project.scripts]
+rh = "harnessstudio.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["harnessstudio", "harnessstudio.*"]
+
+[tool.setuptools.package-data]
+"harnessstudio" = ["backends/gr00t_robocasa365/COPIED.json",
+                   "backends/gr00t_robocasa365/copied/*.json",
+                   "backends/pi05_robocasa365/*.json",
+                   "bench/PROVENANCE.json",
+                   "runtime/PROVENANCE.json",
+                   "data/*.json",
+                   "data/canonical_tables/*.json",
+                   "methods/CYCLEVLA_SOURCE.json",
+                   "methods/chunktrust_ahs/PROVENANCE.json",
+                   "methods/chunktrust_ahs/CHUNKTRUST_LICENSE"]

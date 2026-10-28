@@ -1,0 +1,28 @@
+{
+  "ported_from": "robometaharness/unified (Unified Harness v1.1.0)",
+  "ported_at": "2026-10-27",
+  "copy": "byte-identical; relative imports unchanged",
+  "files": {
+    "contracts.py": "03d3e7d6031708925469c1824b8700a94869c3ea5170a617d4cf164dbd68ef3c",
+    "core.py": "a896580e6cb5897302c8042e4ea16e59d7b5e5774caaec9b2596b4c2a871d876",
+    "parity.py": "679ceeb2ba5f4d2c0d6fb28755126c90749d7cf46af9e6e247e0bac21becbe5e",
+    "memory.py": "45f1255e96b0cda4b0a24e90ff79e33a7e53f4067f59f65f0228c1e46f365443",
+    "modules.py": "7ee7f3c8a69a4b4683160e523553e97beffb4ab29719bdff32e46a9f6700a3c2",
+    "operators.py": "3fca180084859cc1bf97d37d2a6b7f21bbaeaafa8b28fcf89a0d529fa1a13b3c",
+    "__main__.py": "0c9295680289873f4ab05f6eb4176e0a30e56024fc74a0fadca1dafd8b5c42aa"
+  },
+  "not_ported": {
+    "rpent_bridge.py": "moved to robometaharness/integrations/rpent_support/ (RPent integration, not HarnessStudio)",
+    "robocasa_pose.py": "moved to robometaharness/integrations/rpent_support/ (RPent integration, not HarnessStudio)",
+    "surface_support.py": "moved to robometaharness/integrations/rpent_support/ (RPent integration, not HarnessStudio)",
+    "manual_slew.py": "moved to robometaharness/integrations/rpent_support/ (RPent integration, not HarnessStudio)",
+    "cartesian_effect.py": "moved to robometaharness/integrations/rpent_support/ (RPent integration, not HarnessStudio)",
+    "closure_settle.py": "moved to robometaharness/integrations/rpent_support/ (RPent integration, not HarnessStudio)",
+    "harness_api.py": "moved to robometaharness/benchmarking/harness_api.py (evaluate.py registration)",
+    "harness_dispatch.py": "moved to robometaharness/benchmarking/harness_dispatch.py (evaluate.py dispatcher)"
+  },
+  "unified_retired": {
+    "at": "2026-10-28",
+    "backup": "archive/retired-unified-20261028/ (SHA256SUMS.original)"
+  }
+}

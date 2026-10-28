@@ -1,0 +1,44 @@
+{
+  "action_chunk": 16,
+  "control_hz": 20,
+  "denoising_steps": 4,
+  "noise": {
+    "admissibility": "only after the non-subset same-seed base16 bitwise-replay probe passes on the P2.5 map",
+    "crn": true,
+    "namespace": "chunktrust-beat-20261026/crn-v1",
+    "rule": "N1: torch.manual_seed(derive_seed(namespace, case_id, 'primary', policy_call_ordinal)) inside torch.random.fork_rng for every policy call, identical in all arms; candidate/null overhead use other streams; marginal N(0,1) and weights unchanged"
+  },
+  "observation_stride": 16,
+  "parity": {
+    "fresh_process_retries": 1,
+    "initial_observation_keys": 9,
+    "initial_packet": "initial_public_reset.npz (+ initial_public.npz after re-render), evaluator-only",
+    "max_rerenders": 2,
+    "mismatch_after_retry": "case invalid for all arms; phase incomplete -> infrastructure_blocked",
+    "placement": "identical case->(gpu, slot) map and workers per GPU in every arm; arms sequential",
+    "preaction_check": "canonical table from policy-free reset probe; class S abort; class R re-render",
+    "scene_witness": "initial_scene_sha256: qpos,qvel,act,mocap_pos,mocap_quat,time + compiled-model array digest + ep_meta sha (evaluator-only)",
+    "strict_initial_observation_hash": true
+  },
+  "records": {
+    "contract_fields": [
+      "seed",
+      "horizon",
+      "initial_observation_sha256",
+      "protocol_sha256",
+      "checkpoint_sha256",
+      "action_chunk",
+      "observation_stride",
+      "control_hz"
+    ],
+    "observation_stride": "declared common contract constant 16; executed k recorded in executed_k"
+  },
+  "reset": {
+    "horizon": "official get_task_horizon",
+    "rule": "env.reset(seed=7+50*within_group_task_index+trial)",
+    "split": "pretrain",
+    "success": "native any-step _check_success"
+  },
+  "runner_version": "v2",
+  "schema": "chunktrust-protocol/2"
+}

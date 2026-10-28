@@ -1,0 +1,42 @@
+{
+  "schema": "chunktrust-protocol/2",
+  "runner_version": "v2",
+  "observation_stride": 5,
+  "action_chunk": 5,
+  "control_hz": 20,
+  "denoising_steps": 10,
+  "noise": {
+    "crn": true,
+    "namespace": "harnessstudio/pi05-crn-v1",
+    "rule": "N1: Policy._rng = jax.random.key(derive_seed(namespace, case_id, stream, decision_ordinal) % 2**32) before each sample; sample 0 = primary stream in every arm"
+  },
+  "parity": {
+    "strict_initial_observation_hash": true,
+    "max_rerenders": 2,
+    "fresh_process_retries": 1,
+    "preaction_check": "none (no canonical reset table for the Pi0.5 gym env path); pairs rely on seeded resets, scene determinism and M/R/X attribution"
+  },
+  "records": {
+    "contract_fields": [
+      "seed",
+      "horizon",
+      "initial_observation_sha256",
+      "protocol_sha256",
+      "checkpoint_sha256",
+      "action_chunk",
+      "observation_stride",
+      "control_hz"
+    ],
+    "observation_stride": "declared common contract constant 5; executed k recorded in executed_k"
+  },
+  "reset": {
+    "horizon": "ceil(1.5 * get_task_horizon) (openpi-robocasa main)",
+    "rule": "env.reset(seed=7+50*within_group_task_index+trial)",
+    "split": "pretrain",
+    "success": "first info['success']"
+  },
+  "determinism": {
+    "xla_flags": "--xla_gpu_autotune_level=0",
+    "why": "XLA GPU autotuning chose different kernels per server process (actions differed by up to 2e-3 for one request and seed); with autotuning off, three concurrent processes were bitwise identical. Disclosed adaptation of openpi's default XLA configuration."
+  }
+}

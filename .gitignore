@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+# internal milestone notes (kept local)
+docs/DESIGN.md
+docs/ACCEPTANCE-M1.md
+docs/decisions-M1.json

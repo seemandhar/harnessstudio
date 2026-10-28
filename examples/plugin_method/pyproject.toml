@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hs-example-plugin"
+version = "0.1.0"
+description = "Example third-party HarnessStudio method (selector demo)"
+requires-python = ">=3.10"
+
+[project.entry-points."harnessstudio.methods"]
+first-sample = "hs_example_plugin:config"
+
+[tool.setuptools.packages.find]
+include = ["hs_example_plugin", "hs_example_plugin.*"]

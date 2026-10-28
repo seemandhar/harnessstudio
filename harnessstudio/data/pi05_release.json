@@ -1,0 +1,87 @@
+{
+  "checkpoint_subdirectory": "pi05_pretrain_human300/multitask_learning/75000",
+  "files": {
+    "_CHECKPOINT_METADATA": {
+      "sha256": "c15b833bd5b285c426ac1eb078ddfa334140a6661c61515e3bfd304ec87bdc70",
+      "size": 426
+    },
+    "assets/norm_stats.json": {
+      "sha256": "4aed1af411bd0e0f49d2b0e6d6832b11b8682917231a07173fbc30fd493bbdee",
+      "size": 3208
+    },
+    "params/_METADATA": {
+      "sha256": "f27d21952e602528615298c668b588ba14ae8268e03e94598ea0235eaea52a5f",
+      "size": 23544
+    },
+    "params/_sharding": {
+      "sha256": "7e65c8b63fafedfedb52bf416d6bfde394c1c88fd28dc02f18a7911f2581c183",
+      "size": 12797
+    },
+    "params/array_metadatas/process_0": {
+      "sha256": "b6f4c56c01a8b73c9db955c4c68dd0b74d7fdda723831715dcbcd18ba5ddd4ab",
+      "size": 9162
+    },
+    "params/d/35c0b41e13ddb0a578456230f51a3416": {
+      "sha256": "97ee62c8ea97e9d8460dfa4cac06a73755d61c290c8aa6b046ba33f90f515041",
+      "size": 2138
+    },
+    "params/manifest.ocdbt": {
+      "sha256": "e0d7c903d80c8ed959cb0428463be3a85406e82b170dbae2c5ca0004f81f0839",
+      "size": 117
+    },
+    "params/ocdbt.process_0/d/16a296efc9531f413b90c15199e43385": {
+      "sha256": "dc757fa844af3d94c8eaaa07194417a7c482bb52edf6e8d86e577f81816c5bae",
+      "size": 538931200
+    },
+    "params/ocdbt.process_0/d/28b537f74e118c2c1c44f72e8b0e00b7": {
+      "sha256": "f209dd91be421638fea6261cc63a34a2004ee145eb30cb6ba38a99654f9af305",
+      "size": 2240151552
+    },
+    "params/ocdbt.process_0/d/471d6e9b709ec1a579f83c8b4914e1ed": {
+      "sha256": "3ce8fe59c2e2b636d434e02c985a02916d88d2b129189b529d24c3e6099baed4",
+      "size": 30384128
+    },
+    "params/ocdbt.process_0/d/5cf1127d4e3fcd6e80a66ebba54dc32d": {
+      "sha256": "bacba2b2609a43ca79324669efc844756779f69a4d8c7cd10c7762683fd32deb",
+      "size": 2799407104
+    },
+    "params/ocdbt.process_0/d/6292e633c11b8f6931cac6ab824f3279": {
+      "sha256": "96aa01bc6b8323995e711fbd80ca0f52f24d472194b4bd61cd0cc9c64cf2b4a2",
+      "size": 35061760
+    },
+    "params/ocdbt.process_0/d/65f82551b4d64f31f6bb1cdcf17945e1": {
+      "sha256": "e1f92637f1d9e85c6da42b7cc315fdd98ff1f8786baf31bc93728df8c99c9b4a",
+      "size": 70041600
+    },
+    "params/ocdbt.process_0/d/7f76f4974bbb6946ff46b5dbcd4d44f8": {
+      "sha256": "e4282ee9762ef7bd9a27972e42f0a10e110b27e4a9d4123610cd8a0e47266754",
+      "size": 2529587200
+    },
+    "params/ocdbt.process_0/d/b627c21812ded6c524507187a8526a3e": {
+      "sha256": "2a36a95461e1b67ea66240045be0b2011d7ade7ed2237a8bf95a3f117010e734",
+      "size": 1956962304
+    },
+    "params/ocdbt.process_0/d/b808ab91bab1b5805b381e09b7fc0a85": {
+      "sha256": "0c06d6434c9c6937e4804d6cfd0ab3e91eb982c71e8464880ef8e156a9f91d03",
+      "size": 5367
+    },
+    "params/ocdbt.process_0/d/d71893b153190783845eb3aabec57214": {
+      "sha256": "c32792c5ea2f6ea460915854df63ce59f0135e6fb8f6bd716642550d8802e8df",
+      "size": 1098
+    },
+    "params/ocdbt.process_0/d/d76149c5c280cb9da59fd2f948d9cdda": {
+      "sha256": "fff2f8b328c86ab34912c01d5758210df1805bcd73e3709be401d1989b9b18c3",
+      "size": 213
+    },
+    "params/ocdbt.process_0/d/fb6f9dae6d90f1b488a3d4ebf79278ed": {
+      "sha256": "c91af421dfea08263fa55d6cd904fb7a909925447c448cebeee8bc140fb5a340",
+      "size": 2240278528
+    },
+    "params/ocdbt.process_0/manifest.ocdbt": {
+      "sha256": "619bbfc24075a6e9055ec5e160a0d1e5d1900e2b7edcc2286ca432997f0d58e4",
+      "size": 486
+    }
+  },
+  "repo_id": "robocasa/robocasa365_checkpoints",
+  "revision": "c484448aba1a9b60a04c9b0ca117241518ea69f3"
+}

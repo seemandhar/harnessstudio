@@ -1,0 +1,664 @@
+{
+ "cases": {
+  "CloseBlenderLid--0002": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "c6508d955574854c2432d1934ea5375829ddb6dd1af0c9bdbcc737b2626905f1",
+   "keys": {
+    "annotation.human.task_description": "878a23ced5c12162af190b3c67124e60af4dd91980dd2a77be28d795cf9bac0a",
+    "state.base_position": "fbc290eedbb7c59c41865baa3581b73c89ebcc36290d79aa3d72379e1c7d96b6",
+    "state.base_rotation": "eee8437865b56a3d94da996136b171bfe651335531817e53b7a557a2ab19e1b8",
+    "state.end_effector_position_relative": "8f6d68300d5150f764c5a5f6c116a8933bf5063c08541bbeebe8539f3e9a1ac1",
+    "state.end_effector_rotation_relative": "ed8bd054ff50a04d25e7453fb503a5a92f947e545256bad06559dbe302de6bcc",
+    "state.gripper_qpos": "ed9ea8ea8d42a4745912316772ce4e950ce50c9b0bd475f9ef101cd47781c2e3",
+    "video.robot0_agentview_left": "8405988845c3c3bb44a2c8becd11e1c7391c635fe739aaedb5e542f4e47f7bf5",
+    "video.robot0_agentview_right": "3752369cee433a482a62f7367bb1290f46ad19647c131f6a76d808dd07d23438",
+    "video.robot0_eye_in_hand": "38b22e0159da01adfead0d7efe83e0399b2020bf046567bdd155ec52dd116d05"
+   },
+   "n_resets": 3,
+   "scene_sha256": "58a69d7dcd013c9bc85ad5a8a01471ea133e02e251cc6c484498ac0c72688184",
+   "seed": 9
+  },
+  "CloseBlenderLid--0003": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "d7008f63dcac8e62907fb29a88a10a7f782fd6cf12ece4016f530d51d02dc10d",
+   "keys": {
+    "annotation.human.task_description": "878a23ced5c12162af190b3c67124e60af4dd91980dd2a77be28d795cf9bac0a",
+    "state.base_position": "ae26af77ae8f24dffec82c93e1d8d063376e4e7430a8271bb793565d5818f36b",
+    "state.base_rotation": "37bd68be1082b307f1ff888e7ce4bd0e18a2efe56ecbb34c286bba014c2b5c7e",
+    "state.end_effector_position_relative": "3de896e5f8f217b625795b70ddd172c0e5d107db9a44b298b82ad437a40885ad",
+    "state.end_effector_rotation_relative": "fa17fe0979544abb4efb3656f23081fb2b71780d1861eea14738886ccd607bda",
+    "state.gripper_qpos": "f10fb30d57fff73c46b9a9709553beeb858c6931af955813f6f04fc6268f0a06",
+    "video.robot0_agentview_left": "fa25651adbbb02fb15f18d3bc79a4a3602512b19252eba508ae1d5b0bbdbbd55",
+    "video.robot0_agentview_right": "7751fcf27d59b531557fb1591321765ec86e2969987930180e49440666d8f944",
+    "video.robot0_eye_in_hand": "0733c242ad150123af2db9c4f6d741c7365e612f26f7b90a38569fe6cee51d65"
+   },
+   "n_resets": 3,
+   "scene_sha256": "ceaf9881cd975f70d2959acf0ef65da9844ca1c6223efa29a0f2a19db7f875e6",
+   "seed": 10
+  },
+  "CloseFridge--0002": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "a73409a32d70765ef05ee547aa891b3d0819696bed9b8eed4eb70f6d53948cc3",
+   "keys": {
+    "annotation.human.task_description": "d464dc7bc9fbe2e8431bd855ed1efdfa225465a719ea1304dc3bc98dc1079891",
+    "state.base_position": "d4288ff70c10fea3f11ab4ec43bbc8d3184ff30f04c34e7b75e8775c671313cc",
+    "state.base_rotation": "ed127c9ff564ec8690db24dee4d5782c4bc6d223001962bf79e7135c5b44699f",
+    "state.end_effector_position_relative": "a52130d124b739761289797e144d9cd8b02098f537aab0224c8fcb8ba6a90ef5",
+    "state.end_effector_rotation_relative": "eab3542dc5d868a68b1086a84e522f7cce78670a6c88374d5d6e36095927fd57",
+    "state.gripper_qpos": "ef3dd42dfba7e9366fd14b0902d93012f53404a8e3cc2dafd5a8f451a8e0f89e",
+    "video.robot0_agentview_left": "500094d27333e5ae6646b5e58791a285914ce994f8e3f3c478c50d25148ae5be",
+    "video.robot0_agentview_right": "5a81befe98e867a0c689d84553ff9edd9bb5d61f731e8cf986955757433a8f07",
+    "video.robot0_eye_in_hand": "65e83efc13e277115cbacf2fda160d32cda13883707c38597c13ee2a3b4a1c6e"
+   },
+   "n_resets": 3,
+   "scene_sha256": "a6d68f02bdd09cc9c17c8c93865222373855429342497d545cf14b18770bd2cd",
+   "seed": 59
+  },
+  "CloseFridge--0003": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "ca1c7f604ddb5d35b48e08751ba74c4dd4be9d4aa802151b71acab1844dcd132",
+   "keys": {
+    "annotation.human.task_description": "a9bbfd6e41541066bf1a3b996f92ce93097a5fa7f66ca012f2846e396b42c62e",
+    "state.base_position": "2134a0405ffb6050e558bcb85d655a3771bfc54a51c087b2e7ebb34232557529",
+    "state.base_rotation": "34338a67bf08b552e54c091e767297e99673f5322282c92aa2043844f986f94a",
+    "state.end_effector_position_relative": "53681072cd2ea2f4ad016ae7c5c0a0f75d480fd51ed34738666e05362bd5c4e0",
+    "state.end_effector_rotation_relative": "c4e27118211501d0a621550dbc8e079699ae8e09ae6b07ef318fab0632d7c0ed",
+    "state.gripper_qpos": "618059fc53bbf6f73649d0719bbcacf39bb3cc32e6a1b2f609ecd2a6fb77c914",
+    "video.robot0_agentview_left": "a111cf214e920928dfa470379bf6e244b83c3693cf556577eaef749498e948b8",
+    "video.robot0_agentview_right": "c82d482019f647ad674964d3877e017860a2f2341b0524b44228953e9b116094",
+    "video.robot0_eye_in_hand": "b7667c6d28e37e384ce713754e0e5d888e0d3ef4dc6f93e5fc925147175b5d70"
+   },
+   "n_resets": 3,
+   "scene_sha256": "33154a6fc98710eba56369b17a410fdf457fbbca7d8a22f6e21ada7b25464b52",
+   "seed": 60
+  },
+  "CloseToasterOvenDoor--0001": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "5d8cd731c588228f81e89a2f60a2c80ddf3318fa3fdd257caf10697b40766e53",
+   "keys": {
+    "annotation.human.task_description": "1dacab6d15ff81295075b4033a51c23b41b3fec159220a3b82dab51266583ed0",
+    "state.base_position": "c23d61ee4b56b9b3a6f4fdc30cbe25e868a2b8de5bc40915844e36a21885a2c9",
+    "state.base_rotation": "34338a67bf08b552e54c091e767297e99673f5322282c92aa2043844f986f94a",
+    "state.end_effector_position_relative": "0b633db93706c81a3bedd4d1928ccb566741695e6f1b7ca7c61238556e98c0c5",
+    "state.end_effector_rotation_relative": "7974ee3688e8d7b898d9b06f4ed6755b451707b5da19c9eb9d32d659201617b8",
+    "state.gripper_qpos": "91063e205283679d0e4a0b7fe2672e1d38f873c927b18dec8990db5c073fafbf",
+    "video.robot0_agentview_left": "92e36b00b59a07c8accbf500027467df24757de5c3d81375f95311793d31b966",
+    "video.robot0_agentview_right": "a1ae262965ccb167fd80b14fef086cbeee0e17c0590770a0590bf12640b3115e",
+    "video.robot0_eye_in_hand": "ecd2bd9320b97e91fda47701b7c86559e5e034fdf4e0fa22b1ca1827e7ae4774"
+   },
+   "n_resets": 3,
+   "scene_sha256": "e4d7ec4d555715bd88b58248e389218fc49ff60c47cebea1fc7f6bb33e7dc0ba",
+   "seed": 108
+  },
+  "CloseToasterOvenDoor--0002": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "ca754b17ce7c4a6b9f23d6cbe757bbdf674fcabb52a37a199e928d12e7dc2c74",
+   "keys": {
+    "annotation.human.task_description": "1dacab6d15ff81295075b4033a51c23b41b3fec159220a3b82dab51266583ed0",
+    "state.base_position": "5ccdd283f24f66546275ddb8a9c165da695c3b893918784599910b59632b5528",
+    "state.base_rotation": "ce6dbef659bf0a6d97213f5a3cc9d3d37b75a66789d56e41a34c134dff8e1109",
+    "state.end_effector_position_relative": "39259d5a1acb73ae0b51f5285adc4cd4d621dd024798995dafbba660da112872",
+    "state.end_effector_rotation_relative": "82e3f463e78fe499f076df08e8f05df701dfe83d7c021ae2b834dfd22825c5d8",
+    "state.gripper_qpos": "08cef52c8c16ee79684f1e23c995a29e53ce6c8dba45710bea0adcf643409cb9",
+    "video.robot0_agentview_left": "c497639305a229443112bdf133651633ee146a7ecb7dd9bc4f4b13ca96adc2b5",
+    "video.robot0_agentview_right": "6e729a2d3ea18443270a901cf53ef6b910e16aea9787d444bc756841854d509f",
+    "video.robot0_eye_in_hand": "f328cfba94d9c5d6bd97686d341a4bd4190a8b04446a735ffc16f4a574895be0"
+   },
+   "n_resets": 3,
+   "scene_sha256": "49c3e400748a2e1f1821fc5aaad473e1d4d2395dee8cb264095a5738fde29999",
+   "seed": 109
+  },
+  "CloseToasterOvenDoor--0003": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "091647d7b57542e21bd6e825a79e212cf75c44979bc1a7bed94d54a2b91673ff",
+   "keys": {
+    "annotation.human.task_description": "1dacab6d15ff81295075b4033a51c23b41b3fec159220a3b82dab51266583ed0",
+    "state.base_position": "2a3274f983f069e96a116b2cfe58ddca05d0f7e0e0fd72571f8d448a07bc6429",
+    "state.base_rotation": "34338a67bf08b552e54c091e767297e99673f5322282c92aa2043844f986f94a",
+    "state.end_effector_position_relative": "309b774ba7ecc51039c3f9f442fea99d21e21cb77998c9d7c9995807abf5a7f7",
+    "state.end_effector_rotation_relative": "876fdd62dea4a195e0fc393338b1744be692429e96f058e20b95a3dbbb0c71c2",
+    "state.gripper_qpos": "75a7dea0a2ddf50d3e260fd0158dd3ec95d5fd8b8f60d3f9dcbf5bbc72ba698c",
+    "video.robot0_agentview_left": "264f9e947985a1bfd5ea9c93afa4f03a5f48e2f92d6f33e3c2ea919f570781d1",
+    "video.robot0_agentview_right": "5078fb107d7693a0c50098755f28a447fb6ea872c2754392bc2ef8dc4448cfac",
+    "video.robot0_eye_in_hand": "8e45531ff409e26bbfcde2914bdb337be9e6ce2fa07f98d48ce91c1fc365ab52"
+   },
+   "n_resets": 3,
+   "scene_sha256": "67627123d26935261f4155ce03dcbc0b08936f6755c8fca8a3c61f1bbdc8e2a8",
+   "seed": 110
+  },
+  "CoffeeSetupMug--0002": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "ecb4483e2ee94d0d5000f33fdfda149709c81d0766ac488cb64ae4f9fad61b3c",
+   "keys": {
+    "annotation.human.task_description": "2ec7497f5c89f08379a25b711c4fa2cf87271ceb48d8138b7fa0f47ef6dc3f8e",
+    "state.base_position": "0a8959ff4e9125aff4eb41a035ae60bbf1c27d8732122d008d75215a15e91dc9",
+    "state.base_rotation": "5f93fffec9eef89fd54bb69414a23a9158abbc9e817f553b3f6ee6059f4eaf0d",
+    "state.end_effector_position_relative": "9daadfe528548e66ab12542526caeb36e4f285977e08aa8b479109a50c68e4c2",
+    "state.end_effector_rotation_relative": "bb8ee6b6102808295ff223f5f057220119a67c87b82b779d21111f41d466363d",
+    "state.gripper_qpos": "e4d2c49453599d529a22ccba2ec9dc4d2127bb7e10140b549badd44f10757d1e",
+    "video.robot0_agentview_left": "e0eda8701c778fd016ab131c859e2ee01766ee0ad173210489e72dc8ff4cc475",
+    "video.robot0_agentview_right": "21979da84c253af6b31a4634a9bd1c4de9c82e02adf6bbf144cd47ab14e607d1",
+    "video.robot0_eye_in_hand": "62a96741135892cd64f0434967e21233a87794e5249da79671029831090f8aee"
+   },
+   "n_resets": 3,
+   "scene_sha256": "649e59f0ddec2ee386d835f32f0e06833b75e391b8e57f9bf4aa5270135e9960",
+   "seed": 159
+  },
+  "CoffeeSetupMug--0003": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "d7e3dcfe356a006e9698ca8e30b22706b5ea97459c485d32da1b9d89eac0b7d3",
+   "keys": {
+    "annotation.human.task_description": "2ec7497f5c89f08379a25b711c4fa2cf87271ceb48d8138b7fa0f47ef6dc3f8e",
+    "state.base_position": "06a2cc1be2ae9fbaa0eb3f4ad1065543c0bc21210361b4bc35b5ef5e0a7c4772",
+    "state.base_rotation": "34338a67bf08b552e54c091e767297e99673f5322282c92aa2043844f986f94a",
+    "state.end_effector_position_relative": "e4549b3af0b0fa20968a4b9da5a993a8596b948fedc3ec5d8e08c0eb06c8e88b",
+    "state.end_effector_rotation_relative": "0a715fbe6c62a91258a7dc372d35c40e46a31f728471daf8c78ee3ce05397fc8",
+    "state.gripper_qpos": "a3db0f0e4277189afead3e942933b181bb0f837a6cdc20a8115ad8d4c2970ade",
+    "video.robot0_agentview_left": "3ef1b98b78c511a918b83e8a074cda816d275821e232e0c66d9b99a5ee484692",
+    "video.robot0_agentview_right": "8b04c8e5d857afa45c6221c9097a3616f66c11c2da86e8b83b2b49966a7aac29",
+    "video.robot0_eye_in_hand": "0fb5a26b8d4c52013942e98effbd871a8840296c998cbb5e6062a307298c3107"
+   },
+   "n_resets": 3,
+   "scene_sha256": "75a0a7d88b4e829a7a2082eb79f1d65f3c30cd57900a24d36b0766b859bb2263",
+   "seed": 160
+  },
+  "NavigateKitchen--0002": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "35d000230c1ae4947bed8d54a67a28d1bec7bf19aaeb71e0b3efdac0933afc6b",
+   "keys": {
+    "annotation.human.task_description": "9b9d694ff8fe24539e437809c91426a2d3cbdef507ee407a417af3d26b1edb52",
+    "state.base_position": "a24eea0dee903d9bb88c2f81b30f26c48457bdee4acba9baed232b6531571c98",
+    "state.base_rotation": "12216432e5fe41ff24e32dee21126109a570119feb61aeee3187770f360f8394",
+    "state.end_effector_position_relative": "b6e288ea7968f3556cb41f391cfc418a6aee0cd4be469c5c6307659766734977",
+    "state.end_effector_rotation_relative": "d1c76f395313cd5aee43d55255f65148afb6aa582fbedb7813b16009e203c56e",
+    "state.gripper_qpos": "0c4c96859fa33bb4d57e446d721f47380ee4d970a0f49952617ebaf2b6f2f2f2",
+    "video.robot0_agentview_left": "d46ec3cb9bff7e07df27dbfa4fc0b42a3a82dcb025e1012e738b64bbe753dfba",
+    "video.robot0_agentview_right": "1fa15b7b33a1b48adc736d6ffaca444dc76e03376794fe14210f5451b0965959",
+    "video.robot0_eye_in_hand": "8968307a3f0d17ce58ac86269594efb8b7f87176d67227b78ab7eb941bd3c7fb"
+   },
+   "n_resets": 3,
+   "scene_sha256": "f6e94a0494e8e9d0a059a4bb3d2fbff706e6f74948575ff238024e73af116309",
+   "seed": 209
+  },
+  "NavigateKitchen--0003": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "6124b05260924fe3c6e9ff318bd3ecd366709a936eeaa7073158e6381adf3a1b",
+   "keys": {
+    "annotation.human.task_description": "a1a2ced7f8016709d5ea0c0f92b7e8e85afce16b9b599880abf7ce2ee48a4ecd",
+    "state.base_position": "740d729e670ebb054b3c8c1f62a89877c518ab761ecf507de8914ccb4fde9ce6",
+    "state.base_rotation": "f470a1dbad76b2a540e1766b5bc248de9ac584f50a30e096a235227b692ec053",
+    "state.end_effector_position_relative": "ec1a8942e06bff89787e90455d233f83f9d2f566f6ccb5b90916793989d8421a",
+    "state.end_effector_rotation_relative": "bea33dcd47d03ad942db6ff53d91848b94f93196ba8f3f2683b4d271503a3e3a",
+    "state.gripper_qpos": "47fc65adda851d6374ce9368789b424b72425b10f0c7f78c731c206a27ae9f27",
+    "video.robot0_agentview_left": "0f4462a5d746f62b3b45cb52e3ff44a539705c9aa37c14016dc57778763519a0",
+    "video.robot0_agentview_right": "5ead7f20481245d11b566ca6ab07346185b5a838aa75f631e4b0ce8f96a294e4",
+    "video.robot0_eye_in_hand": "9e66a2b54e5cfad0fd8c06a7a57f9d964dbbe2a224c6e68753d0e1c40b8d6584"
+   },
+   "n_resets": 3,
+   "scene_sha256": "a80daa574dd96bca95d105c4af228c6419beb6896979d83fcb7d73e6c4cea72f",
+   "seed": 210
+  },
+  "OpenCabinet--0002": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "29786a79243433da89191c0ebc13c313dcce8e6299728ba8915439e28882b5df",
+   "keys": {
+    "annotation.human.task_description": "70e6ff164093eaa95f71b473edbf294078655e81e028ac879b1d7ff4bab810d3",
+    "state.base_position": "e7a5e70044a2e1dacf1489e01d2e477f81c2538e0b6681426e95934ad1b1a6b0",
+    "state.base_rotation": "126b90d6c4dd9a8e68422f25e71e315c9ddeba68d494d5780f3771653be27c66",
+    "state.end_effector_position_relative": "07936cf51ebb61adfdb081a72a5c6c4f718b68766890a1a41bc3a744ccf9ee52",
+    "state.end_effector_rotation_relative": "559a41d9459cdbbe2c9a6b184da0f1bfaad536a2fda0e3989a15d54de29dd435",
+    "state.gripper_qpos": "475b839c1b8c5109846929003f62e5514ff5c7427a0ae0675ba69ef7404bbaf1",
+    "video.robot0_agentview_left": "c829b995575fe71242ffbec196a44ae93b9cf0fe61545a0b2458c5bce18cfda7",
+    "video.robot0_agentview_right": "8d238e511e81b4bc7ad82399d52fbcda6d8bc83a97dadee08ac86aa05fc16141",
+    "video.robot0_eye_in_hand": "35ddead0eb9fefd1ac61917ac5c0409e2b1ac2eb040a703c9de432302f66aa7f"
+   },
+   "n_resets": 3,
+   "scene_sha256": "fd13026a5fbad9f7b7e37a53d437821f082a8ca048a802b26f85ff5d3c7061e9",
+   "seed": 259
+  },
+  "OpenCabinet--0003": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "5c67adf76feb72e2260347bf784071a1aefe01cc3fb285cd2f1714459a536bb8",
+   "keys": {
+    "annotation.human.task_description": "70e6ff164093eaa95f71b473edbf294078655e81e028ac879b1d7ff4bab810d3",
+    "state.base_position": "992af7d8a54eb3ff8f99e97c980eabfeadbfa30048037b087870b5097c319434",
+    "state.base_rotation": "34338a67bf08b552e54c091e767297e99673f5322282c92aa2043844f986f94a",
+    "state.end_effector_position_relative": "6a9e0121d23fa77bcb4d5ed611132b2940bb069274f504d34c5bb88f6ee9862d",
+    "state.end_effector_rotation_relative": "ca2ea1a16cad99975260032d50f43c57c1698a1f4e2df39d8e157a24b8b36edc",
+    "state.gripper_qpos": "4b795c08740ebfd4d574fa33df9fcb5fe20a2e7036e42ce7def584c4fb1e0a78",
+    "video.robot0_agentview_left": "faae79cc454ecaf11ad36afa42df919a72dcf4a994cc95b107bca53c32cabb49",
+    "video.robot0_agentview_right": "136fcb771662953788a5ff7af09f0f1ba6b4dea76d239025ced0abddcde8f320",
+    "video.robot0_eye_in_hand": "20033f2eca9395931e790378a2fc04a48672d95ec1f48263dffa095b0094808d"
+   },
+   "n_resets": 3,
+   "scene_sha256": "374d63ee60eea4d3127f8b03d086289f5d41a31cb40b104f43a117c5dea3ac94",
+   "seed": 260
+  },
+  "OpenDrawer--0002": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "5768161c12396dcd2f52693a46c54beba4b1bde66a52014de749e640f2692428",
+   "keys": {
+    "annotation.human.task_description": "f3057a2d9847c5cd18ca2603185a7689888d348be07d1867546aed9fb22cdaca",
+    "state.base_position": "4a81175ca3c1d5fae1958947802fbdc91665aafc32045caef4e6ac82b2514f45",
+    "state.base_rotation": "b6ef4014485b01fe3da36c6a301c29daae82c0bc0041e41506a4e08ccd9109a3",
+    "state.end_effector_position_relative": "47659110b106b5f368fbc880ebeb4c4c7b17e349acbcddbadb77cd8e976fdfb0",
+    "state.end_effector_rotation_relative": "127acd7819c377127f937e5166f70eada5aef616f4359235d64cfb1673a9b0e5",
+    "state.gripper_qpos": "1f251e85d58e55ac9f3769a99ca94c371878a9e2ee1b423e0df505c1c6d6ff6c",
+    "video.robot0_agentview_left": "0c6b3be2a5a26e3ba6c1e2eb7f700f82c6540057ca68f5457e514094cdb90f4f",
+    "video.robot0_agentview_right": "6dcbff238e8da54e7610c6529d97f2c7ed02823f9ab6aef5ce655f820803e8ed",
+    "video.robot0_eye_in_hand": "19cfa1c9317d1cf5acc5725ea5f8238d959c680805ac343fe5687fdefca61481"
+   },
+   "n_resets": 3,
+   "scene_sha256": "2a945880df7e71889fba142944d6f70cf30f0c2e00f31062f694c1e8707bbb71",
+   "seed": 309
+  },
+  "OpenDrawer--0003": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "38bf4b3692bd3f3ade4de061583b73ec1cbeed90e900fd207d1d1fd4ee7807d3",
+   "keys": {
+    "annotation.human.task_description": "036e9317eab4f5ab3e6da08c57a9b3d4e406e2be381ca14ab32b8b0b89c5b6bd",
+    "state.base_position": "204109a2660fed822e7877bb00db8a00019fcc5456bbc2441f1764ff049487b1",
+    "state.base_rotation": "34338a67bf08b552e54c091e767297e99673f5322282c92aa2043844f986f94a",
+    "state.end_effector_position_relative": "7d32d60953a470c0eb0f84593933870388d5af0ac50d16d5787ef8f62b6f008f",
+    "state.end_effector_rotation_relative": "adf437df9a112f37e1d5a15213fa2402182bc02c1cd6411a677195197eacba8d",
+    "state.gripper_qpos": "c65f64da7c8d408444e184b6d0e42e08fbe97ca2359f563c2ca5c2f488384f8d",
+    "video.robot0_agentview_left": "efe3003bdbafc2dfa54518d0b4e19e2426b6dbe3ec810d8bf312d46a6f15248a",
+    "video.robot0_agentview_right": "d3ff649dc50003ba9ba2a50a2b1060dfbf088ae052f2941b4a4fc583879639af",
+    "video.robot0_eye_in_hand": "50770c15dedb0142cef08eaae1eede916b459735a222be9d497ce08b0e37eedd"
+   },
+   "n_resets": 3,
+   "scene_sha256": "48bf8f88db526a3a20cd9c0bd7f4ed53e9d8a694ef565d3316c214caef7b322f",
+   "seed": 310
+  },
+  "OpenStandMixerHead--0002": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "480f489361b25561e32ae5ea05f6bcf2ab6da8e3fb5902bee212a54f3c17157b",
+   "keys": {
+    "annotation.human.task_description": "5eb530a7eb6f31eceb5272207861fc2480a2879e8431e72999aacdf6598daba3",
+    "state.base_position": "b837c8418f11588c1766c4ebd23fd29d067d3d3a4bad63f82eda76647cabb15f",
+    "state.base_rotation": "0df6f77cb9f4615e6f1c67b49d4758ab9be6995bbc9b84f51996df1fa49c09d8",
+    "state.end_effector_position_relative": "e8c399935643235092363ee882dd4e58221e477ccc65205f8f095cdff1f47100",
+    "state.end_effector_rotation_relative": "8b629f4396740326488701119ebd5810c84ba7c2df954188faf74c817c239e90",
+    "state.gripper_qpos": "f734d331ad6b084cf5320283e8bf62f3955c8ebac4d6381bcbe4dc953445f275",
+    "video.robot0_agentview_left": "9ef9dd595069ee856f9a419d8be822ab4ae5d6b64d123e7698fa675646b83984",
+    "video.robot0_agentview_right": "cd093ee2c73e01b2b0fc201e69c58281d655a1bb7d8b295c68aee9725b7b56b8",
+    "video.robot0_eye_in_hand": "afc3dba1095ef1f81c98d57a26345ccb564cad1ecd03fe7849a150cfaa5203c4"
+   },
+   "n_resets": 3,
+   "scene_sha256": "b587395b068acdd8f95f0af006e493786c30e93615afa0b7fa725c02f6b7d811",
+   "seed": 359
+  },
+  "OpenStandMixerHead--0003": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "ef1fb39ec87f3d5aa712753f527808dde3858a02d4aad506c24b7a405959facb",
+   "keys": {
+    "annotation.human.task_description": "5eb530a7eb6f31eceb5272207861fc2480a2879e8431e72999aacdf6598daba3",
+    "state.base_position": "eda9f8a7ee81666ec47be862c8e55d83d4e2ff414f3ceca9513f5be40694ff0c",
+    "state.base_rotation": "6b4ab671d5be09b15c8916977423eade542cefc47f701ffca671aefb777c331d",
+    "state.end_effector_position_relative": "6c180422382b838003965782eb90b6247e9dd06afa37683e53c1ee6d7ec5cee0",
+    "state.end_effector_rotation_relative": "3851d86e39f7c586e07a49434149785cec55d8ab97e2b5e9adc3d24c5a011ee7",
+    "state.gripper_qpos": "34241ac52a40c2f48cf2f9c2bb25528f516d83c272da94a3f5699bd7270521d5",
+    "video.robot0_agentview_left": "8ed4a120fe7a41a3e89c008a89ef48b6b43fa92c6b5ce8ba89d17c38e4be16ed",
+    "video.robot0_agentview_right": "2b90c42c317325b5c44a6a2be0ad139325ad8cd4dd6191ea5f6eb70138bb78fa",
+    "video.robot0_eye_in_hand": "d7eb5bc3ea17af4a06de24cd41e099fb8a5a31b1ee05563c6f55530c1bb2dcc6"
+   },
+   "n_resets": 3,
+   "scene_sha256": "3845dddd7adf373d7addc05180a96d305a3803a896cfc0b2d7193126e28963ec",
+   "seed": 360
+  },
+  "PickPlaceCounterToCabinet--0002": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "4e2674e559cef5aa743745e43c394e09184c8e29fb14b89554360523bac542af",
+   "keys": {
+    "annotation.human.task_description": "56f16d9341bb9bfe486ad925372aaf1c7f3e2f418961c3522e0ce38b8115b884",
+    "state.base_position": "3f127ba2f32929bfee6ed25fbbe998f4833eb1f739efd83bf9d9e6c39292e901",
+    "state.base_rotation": "60cc7ad94e36cb2e7b778867299fc687f7211e7497d56dfb8248661df54bc910",
+    "state.end_effector_position_relative": "7f4992cc2cfc075c22684ddff9dca1d2a79a69e5db75dc82a3b8510aca982a39",
+    "state.end_effector_rotation_relative": "01e7f8eddfef104082f50549eabfc6ad28c627b07b8c6eadd7c31252b0c86c5b",
+    "state.gripper_qpos": "1aa9f1ba699a06635fcd32a13a57b14a26b89082ffefbe3e558b8de739775fd3",
+    "video.robot0_agentview_left": "3c14e5db4cf8326984abf0892585ea8fd2a79952906821a59b754dff2d02dbd5",
+    "video.robot0_agentview_right": "7a264d38f1a39ecdc9ad13fabb771b8f62dd4844f645e21825d79d54e6c83853",
+    "video.robot0_eye_in_hand": "8a7f322ab2e8c4549d186f8118cf2c28407c21ec57926b3ef7f4687b1befe321"
+   },
+   "n_resets": 3,
+   "scene_sha256": "941eb6a20b811047a5160193eae72b31581d36ff7c0169a0761d10c80657b06a",
+   "seed": 409
+  },
+  "PickPlaceCounterToCabinet--0003": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "79bcc7519a063d159a799a500b9c143e111b3ccbed53e634a2207a982ea56839",
+   "keys": {
+    "annotation.human.task_description": "b08a8f51e47c25091cdd453519ebbe78ec0cdfa0552b455a824fd6008eb80bbf",
+    "state.base_position": "a94543dbe169fac4b3b8b1e06651f7dfb357f25c3fd928cd18ae43d1062111ef",
+    "state.base_rotation": "34338a67bf08b552e54c091e767297e99673f5322282c92aa2043844f986f94a",
+    "state.end_effector_position_relative": "439382ff29dc15c122ef03324165c58a03e21f6598071d2b52dc2116b39b4772",
+    "state.end_effector_rotation_relative": "f01fba896d1f527d66f1729c48f270006df290c3b0b8c2b80a529d166441fa65",
+    "state.gripper_qpos": "083e189bf29191a588810a0ed16bfe2432a4602959804d03cd6b314250102fd0",
+    "video.robot0_agentview_left": "0a7950c0ae75460d6cac56f64008c0f87f73dc6dff4bbf00c0071f3fd890c8f4",
+    "video.robot0_agentview_right": "9d02c61b3b08da1a6dab6ce25d12d711f88c02245746bcd9383fae8aaadd4473",
+    "video.robot0_eye_in_hand": "95a20b5c7c641bbc02abc83a8ef28d79f6a39e1c1ab5efad488bf28cd482a123"
+   },
+   "n_resets": 3,
+   "scene_sha256": "49c5693c8396c3847555a767f76953753f8cfb12b444b1882e67bd68c4ff192c",
+   "seed": 410
+  },
+  "PickPlaceCounterToStove--0002": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "973c2ed1ae24e104360b80eda5a8f7f4da29123e30b9181c74a0ecec3f83b651",
+   "keys": {
+    "annotation.human.task_description": "b9e64fecd506e00c5a4da90ad47508d1abc3912b6c7acd4ff9cd572f9aec3bb5",
+    "state.base_position": "d9fedc96f2d5f435f1b5b742ec8dcc318f645087d91baccca55f3cb34cecaa74",
+    "state.base_rotation": "d2d83ab5143790dbf4c3c86a17127f0544d1d34ba5d807e2a787ed05a125debd",
+    "state.end_effector_position_relative": "d8fb0f3878f9afa676428774639e15de04cbc17ed35d657025b37a13b8595083",
+    "state.end_effector_rotation_relative": "a65a84f470d4f912836819be0bc5d3311130944a3f52cf4fcfcc9fefbec49621",
+    "state.gripper_qpos": "aa3b17c55d96034b8b67f5b253a17aae663d1e5d4dbba57bece7e6506af48bde",
+    "video.robot0_agentview_left": "bc44c83295cd46d2a52a3699a86eaacffd7be31cbe661440c9f2ed1f61984611",
+    "video.robot0_agentview_right": "87276642ad74640a35f4ed36c5b85ee47594e959e4da3a538be29d68f4207ae0",
+    "video.robot0_eye_in_hand": "fff500fc5a5e2bd684fee9bedadb434a2b75ba13fdcf43a91485d35dbe64f9db"
+   },
+   "n_resets": 3,
+   "scene_sha256": "6dea9212d7be98041e22586df8e2528a16eaa53a9e33f2569e35e8f6f6256dc6",
+   "seed": 459
+  },
+  "PickPlaceCounterToStove--0003": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "c9b3a91752dac6e8fae8bcd2a326397704c3fd08349fbb92504b85487fd772de",
+   "keys": {
+    "annotation.human.task_description": "3bb038abc533885e394d8c8520b19122c6e053a83f38fd45823afb6a6ed8129b",
+    "state.base_position": "b16b344b93fc88b6ff636bb879cd4dfb264951356bbcae6f37bf5c021d04514b",
+    "state.base_rotation": "094080db24f4856fdad40df54c716357977ada1352ec89c652af8e744c2159c4",
+    "state.end_effector_position_relative": "abfe1183e52692c78d411174264a778d0dba1a00efb9cd0a9864c4bd5f5aa190",
+    "state.end_effector_rotation_relative": "1e149e14ca53928d690fcd7e1ce74e0ce19718cca34bd2754b5c64c412723256",
+    "state.gripper_qpos": "b8db4ded8fa296035d90ef2e2e1cf3f8b3e1e433f1ec68953a16e8951e3fd083",
+    "video.robot0_agentview_left": "408f58efa7c49c16ad83da7b169ef2d101bb2aae7d3af5a4c3c949357d809845",
+    "video.robot0_agentview_right": "83af09b8323213ef2bf55fb64b0e12ff2d1fe8378a9d8f31a2e9245523478828",
+    "video.robot0_eye_in_hand": "b1302c8e745e28717ba78bd01aef94f5cc6738756791aec70df36da4e18516b3"
+   },
+   "n_resets": 3,
+   "scene_sha256": "3d5ac986c6cb0b6ef058b14af2e396e5c4cc8aceb6fa1b8e4847d29178c831e7",
+   "seed": 460
+  },
+  "PickPlaceDrawerToCounter--0002": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "84dc5276f93223abcce497400d734e9acd32ec4a80c79e9b27161856b1cb794c",
+   "keys": {
+    "annotation.human.task_description": "29872c28a7c5b0e4f93ee494b3ed78fe492d9315fea0634723e81f7c7529de72",
+    "state.base_position": "7161f634f051bb13dd4da0321dd58975a3cc553ebbb1ec6668e3c91c248be719",
+    "state.base_rotation": "8d7efedf64e6ded81ea641c0d8ad19b2beaa1885a3b56bf1ee128e77065ec287",
+    "state.end_effector_position_relative": "64dbbdea1ee2b4140c51aa2f2e3a92160b7482be5d12ad3c9a10074403895452",
+    "state.end_effector_rotation_relative": "76e2fcb1eff41f9fb07acb7ee10019e7fc9f9efc0c2048a7a927a538b75148a2",
+    "state.gripper_qpos": "dda4a3b8be347cd75db5fd1eb66d2027070900518b4920f9665a64fed1a1c0ed",
+    "video.robot0_agentview_left": "1d14481d47a5e66ff7095f0fdcb46a2adbe65250917f7f55b3fdff74daa128d1",
+    "video.robot0_agentview_right": "d4a6d6416195341802870177fac275d9bcff4f0fe91b76913f7cb59209a78845",
+    "video.robot0_eye_in_hand": "4f8ee8cf3dbf4b476b29af47e4092121ab0748959f4e174f69383c5bd64ed112"
+   },
+   "n_resets": 3,
+   "scene_sha256": "4f71edd68d6d9db80838e939a3c89471496b917ca918db421d6dde4bea2c564e",
+   "seed": 509
+  },
+  "PickPlaceDrawerToCounter--0003": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "b1b7bc288a782ba5166af31b4dde8bd5fc69f7e5f8aadf6f7fce4697a249d8bb",
+   "keys": {
+    "annotation.human.task_description": "4c357d87ea50fd4e424dd2a0bdebb6be248d5b9d199e2d3e4a2763562cf39819",
+    "state.base_position": "275e2343a9669c4bbad1ff150323aa8acb055db80feed72f77b19a73220c1264",
+    "state.base_rotation": "34338a67bf08b552e54c091e767297e99673f5322282c92aa2043844f986f94a",
+    "state.end_effector_position_relative": "8b5f2dc60ae39a77a468108087fffb1fae080489bcd7a42af46954a3f8491029",
+    "state.end_effector_rotation_relative": "aee048a11a119fe90c8d9b526aeddd3e992877303ad55ce03874a263eb3877aa",
+    "state.gripper_qpos": "17454e03a228f48ebbd0d3ccd0cc26215917ec09194397965eb2aca75b9448b2",
+    "video.robot0_agentview_left": "555eda8fdfa9e94d9c55b8916e04a74a6d4c59ab3c60fe7d094b38a1084c7002",
+    "video.robot0_agentview_right": "67afb4cc2c8a7f66918c4283b5d4a3b0d7f17b1b2e8345cd1b0bfe807a7fef95",
+    "video.robot0_eye_in_hand": "98d42673ff71efc10f5674a6404d9c76948efb30aab9db446208ad61de46bf9a"
+   },
+   "n_resets": 3,
+   "scene_sha256": "e41aab7e317430a8488251595a66904acce399257076223bb59ffe39fecf0ecf",
+   "seed": 510
+  },
+  "PickPlaceSinkToCounter--0002": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "9f7be119f6ef421acacc40827896b2a0180c0900183aa1458ccafcfcbd403a1e",
+   "keys": {
+    "annotation.human.task_description": "355bbe68fdc1c4f9680b0a0d1f98fe2944f0613a8b9fd9af57000d6a5046ec03",
+    "state.base_position": "e62e2500bdf4a879dbaf500770874bba9d18cacdfb784f0e9dbc434d9ce6433a",
+    "state.base_rotation": "718ec939c600d180f520e535d61cb0cecdbbaefa389dbb69162e69c905a7be7c",
+    "state.end_effector_position_relative": "0235e69ab1f231fc63c51ce941b1448e621eb216f6394f4f9b616337bdd53c82",
+    "state.end_effector_rotation_relative": "5e6acc7f2d89bb595965fb925319efdf2d55e9b6359b9eb4f5cd141e20399537",
+    "state.gripper_qpos": "69afad6d267c895fe41c4927cd5b222c0a804010a542b25f871c7f901d4092f0",
+    "video.robot0_agentview_left": "f5e26bed555ecbf04447ad66b9ca68f0c7d8a065211ff2edda8640c5e0656051",
+    "video.robot0_agentview_right": "c6493e18ddbb9cadb4457af2e06db6a5559ae835dccd6906e87b857fa9dba7e0",
+    "video.robot0_eye_in_hand": "ec82224619a326602f4d2e3bd18fdcc3d01b80891630a19533739add54fda677"
+   },
+   "n_resets": 3,
+   "scene_sha256": "8428736cf5e494a025f1decb20d790408e7b53f9f0a997e0dac48c5f9a76874c",
+   "seed": 559
+  },
+  "PickPlaceSinkToCounter--0003": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "d5d100605b6676693f8156aa97838a5aa76986f3880f1e7c7156588bd4c60463",
+   "keys": {
+    "annotation.human.task_description": "5b1e970f61004e626e4e8bf28a9804770e5583a6cdf635f01c00528ddfa5ffa2",
+    "state.base_position": "7725926c90ee72668561d68aff1392a77ab2ebb76cbd730d04a981c524074cc5",
+    "state.base_rotation": "5c1f768cadf837a7d2cf1e96c1de99091433f026d0f61cb6031565602ad1aa6f",
+    "state.end_effector_position_relative": "f789e1b48dfeaa065a3be00cc6d84374104796a186f082a8e87f40d0c565666b",
+    "state.end_effector_rotation_relative": "69cde3fc45dba12564656ddcf6a9e6dbaaea0102c6f585bf285e5f602f59ea07",
+    "state.gripper_qpos": "91767eacd46eaa3089febf64b4214d42ba0763f51cf00a04f0eb1804eb0d1431",
+    "video.robot0_agentview_left": "eab4910ff3f1e39804ba176269c36bdc8b8095fe61e4cf08f3ea0d8cae9d4f9c",
+    "video.robot0_agentview_right": "9d147ddecb66c71d1f1d528f4bde9a3741b7278e65bb20655bdd668ceaf0a3ec",
+    "video.robot0_eye_in_hand": "eca5b07b476cdcb84f0f81968fcb342d3b77e08649ac9f5bb2ef619cc1edfcb9"
+   },
+   "n_resets": 3,
+   "scene_sha256": "e38bea28732c84c54ef8eca703b39e6bdb7ae3665f5e821efb9b7a1f7848267d",
+   "seed": 560
+  },
+  "PickPlaceToasterToCounter--0002": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "da9125e9a5057a2998e4e0e98375a4a36d9297f737fdd4f99b480bd0fe66446c",
+   "keys": {
+    "annotation.human.task_description": "e934c9c0f173c35a9453eb76c7fdb57c1bc850fa696f194fb4c78850c69c69b5",
+    "state.base_position": "16a7a015cc964e2c00a82a001f5dc1a89d4fdccad7e14a61442f8b229da2696e",
+    "state.base_rotation": "34338a67bf08b552e54c091e767297e99673f5322282c92aa2043844f986f94a",
+    "state.end_effector_position_relative": "42e2ff5253e7b2ec3501a0e72b2da5389f25c39a26d6b548439e1334564ab4db",
+    "state.end_effector_rotation_relative": "4939fcf1433aec8b778dbe6b422eb5c7af0ffccd689dccb70f69ba900ab8590e",
+    "state.gripper_qpos": "042debd560f3cdff56585a03625fcf4910901fa16c9ab7c2ac175b4b1b25bf80",
+    "video.robot0_agentview_left": "4e497277e45f1c25a5996720748fead3e4081fe494d2f3e3348ae707816c7ea0",
+    "video.robot0_agentview_right": "79dd9978a15bfcb29808188735d3017863eacd7b159a7160be762d3a4a3458fc",
+    "video.robot0_eye_in_hand": "2ed581cc16f0d467fdee8c83271974a5c3ab54f17320a904ea3032dac53ef2ab"
+   },
+   "n_resets": 3,
+   "scene_sha256": "7905524c07df3e978cb98b29ad1592497ff07697b8aaa22e77497fff0a25e2ad",
+   "seed": 609
+  },
+  "PickPlaceToasterToCounter--0003": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "fd3ac8cbfde1ec304a90b288012abeeb907ab6b56d9e6f526e39c11efc649895",
+   "keys": {
+    "annotation.human.task_description": "e934c9c0f173c35a9453eb76c7fdb57c1bc850fa696f194fb4c78850c69c69b5",
+    "state.base_position": "05c07d01186f1a3c3f115b9d8aa8ee91c4961ed2a8b1f030b5396535376b7abb",
+    "state.base_rotation": "ab81a00d6a333041da2fd6da13dae3d553493baf21133bbed2ab86c4cc5afcc6",
+    "state.end_effector_position_relative": "2fe8a4d3147113b3e36a743bf17d5d1d03727768396237fff0b64fbe94f0c813",
+    "state.end_effector_rotation_relative": "d91d9790a0facf141be399f38ac54bdd517265eaaccfa0adcacea0d6f1d875f8",
+    "state.gripper_qpos": "92ef49ff6671f4becdf1674a96f1a312d02f1f03ff4c4bc65f381da16bce8c20",
+    "video.robot0_agentview_left": "ec675f21532fe6cf6babf05a11e721305519bb4797f61924c2953f16a1ad5f4f",
+    "video.robot0_agentview_right": "eb25ab3146a2d26e2101b13d54f0d4f65e741765a569ba37d31cdb01b91261e6",
+    "video.robot0_eye_in_hand": "38c8cd8c55857e2070281abe3ddbc20c1663f49799a2f7ddd38babd94495af22"
+   },
+   "n_resets": 3,
+   "scene_sha256": "583b2b7f1fa51f05778d609be6eac95e5dba7c30663439640e19c542ca4aaf94",
+   "seed": 610
+  },
+  "SlideDishwasherRack--0002": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "4c8de09f1dcbf4fb9179d6f2e3b84f4c5959f0634a047420f2d3ef9040ca85b8",
+   "keys": {
+    "annotation.human.task_description": "ab70d6cb39e17bc4f4bbf43ed88653cd7fd9834b179a3c269d1817891db4f00a",
+    "state.base_position": "94845ad030023e062bac8d136ff87bdff3d65f3edfb12921720a7ae5f7fff8b7",
+    "state.base_rotation": "afacdde2bb4761c3569f41ec7fad23a9c920350ae67a2601b193542fdbe58812",
+    "state.end_effector_position_relative": "99874545908e9cf698d429090f9db12f5a6fc6983d1808de66f49c4d01b533d6",
+    "state.end_effector_rotation_relative": "97ae66be2927f820bfbe3e6bf91e4fa2b3d81b38f6cabe67bcb65ca7131d8ace",
+    "state.gripper_qpos": "63df1f2dc02e1a13e7914061dfbc1290a8d9952ebf1a22d90df49e234a47ccb9",
+    "video.robot0_agentview_left": "4c194411d3fb1d1c85882f3404a31e05a5b7cf85a1f4072769a31921c9f59a36",
+    "video.robot0_agentview_right": "82d13bb6ae51f6a2db5cf37245d0031c94eab5a82cb1caef04fefd0ca8fc77ba",
+    "video.robot0_eye_in_hand": "982ad061b58272ec67c23c138b73772d4c1a9c23eed87f0380d42dba6af33143"
+   },
+   "n_resets": 3,
+   "scene_sha256": "2826577a1ba037609803e19c06b7da5edff90e517a9d167a89fbd417bc90c2ba",
+   "seed": 659
+  },
+  "SlideDishwasherRack--0003": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "b933bafb8a0b9da8bdf7e7a1ce7ac1778ccdb1ed572f736fdb62a94392c89b54",
+   "keys": {
+    "annotation.human.task_description": "ab70d6cb39e17bc4f4bbf43ed88653cd7fd9834b179a3c269d1817891db4f00a",
+    "state.base_position": "05b34ec19aede75f58aa0503e1e7f7ca2bb7598fd1e1d65e453777dc93b6b327",
+    "state.base_rotation": "8e2e56d5a4106f8b1013dd2bd827a55ec6ff63c477b89bd3c91d398a96ecd15d",
+    "state.end_effector_position_relative": "045942be4f82c62ccda83f6e0c9c8d66bca39718a8661cfe42973bfa93aed7c8",
+    "state.end_effector_rotation_relative": "1e39a5ad10b7ee475c8cbaf076132acc572402c2253f766f6b7b7b2bdeeb054c",
+    "state.gripper_qpos": "04cbb897dca49dd411011ae96c5dff91dff9da5e324980090687ff11559c8a0a",
+    "video.robot0_agentview_left": "0c43347fd13494fdcd87afdee1cded5ac1bea59eaf320c695faddd1582a97e22",
+    "video.robot0_agentview_right": "bd0be9b5ceb1f7e6d27026c6a22d4765d70405bd05cf5904f1e9591074423d40",
+    "video.robot0_eye_in_hand": "04eaab49d0d15cf4c5f781a8848a021a89d9f83644617e981b8ff5144d82eb2a"
+   },
+   "n_resets": 3,
+   "scene_sha256": "9bb09642eddf59b34fabe05cd61c3afea1fcd908e8fac8c7666daff502ec9601",
+   "seed": 660
+  },
+  "TurnOffStove--0002": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "2dd299e189d0ee192320d1891d1a1d4bbb59d0d153a08f98db917c7bafb713ed",
+   "keys": {
+    "annotation.human.task_description": "c560996dff4a1cda9fa0ded435f3b620b67080d3179d963c8851ceb484957c22",
+    "state.base_position": "57f9eb64e5c291feae2b7c8f9d51cbf84e958d0d4a87fec7bcfa685832d930ea",
+    "state.base_rotation": "7436708df152bdf815dd29f7eca60e91e0b1b6ba6516f090ec519559c12c383f",
+    "state.end_effector_position_relative": "7ae5d9a6d1998c67fb5a96b6c61aac8e69d67997609c5fe8e4c7ea3a65c24818",
+    "state.end_effector_rotation_relative": "63af502862938cb194a29a87fe27f01f695d4ba0c78bb5231f7cd5ea86124a52",
+    "state.gripper_qpos": "5d99491d503f8bab133b156afb374062316703f0590db5a2384513220c14a5dd",
+    "video.robot0_agentview_left": "e4a5d5dd496fc2e9786b8bd2cf8bbd58b618b2201317cfc459c62c84edd609f0",
+    "video.robot0_agentview_right": "53424ac822f0d143c24396a8f6f5ffbe93c7630ce06fc2c82c95401bdbe99c14",
+    "video.robot0_eye_in_hand": "11b5329e6148d4562cb37f5b23b7e0f9661bb1cafa0028012c11b79deb205be1"
+   },
+   "n_resets": 3,
+   "scene_sha256": "7f8c27316d87f14f59e87b0b01a1ec278d7a2966df7df974f7e3a5929935d508",
+   "seed": 709
+  },
+  "TurnOffStove--0003": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "6d1545c870fe6d8e19c16931a40772e19efeb489833e5ae6892b54dd24e515a3",
+   "keys": {
+    "annotation.human.task_description": "04dbd94eacf10faf5509b94834815e3038e35c83da4d8ddaef5ce6348475c5de",
+    "state.base_position": "5ba529487af2cb26297cdfe35fbd2790151e4697e9b1632e8db081c1da64db4a",
+    "state.base_rotation": "b9e8522d8deed9cb0080e0c25e917f841210a1f96e8412eec37e8d7419cb5ae5",
+    "state.end_effector_position_relative": "352775ad3a319c2cca533f2d71f2291d7a61b4f2d068898437d9d330b645b7a6",
+    "state.end_effector_rotation_relative": "34967ad5bfc47fe241e0764731af755babe77f8e0892c4e908dd6830df8e3896",
+    "state.gripper_qpos": "bb6f194661d65a01c37ed5e47d6dcf331851583d0b6fe0c5b0f9f7a3518c5961",
+    "video.robot0_agentview_left": "16e3d511ccb04b718386172727aacef499aa87b495bb6dce578c5e42c360f053",
+    "video.robot0_agentview_right": "92d47a64cb74817145235df21d0a5387e4b459509e0e422944426ecc87b582ca",
+    "video.robot0_eye_in_hand": "3a2e4087e1e116b2849e510a79efefc2286c12750e5cc5f8ae61e391c7aa81f2"
+   },
+   "n_resets": 3,
+   "scene_sha256": "1938204643e2adb9c6b15fe647bdbd90c6ac73284956475d67950cc10e0847ed",
+   "seed": 710
+  },
+  "TurnOnElectricKettle--0002": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "7e279df317d5ea72141304fded0e37f7f43fdd318b28e6aef78a557e61b1e3d5",
+   "keys": {
+    "annotation.human.task_description": "5c398b76a866654f20c65ebff5c9a30642c5e5f3bc8b291991b62b06977ac137",
+    "state.base_position": "7d79891ba7ffe64976cc801a5f72cc538e20f578912664119811f2da716b09bf",
+    "state.base_rotation": "b1f6cbc8494e4c40458362768b623a3679f1de9f62f449c68ad396d7c404bc99",
+    "state.end_effector_position_relative": "79f7a2b6cee15242d4b16179cc757c995712f9e00d5b8bd65fe35792e688a5be",
+    "state.end_effector_rotation_relative": "56c8eec267f020458975e35e57d12e8514a1b43db2fa68f4c62ce67ff4d197ec",
+    "state.gripper_qpos": "acb983b01850642890e67e66197fa552bbdf33d04205070f27f012f695759c2e",
+    "video.robot0_agentview_left": "8053ab198d849f7ba46ba9624dab40b9fafacbb160d1391a5e74068f55ff3c53",
+    "video.robot0_agentview_right": "0b46131875771ef0953e45f7b91ec6ba9e1860a71e457743c647180dbf1a1646",
+    "video.robot0_eye_in_hand": "c32786ac99d4cd20a981636b295b2d4813078ec18163533c9aad383c590703fd"
+   },
+   "n_resets": 3,
+   "scene_sha256": "ac5bfeb85ba372d287859f961dfa401eeb1714a648ce84e98d4ef28ab0f7cee6",
+   "seed": 759
+  },
+  "TurnOnElectricKettle--0003": {
+   "ambiguous": false,
+   "divergent": [],
+   "initial_observation_sha256": "c554e4bf6052f6795cf76ebac7478d82273e9e8572beee16c06276e118815a6d",
+   "keys": {
+    "annotation.human.task_description": "5c398b76a866654f20c65ebff5c9a30642c5e5f3bc8b291991b62b06977ac137",
+    "state.base_position": "bd34629c87b8ce01a1e87ed65b96ce04704cc5a8f00682c118024d6425e0e145",
+    "state.base_rotation": "59468782d6e9cda033d242a90bbb291212ebcde70ae8912cf378918eadf6fe21",
+    "state.end_effector_position_relative": "6c7653f95fb46eec2175de2b24fbe1b66185855f52c1c10b363a46f31b17effe",
+    "state.end_effector_rotation_relative": "287fedad22817bdc499cd7a19e7fd053373514b38e2babfb8dcd53fee89b819e",
+    "state.gripper_qpos": "053401be4ed7ca00fc78668bcc1ad27345bdd015b6839209e25cb94b33440dfb",
+    "video.robot0_agentview_left": "88ed60ae4a17eea2c87b68e6fa632615a3eda488e96875b021ea4df473f04619",
+    "video.robot0_agentview_right": "d93c74eb68afd872ce4ae92c992f086d69f9e846dd9c99555b0db900e6ab5525",
+    "video.robot0_eye_in_hand": "3947ad3bda1ede9628fa960d0b80e8bf02a3a3241802ff7cb0dade8bfe2728d4"
+   },
+   "n_resets": 3,
+   "scene_sha256": "300832e2dea1a70dc51293b85af81dca8ac81d9d6612eb6ac24a8498ed991872",
+   "seed": 760
+  }
+ },
+ "probe": {
+  "failures": [],
+  "gpus": [
+   0,
+   1,
+   3,
+   6,
+   7
+  ],
+  "lease_released": true,
+  "phase": "development",
+  "policy_free": true,
+  "repeats": 3,
+  "wall_seconds": 148.8635494709015,
+  "workers_per_gpu": 4
+ },
+ "schema": "chunktrust-canonical-table/1",
+ "stats": {
+  "ambiguous_cases": [],
+  "case_key_pairs": 330,
+  "deviant_render_rate_ci95": [
+   0.0,
+   0.0037192074142188836
+  ],
+  "deviant_renders": 0,
+  "divergent_by_key": {},
+  "divergent_case_key_pairs": 0,
+  "divergent_pair_rate_ci95": [
+   0.0,
+   0.011116176177237203
+  ],
+  "renders": 990
+ }
+}
