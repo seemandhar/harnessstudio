@@ -15,6 +15,8 @@ BUILTINS = {
     "llm-subtask-planner": "harnessstudio.methods.llm_subtask_planner:config",
     "subtask-sequencer": "harnessstudio.methods.subtask_sequencer:config",
     "chunk-interrupt": "harnessstudio.methods.chunk_interrupt:config",
+    "rtc": "harnessstudio.methods.rtc:config",
+    "rtc-hard-masking": "harnessstudio.methods.rtc:config_hard_masking",
 }
 
 

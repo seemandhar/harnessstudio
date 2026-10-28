@@ -120,6 +120,11 @@ def validate(config: MethodConfig) -> MethodConfig:
     if "controller" in config.slots:
         from .controller import validate_controller_params
         validate_controller_params(config.slots["controller"].params)
+    if "sampler" in config.slots:  # only sampler methods import their sampler module here (B5)
+        from .slots import sampler_has_guide
+        if sampler_has_guide(config.slots["sampler"]) and \
+                Capability.DIFFERENTIABLE_DENOISER not in {Capability(c) for c in config.required}:
+            raise RegistrationError("A sampler with guide() must require the differentiable_denoiser capability")
     for artifact in config.artifacts:
         if not isinstance(artifact, ArtifactPin):
             raise RegistrationError("Artifacts must be ArtifactPin entries")

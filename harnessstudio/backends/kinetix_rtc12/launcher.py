@@ -1,0 +1,127 @@
+"""Parent-side launcher for kinetix-flow runs (HarnessStudio interpreter; never imports JAX).
+
+Freezes the method closure into the run folder, then runs the worker in the authors' pinned env with the
+frozen copy first on PYTHONPATH (frozen-source rule). On GPU it takes or checks a lease in the shared
+registry (HARNESSSTUDIO_DELEGATED_LEASE is honoured), pins deterministic XLA flags (delta-review B1),
+charges the GPU ledger and releases its own lease after the worker exits. Only the variables the worker
+needs reach it; every *_API_KEY is stripped.
+"""
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+import time
+import uuid
+from pathlib import Path
+
+from ... import config
+from ...policies import kinetix_flow as KF
+
+GPU_XLA_FLAGS = "--xla_gpu_deterministic_ops=true --xla_gpu_autotune_level=0"
+
+
+def _child_env(device: str, gpu, frozen_root: Path) -> dict:
+    env = {k: v for k, v in os.environ.items() if not k.endswith("_API_KEY")}
+    env["PYTHONPATH"] = os.pathsep.join([str(frozen_root), str(frozen_root / "plugins")])
+    env["WANDB_MODE"] = "disabled"
+    env["PYTHONUNBUFFERED"] = "1"
+    env["HARNESSSTUDIO_KINETIX_ROOT"] = str(KF.kinetix_root())
+    if device == "cpu":
+        env["JAX_PLATFORMS"] = "cpu"
+        env["CUDA_VISIBLE_DEVICES"] = ""
+    else:
+        env["JAX_PLATFORMS"] = "cuda"
+        env["CUDA_VISIBLE_DEVICES"] = str(int(gpu))
+        env["XLA_FLAGS"] = GPU_XLA_FLAGS
+        env["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+    return env
+
+
+def launch(method: str, *, arms, points, levels, rollouts: int, out: Path, device: str = "gpu", gpu=None,
+           level_universe=KF.LEVELS, seed: int = 0, ledger=None, max_hours: float = 1.0) -> dict:
+    from ...core import registry
+    from ...core.manifest import freeze, method_manifest
+    from ...core.protocol import require_method, require_protocol
+    method_config, origin = registry.get(method)
+    require_method(method_config, KF)
+    for p in points:
+        require_protocol(KF, *(int(x) for x in str(p).split(":")))
+    if device not in ("cpu", "gpu") or (device == "gpu" and gpu is None):
+        raise ValueError("device must be 'cpu' or 'gpu' with a gpu id")
+    child = Path(KF.CHILD_PYTHON)
+    if not child.is_file():
+        raise ValueError(f"kinetix child interpreter not found: {child}")
+    out = Path(out).resolve()
+    out.mkdir(parents=True, exist_ok=False)
+    mm = method_manifest(method_config, origin, policy=KF.NAME)
+    frozen = freeze(mm, out / "frozen_closure")
+    (out / "launch.json").write_text(json.dumps({"method_manifest_sha256": mm["sha256"], "frozen": frozen["root"],
+                                                 "device": device, "gpu": gpu, "xla_flags": GPU_XLA_FLAGS if device == "gpu" else None},
+                                                indent=1))
+    lease_owner, own_lease, led = None, False, None
+    if device == "gpu":
+        from ...bench import resources
+        from ...eval.ledger import Ledger
+        from ...eval.runs import DEFAULT_LEDGER
+        led = Ledger(ledger or DEFAULT_LEDGER)
+        led.require(max_hours)
+        lease_owner = config.delegated_lease()
+        if lease_owner is None:
+            lease_owner = "harnessstudio.kinetix." + uuid.uuid4().hex
+            resources.acquire(config.leases_dir(), lease_owner, [int(gpu)])
+            own_lease = True
+    argv = [str(child), "-m", "harnessstudio.backends.kinetix_rtc12.worker", "--method", method,
+            "--arms", *arms, "--points", *[str(p) for p in points], "--levels", *levels,
+            "--level-universe", *level_universe, "--rollouts", str(rollouts), "--seed", str(seed),
+            "--out", str(out / "run")]
+    started = time.time()
+    try:
+        proc = subprocess.run(argv, cwd=str(out), env=_child_env(device, gpu, Path(frozen["root"])),
+                              capture_output=True, text=True, timeout=int(max_hours * 3600) + 600)
+    finally:
+        if led is not None and (out / "run").exists():
+            led.add(out / "run")
+        if own_lease:
+            from ...bench import resources
+            resources.release(config.leases_dir(), lease_owner)
+    (out / "stdout.log").write_text(proc.stdout)
+    (out / "stderr.log").write_text(proc.stderr)
+    return {"out": str(out), "run": str(out / "run"), "argv": argv, "returncode": proc.returncode,
+            "wall_seconds": time.time() - started, "lease_owner": lease_owner, "stderr_tail": proc.stderr[-800:]}
+
+
+def _results(run: Path, arm: str) -> list:
+    return [json.loads(p.read_text()) for p in sorted((run / "results" / arm).glob("*/result.json"))]
+
+
+def run_tier2_kinetix(method: str, *, gpu=None, ledger=None, device: str = "gpu", rollouts=None, root=None) -> dict:
+    """Tier 2 on kinetix-flow: baseline, null and candidate on TIER2_CASE; null must be M for every rollout."""
+    case = KF.TIER2_CASE
+    root = Path(root or config.runs_dir() / "verify" / method / ("tier2-" + time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())))
+    point = f"{case['inference_delay']}:{case['execute_horizon']}"
+    res = launch(method, arms=["baseline", "null", "candidate"], points=[point], levels=[case["level"]],
+                 rollouts=rollouts or case["rollouts"], out=root, device=device, gpu=gpu, ledger=ledger)
+    checks = [{"name": "worker_completed", "passed": res["returncode"] == 0,
+               "detail": {k: res[k] for k in ("run", "returncode", "wall_seconds")}}]
+    if res["returncode"] != 0:
+        return {"method": method, "tier": 2, "policy": KF.NAME, "passed": False, "checks": checks,
+                "root": str(root), "error": res["stderr_tail"]}
+    run = Path(res["run"])
+    attribution = json.loads((run / "attribution.json").read_text())
+    mrx = {cid: v.get("null") for cid, v in attribution.items()}
+    all_m = all(v and v["X"] == 0 and v["R"] == 0 for v in mrx.values())
+    checks.append({"name": "null_vs_baseline_MRX_per_rollout", "passed": all_m, "detail": mrx})
+    base, null, cand = (_results(run, a) for a in ("baseline", "null", "candidate"))
+    from ...core import registry
+    has_sampler = "sampler" in registry.get(method)[0].slots
+    if has_sampler:
+        ok = all(r["guidance_vjp_steps"] > 0 and r["guidance_vjp_steps"] == 5 * r["decisions"] for r in null + cand)
+        checks.append({"name": "null_pays_guidance_materialized", "passed": ok,
+                       "detail": {"null": [r["guidance_vjp_steps"] for r in null],
+                                  "candidate": [r["guidance_vjp_steps"] for r in cand]}})
+    overhead = {arm: [{k: r.get(k) for k in ("policy_calls", "policy_seconds", "decisions", "solved_count", "rollouts")}
+                      for r in rs] for arm, rs in (("baseline", base), ("null", null), ("candidate", cand))}
+    checks.append({"name": "overhead_measured", "passed": True, "detail": overhead})
+    return {"method": method, "tier": 2, "policy": KF.NAME, "case": case, "device": device, "root": str(root),
+            "integration_only": True, "passed": all(c["passed"] for c in checks), "checks": checks}

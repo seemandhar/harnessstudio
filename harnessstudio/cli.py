@@ -12,10 +12,11 @@ from pathlib import Path
 def _cmd_list(args) -> int:
     from .core import registry
     from .core.capabilities import Capability
+    from .core.protocol import compatible as _compatible
     from .policies import adapter, names
     rows = []
     for name, (config, origin) in sorted(registry.all_methods().items()):
-        compatible = {p: frozenset(config.required) <= adapter(p).CAPABILITIES for p in names()}
+        compatible = {p: _compatible(config, adapter(p)) for p in names()}
         if args.policy and not compatible.get(adapter(args.policy).NAME, False):
             continue
         rows.append({"name": name, "version": config.version, "fidelity": config.fidelity.value,
@@ -63,6 +64,12 @@ def _add_case_flags(s):
     s.add_argument("--gpus", default="0", help="physical GPU ids with no foreign processes, e.g. 0,1,2,3")
     s.add_argument("--canonical-table", type=Path, help="canonical reset table (default: bundled RoboCasa365 atomic_seen dev table)")
     s.add_argument("--ledger", type=Path)
+    _add_protocol_flags(s)
+
+
+def _add_protocol_flags(s):
+    s.add_argument("--inference-delay", type=int, help="protocol inference delay d (async_execution policies only)")
+    s.add_argument("--execute-horizon", type=int, help="protocol execute horizon s (async_execution policies only)")
 
 
 def _table(args):
@@ -74,7 +81,20 @@ def _ledger(args):
     return args.ledger or DEFAULT_LEDGER
 
 
+def _protocol(args) -> None:
+    """Protocol parameters (inference delay / execute horizon) are refused on policies without async_execution.
+    kinetix-flow runs go through backends/kinetix_rtc12 (tier 2 via `rh verify`); rh run/eval do not drive it yet."""
+    from .core.protocol import require_protocol
+    from .policies import adapter
+    pa = adapter(args.policy)
+    require_protocol(pa, getattr(args, "inference_delay", None), getattr(args, "execute_horizon", None))
+    if pa.NAME == "kinetix-flow":
+        raise ValueError("rh run/eval do not drive kinetix-flow in this version; use `rh verify METHOD --policy "
+                         "kinetix-flow --tier 2` or python -m harnessstudio.backends.kinetix_rtc12.worker")
+
+
 def _cmd_run(args) -> int:
+    _protocol(args)
     from . import config
     from .eval.runs import case_flags, evaluate, write_config
     if args.arm == "null" and not args.baseline_run:
@@ -92,6 +112,7 @@ def _cmd_run(args) -> int:
 
 
 def _cmd_eval(args) -> int:
+    _protocol(args)
     from .eval.quick import quick
     report = quick(args.method, groups=args.groups, tasks=args.tasks, num_tasks=args.num_tasks, trials=args.trials,
                    gpus=args.gpus, table=_table(args), ledger=_ledger(args), policy=args.policy)
@@ -155,6 +176,7 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("--gpu", type=int, default=0)
     s.add_argument("--canonical-table", type=Path)
     s.add_argument("--ledger", type=Path)
+    _add_protocol_flags(s)
     s.set_defaults(fn=_cmd_run)
     s = sub.add_parser("eval", help="paired baseline / null / candidate screen on a case list")
     s.add_argument("method")

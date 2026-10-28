@@ -16,6 +16,8 @@ class Capability(str, Enum):
     PROPRIO = "proprio"
     VARIABLE_EXECUTE = "variable_execute"
     PREDICTED_FUTURE = "predicted_future"
+    DIFFERENTIABLE_DENOISER = "differentiable_denoiser"  # sampler guide(): VJP of the one-step clean estimate
+    ASYNC_EXECUTION = "async_execution"  # protocol-level inference delay d / execute horizon s (Kinetix RTC)
 
 
 _UNIFIED_ALIASES = {Capability.ISOLATED_STREAMS: ("independent_sampling", "isolated_sampling")}

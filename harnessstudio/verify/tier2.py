@@ -144,6 +144,9 @@ def run_tier2(method: str, policy: str, *, gpu=None, ledger=None) -> dict:
     pa = adapter(policy)
     if gpu is None:
         raise ValueError("tier 2 needs --gpu (a measured-free GPU id)")
+    if pa.NAME == "kinetix-flow":  # Kinetix RTC extension: batched per-rollout tier 2 (backends/kinetix_rtc12)
+        from ..backends.kinetix_rtc12.launcher import run_tier2_kinetix
+        return run_tier2_kinetix(method, gpu=gpu, ledger=ledger)
     method_config, _ = registry.get(method)
     root = config.runs_dir() / "verify" / method / ("tier2-" + time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()))
     checks = []

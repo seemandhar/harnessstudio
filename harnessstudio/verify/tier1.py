@@ -6,7 +6,8 @@ import traceback
 
 from ..core import registry
 from ..core.arms import Arm
-from ..core.capabilities import require, unified_names
+from ..core.capabilities import unified_names
+from ..core.protocol import require_method
 from ..core.errors import LeakageError, MethodContractError
 from ..core.method import ModuleRef, validate
 from ..core.noise import NoiseSchedule, derive_seed
@@ -80,8 +81,7 @@ def run_tier1(name: str, policy: str) -> dict:
     pa = policy_adapter(policy)
     caps = pa.CAPABILITIES
     checks = [_check("registration", lambda: validate(method).name),
-              _check("capabilities", lambda: require(method.required, pa.CAPABILITIES,
-                                                     method=name, policy=pa.NAME) or "ok")]
+              _check("capabilities", lambda: require_method(method, pa) or "ok")]
 
     def null_derivation():
         base, brows = _run(method, Arm.BASELINE, caps)
@@ -212,6 +212,12 @@ def run_tier1(name: str, policy: str) -> dict:
                 raise AssertionError("null did not pay the controller's LLM calls")
             return rows
         checks.append(_check("controller_shadow_null_and_candidate", controller_arms))
+
+    if "sampler" in method.slots:
+        from ..core.slots import sampler_has_guide
+        if sampler_has_guide(method.slots["sampler"]):
+            from .guide_contract import check_guide_contract
+            checks.append(_check("guide_contract", lambda: check_guide_contract(method.slots["sampler"])))
 
     if origin.get("kind") == "plugin":
         def closure():

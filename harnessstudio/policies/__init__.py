@@ -3,8 +3,10 @@ from __future__ import annotations
 
 import importlib
 
-_ADAPTERS = {"gr00t-n1.5": "harnessstudio.policies.gr00t_n15", "pi0.5": "harnessstudio.policies.pi05"}
-_ALIASES = {"groot": "gr00t-n1.5", "gr00t": "gr00t-n1.5", "gr00t-n15": "gr00t-n1.5", "pi05": "pi0.5", "pi-0.5": "pi0.5"}
+_ADAPTERS = {"gr00t-n1.5": "harnessstudio.policies.gr00t_n15", "pi0.5": "harnessstudio.policies.pi05",
+             "kinetix-flow": "harnessstudio.policies.kinetix_flow"}
+_ALIASES = {"groot": "gr00t-n1.5", "gr00t": "gr00t-n1.5", "gr00t-n15": "gr00t-n1.5", "pi05": "pi0.5", "pi-0.5": "pi0.5",
+            "kinetix": "kinetix-flow"}
 
 
 def names() -> list:
