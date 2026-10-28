@@ -49,3 +49,21 @@ class RunnerHelpersTest(unittest.TestCase):
         self.assertEqual(self.runner.parity_retry_decision(abort, 1, 1), "invalid")
         with self.assertRaises(RuntimeError):
             self.runner.parity_retry_decision(dict(abort, policy_calls=1), 0, 1)
+
+
+class LedgerCapTest(unittest.TestCase):
+    def test_cap_is_read_from_the_file_and_changes_are_recorded(self):
+        import tempfile
+        from pathlib import Path
+        from harnessstudio.eval.ledger import Ledger
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "ledger.json"
+            led = Ledger(path)
+            self.assertEqual(led.cap, 6.0)
+            led.set_cap(12.0, "user raised the cap")
+            again = Ledger(path)
+            self.assertEqual(again.cap, 12.0)
+            self.assertEqual(again.data["cap_history"][0]["from"], 6.0)
+            again.require(11.0)
+            with self.assertRaises(RuntimeError):
+                again.require(12.5)

@@ -228,6 +228,24 @@ that derived nulls hold, and what each method costs.
 | Sampler native-equality probe on the real GR00T model | no-op, clone-splice, velocity readout and repeat are all bit-identical to native `get_action` |
 | Per-step vs 16-step chunk stepping (identity) | M |
 
+### Plain GR00T through HarnessStudio, all unseen tasks (80 episodes)
+
+The frozen policy with no harness (`identity`, baseline arm), run by HarnessStudio on all 16
+Composite-Unseen tasks × 5 seeded trials (official horizons, GPUs 0–4, three runs of ≤32 episodes
+because small mode caps a run at 32). Compared with a native GR00T run of the same checkpoint on 16 × 5
+unseeded scenes, and with RoboCasa's published multitask number:
+
+| | Successes | Rate | 95% CI |
+|---|---|---|---|
+| HarnessStudio, plain GR00T (seeded scenes) | 4/80 | 5.0% | 2.0–12.2% |
+| Native GR00T run (unseeded scenes) | 5/80 | 6.25% | 2.7–13.8% |
+| RoboCasa published (50 trials per task) | — | 4.4% | — |
+
+80/80 episodes valid with no infrastructure errors; Fisher exact p = 1.0 against the native run. The
+scenes differ, so this is a rate comparison, not a pairing. Successes land on different tasks in the two
+runs (studio: ArrangeTea 2, WaffleReheat 1, WashFruitColander 1; native: WashFruitColander 2, GarnishPancake,
+RecycleBottlesByType, WeighIngredients 1 each): at about 5% success, the scene matters more than the task.
+
 ### Tier 2 on GR00T N1.5 (`CloseToasterOvenDoor` trial 1, 450 steps)
 
 | Method | Null vs baseline | Policy calls, candidate / baseline | Notes |

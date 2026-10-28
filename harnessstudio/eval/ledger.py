@@ -1,4 +1,4 @@
-"""GPU-hour ledger for milestone-1 acceptance (user cap: 6.0 GPU-hours, 2026-10-27)."""
+"""GPU-hour ledger. The cap lives in the ledger file (`cap_hours`); CAP_HOURS is only the default for a new file."""
 from __future__ import annotations
 
 import json
@@ -18,8 +18,16 @@ def used_hours(runs: list) -> float:
 
 class Ledger:
     def __init__(self, path: Path, cap: float = CAP_HOURS):
-        self.path, self.cap = Path(path), cap
+        self.path = Path(path)
         self.data = json.loads(self.path.read_text()) if self.path.is_file() else {"runs": [], "cap_hours": cap}
+        self.cap = float(self.data.get("cap_hours", cap))
+
+    def set_cap(self, hours: float, reason: str) -> None:
+        """Change the cap (a user budget decision), keeping the history in the file."""
+        self.data.setdefault("cap_history", []).append({"from": self.cap, "to": float(hours), "reason": reason})
+        self.data["cap_hours"] = self.cap = float(hours)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.path.write_text(json.dumps(self.data, indent=2))
 
     def used(self) -> float:
         manual = sum(float(a["hours"]) for a in self.data.get("adjustments", []))
