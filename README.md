@@ -148,13 +148,14 @@ Rules that keep agent harnesses comparable:
 | `medoid-bon` | proposer (K=8) + selector (MBR medoid) | component | CycleVLA, arXiv:2601.02295v2 (MBR selection only) |
 | `chunk-interrupt` | executor (per-step stall cut) | tf_variant | VLA-Corrector, arXiv:2607.01804v1 (truncation only) |
 | `llm-subtask-planner` | controller (LLM plan + VLM progress check) | tf_variant | Inner Monologue, arXiv:2207.05608v1 |
+| `subtask-sequencer` | controller (rule-based instruction steps, advance on end-effector stall) | tf_variant | Inner Monologue, arXiv:2207.05608v1 (no LLM, no extra inference) |
 
 Fidelity labels are required: `faithful` reproduces a paper, `component` ports one part of it,
 `tf_variant` replaces a trained part and must name each substitution.
 
 | Policy | Chunk | Capabilities | Methods it can run |
 |---|---|---|---|
-| GR00T N1.5 (Human300, checkpoint-120000) | 16 | chunks, seeded and isolated sampling, denoise step, velocity readout, proprio, variable execute | all five |
+| GR00T N1.5 (Human300, checkpoint-120000) | 16 | chunks, seeded and isolated sampling, denoise step, velocity readout, proprio, variable execute | all six |
 | Pi0.5 (openpi `pi05_pretrain_human300`, step 75000) | 5 | chunks, seeded and isolated sampling, proprio, variable execute | all but `chunktrust-ahs` (its flow loop is inside a jitted JAX call) |
 
 Reusable modules in `harnessstudio.modules` (not registered as built-ins): `TrajectoryMedoid`
@@ -245,6 +246,26 @@ unseeded scenes, and with RoboCasa's published multitask number:
 scenes differ, so this is a rate comparison, not a pairing. Successes land on different tasks in the two
 runs (studio: ArrangeTea 2, WaffleReheat 1, WashFruitColander 1; native: WashFruitColander 2, GarnishPancake,
 RecycleBottlesByType, WeighIngredients 1 each): at about 5% success, the scene matters more than the task.
+
+### Development screen: `subtask-sequencer` on GR00T, all unseen tasks (32 cases)
+
+Plain GR00T often completes the first step of a composite instruction and then stalls (seen in the
+80-episode run's videos). `subtask-sequencer` splits the instruction into its imperative steps with
+fixed text rules (10 of 16 unseen tasks split into 2–3 steps; the rest run unchanged), prompts one step
+at a time, and advances when the end effector moves less than 1 cm over 48 steps after at least 96
+steps on the step. Thresholds were fixed before the screen. Candidate on 16 tasks × trials 0–1, paired
+with the plain-policy episodes on the same seeded scenes (identical protocol fingerprint):
+
+| | Value |
+|---|---|
+| Episodes | 32 valid, 0 invalid |
+| Successes, candidate / plain policy | 1/32 / 0/32 (one paired win, BreadSelection trial 1; p 0.5) |
+| Inference ratio | 1.009 (no extra policy calls, no LLM) |
+
+The sequencer advanced steps as designed, but this is not a measured gain, and the plain policy had no
+successes on these 32 scenes, so regressions could not show up. Following the subset-first rule, the
+full 80-episode run was not started. No null arm was run: with no extra compute, the shadow-mode null
+executes the baseline's actions (tier 2: null vs baseline M).
 
 ### Tier 2 on GR00T N1.5 (`CloseToasterOvenDoor` trial 1, 450 steps)
 

@@ -40,7 +40,12 @@ def _cmd_verify(args) -> int:
         passed = report["tier2"]["passed"]
     stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
     from . import config
-    out = Path(args.report_root or config.runs_dir() / "verify") / args.method / stamp
+    base = Path(args.report_root or config.runs_dir() / "verify") / args.method
+    policy_tag = args.policy.replace(".", "").replace("/", "-")
+    out, n = base / f"{stamp}-{policy_tag}", 1
+    while out.exists():  # two verifies in the same second never share a report folder
+        n += 1
+        out = base / f"{stamp}-{policy_tag}-{n}"
     out.mkdir(parents=True, exist_ok=False)
     (out / "report.json").write_text(json.dumps(dict(report, passed=passed), indent=2, default=str))
     for tier, rep in report.items():

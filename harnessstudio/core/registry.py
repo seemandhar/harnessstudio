@@ -13,6 +13,7 @@ BUILTINS = {
     "chunktrust-ahs": "harnessstudio.methods.chunktrust_ahs:config",
     "medoid-bon": "harnessstudio.methods.medoid_bon:config",
     "llm-subtask-planner": "harnessstudio.methods.llm_subtask_planner:config",
+    "subtask-sequencer": "harnessstudio.methods.subtask_sequencer:config",
     "chunk-interrupt": "harnessstudio.methods.chunk_interrupt:config",
 }
 

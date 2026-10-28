@@ -46,6 +46,7 @@ class ControllerTools:
         self.min_act_steps = int(params["min_act_steps"])
         self.horizon = spec.horizon
         self.chunk_len = spec.chunk_len
+        self.policy = {"action_layout": dict(spec.action_layout), "proprio_eef": spec.proprio_eef}
         self.memory: dict = {}
         self._llm = build_operator(params.get("llm"))
         self.acts, self.prompts, self.stopped = 0, [], None
@@ -66,6 +67,18 @@ class ControllerTools:
     def observe(self):
         """Public observation (the policy's public keys only)."""
         return self._public_of(self._state["observation"])
+
+    def eef_position(self) -> list:
+        """End-effector position from public proprioception, using the policy's declared layout."""
+        if not self.policy["proprio_eef"]:
+            raise MethodContractError("This policy declares no public end-effector position")
+        key, span = self.policy["proprio_eef"]
+        value = self.observe().values[key]
+        flat = value.tolist() if hasattr(value, "tolist") else value
+        while isinstance(flat, (list, tuple)) and flat and isinstance(flat[0], (list, tuple)):
+            flat = flat[-1]
+        flat = [float(v) for v in flat]
+        return flat[span[0]:span[1]] if span else flat[:3]
 
     def image(self, key: str):
         return self.observe().values[key]
