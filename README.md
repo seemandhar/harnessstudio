@@ -374,3 +374,14 @@ tests/                    unit and integration tests (no GPU needed)
   too.
 - No license file has been chosen yet; all rights reserved until one is added. The vendored
   ChunkTrust files keep their own license (`methods/chunktrust_ahs/CHUNKTRUST_LICENSE`).
+
+## Changelog
+
+### 2026-10-29 - Kinetix RTC backend (`kinetix-flow`), protocol-level delay and execute horizon, `guide()` sampler hook
+
+- New policy `kinetix-flow`: the RTC paper's frozen Kinetix flow policies (bc/31) from real-time-chunking-kinetix@9296f31d (MIT), with backend `kinetix_rtc12` running in the authors' pinned JAX environment. One episode = (inference delay d, execute horizon s) x the whole ordered level universe x B rollouts, level-batched as the authors' `eval_flow` (`jit(shard_map(vmap over levels))`). Only the sampler slot is supported.
+- New built-in methods `rtc` and `rtc-hard-masking` (Real-Time Chunking guidance, arXiv 2506.07339v2) through a `guide()` sampler hook. d and s are protocol-level (`async_execution`), identical in every arm, and part of the protocol hash.
+- kinetix-flow null arm: executes the baseline's own compiled program and runs the candidate's compiled program in shadow (cost and guidance materialized, chunk discarded).
+- Exactness, CPU: bitwise identical to the authors' code on a predeclared sample (3 levels x 5 delay points x naive/RTC/hard masking x 64 rollouts, two s > d points, 15 null cases). Reached after two disclosed repairs (level batching; null program); attempt 2 failed, attempts 3 and 4 exact. GPU (RTX A6000, default TF32 matmul precision): separate compiled programs round differently, so GPU comparisons with the authors' numbers are statistical only. Tier 2 with deterministic GPU ops: null = baseline on every rollout (M) for rtc and identity.
+- Unchanged: the episode-execution path (core/pipeline.py, core/runtime.py, arms, noise, budget, runtime/*, GR00T and Pi0.5 policies and backends) is byte-identical. Changed control-plane files: cli.py, core/capabilities.py, core/method.py, core/protocol.py (new), core/registry.py, core/slots.py, policies/__init__.py, verify/tier1.py, verify/tier2.py, verify/guide_contract.py (new). These are covered by the unit suite, tier 1 of every registered method on gr00t-n1.5 / pi0.5 / kinetix-flow (only plugin-closure file counts differ), and GPU tier 2 of identity and medoid-bon on GR00T N1.5 (M).
+- Paper-scale Kinetix numbers (Fig. 5 right panel: naive, RTC, hard masking) are measured by the authors' code and attributed to this port by the CPU equivalence; they are not measured through HarnessStudio. BID, the execution-horizon panel and TE are not attributed.
