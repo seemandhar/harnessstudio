@@ -72,13 +72,39 @@ class KinetixChild(unittest.TestCase):
         self.assertGreaterEqual(counts[False], counts[True])
         print("R8_DOT_GENERAL", counts, file=sys.stderr)
 
-    def test_null_timing_level_batched(self):  # EC4 timing (R8)
+    def test_null_cost_is_candidate_plus_baseline(self):  # A5 (review-postbuild-repair-1 R8_ruling)
+        """The null pays exactly the candidate's computation plus the baseline's batched forward (B4).
+
+        Replaces the retired EC4 window 0.8 <= null/candidate <= 1.25, which contradicted B4 and failed at
+        1.476 / 1.493 (repair-1 build; kept on record in git history and child-tests.log). Binding part: the dot
+        identity in jaxpr and compiled HLO. Timing on a shared host is an indicative sanity check only.
+        """
+        import jax
         import jax.numpy as jnp
         import numpy as np
         from harnessstudio.backends.kinetix_rtc12 import runtime as RT
         from harnessstudio.methods.rtc import RTCGuidance
-        case = RT.KinetixUniverseCase((self.LEVEL,), rollouts=64, inference_delay=1, execute_horizon=1)
         g = RTCGuidance("exp", 5.0)
+        f_small = RT.KinetixUniverseCase((self.LEVEL,), rollouts=2, inference_delay=1, execute_horizon=1)
+        obs2 = jnp.zeros((1, 2, 679), jnp.float32)
+        prev2 = jnp.zeros((1, 2, 8, 6), jnp.float32)
+        fns = {"baseline": (f_small.fns["naive"], (f_small.level_keys, obs2, f_small.state_dicts, f_small.level_keys)),
+               "candidate": (f_small.fns["guided"](g, True), (f_small.level_keys, obs2, prev2, f_small.state_dicts, f_small.level_keys)),
+               "null": (f_small.fns["guided"](g, False), (f_small.level_keys, obs2, prev2, f_small.state_dicts, f_small.level_keys))}
+        jaxpr_dots, hlo_dots = {}, {}
+        for k, (fn, args) in fns.items():
+            jaxpr = str(jax.make_jaxpr(fn)(*args))
+            jaxpr_dots[k] = jaxpr.count("dot_general")
+            hlo_dots[k] = fn.lower(*args).compile().as_text().count(" dot(")
+            if k == "null":
+                self.assertIn("transpose", jaxpr)
+                self.assertNotIn("callback", jaxpr)
+        print("A5_DOTS", jaxpr_dots, hlo_dots, file=sys.stderr)
+        self.assertGreater(jaxpr_dots["baseline"], 0)
+        self.assertEqual(jaxpr_dots["null"], jaxpr_dots["candidate"] + jaxpr_dots["baseline"])
+        self.assertEqual(hlo_dots["null"], hlo_dots["candidate"] + hlo_dots["baseline"])
+
+        case = RT.KinetixUniverseCase((self.LEVEL,), rollouts=64, inference_delay=1, execute_horizon=1)
         obs = jnp.asarray(np.random.default_rng(0).standard_normal((1, 64, 679)).astype(np.float32))
         prev = jnp.zeros((1, 64, 8, 6), jnp.float32)
         f = case.fns
@@ -95,10 +121,13 @@ class KinetixChild(unittest.TestCase):
                     fn().block_until_ready()
                 reps.append(time.perf_counter() - t0)
             times[k] = statistics.median(reps)
-        ratio_nc, ratio_nb = times["null"] / times["candidate"], times["null"] / times["baseline"]
-        print("EC4_TIMING", {k: round(v, 4) for k, v in times.items()}, round(ratio_nc, 3), round(ratio_nb, 3), file=sys.stderr)
-        self.assertTrue(0.8 <= ratio_nc <= 1.25, (times, ratio_nc))
-        self.assertGreaterEqual(ratio_nb, 1.3, (times, ratio_nb))
+        nc, nb = times["null"] / times["candidate"], times["null"] / times["baseline"]
+        additive = times["null"] / (times["candidate"] + times["baseline"])
+        print("A5_TIMING", {k: round(v, 4) for k, v in times.items()}, round(nc, 3), round(nb, 3), round(additive, 3),
+              file=sys.stderr)
+        self.assertGreaterEqual(nc, 0.8, times)
+        self.assertGreaterEqual(nb, 1.3, times)
+        self.assertTrue(0.8 <= additive <= 1.25, (times, additive))
 
     def test_worker_smoke_one_level_universe_null_is_m_and_caps(self):
         import json
