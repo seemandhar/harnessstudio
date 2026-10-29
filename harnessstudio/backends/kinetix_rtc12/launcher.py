@@ -65,6 +65,10 @@ def launch(method: str, *, arms, points, rollouts: int, out: Path, device: str =
     # GPU: allowlisted flags, resolved before any lease (T2a). CPU: the child inherits the parent's XLA_FLAGS
     # (pre-existing behaviour); recorded either way (T2b).
     xla_flags = gpu_xla_flags() if device == "gpu" else os.environ.get("XLA_FLAGS")
+    # P8: no matmul-precision pin; refuse a silently inherited non-default value (reviewed allowlist is empty).
+    precision = os.environ.get("JAX_DEFAULT_MATMUL_PRECISION")
+    if precision is not None:
+        raise ValueError(f"JAX_DEFAULT_MATMUL_PRECISION={precision!r} is not allowed (JAX default only)")
     child = Path(KF.CHILD_PYTHON)
     if not child.is_file():
         raise ValueError(f"kinetix child interpreter not found: {child}")
@@ -73,7 +77,8 @@ def launch(method: str, *, arms, points, rollouts: int, out: Path, device: str =
     mm = method_manifest(method_config, origin, policy=KF.NAME)
     frozen = freeze(mm, out / "frozen_closure")
     (out / "launch.json").write_text(json.dumps({"method_manifest_sha256": mm["sha256"], "frozen": frozen["root"],
-                                                 "device": device, "gpu": gpu, "xla_flags": xla_flags},
+                                                 "device": device, "gpu": gpu, "xla_flags": xla_flags,
+                                                 "jax_default_matmul_precision": "default (JAX_DEFAULT_MATMUL_PRECISION unset)"},
                                                 indent=1))
     lease_owner, own_lease, led = None, False, None
     if device == "gpu":
@@ -106,6 +111,11 @@ def launch(method: str, *, arms, points, rollouts: int, out: Path, device: str =
             "wall_seconds": time.time() - started, "lease_owner": lease_owner, "stderr_tail": proc.stderr[-800:]}
 
 
+def _manifest_value(run, key):
+    path = Path(run) / "manifest.json"
+    return json.loads(path.read_text()).get(key) if path.is_file() else None
+
+
 def _results(run: Path, arm: str) -> list:
     return [json.loads(p.read_text()) for p in sorted((run / "results" / arm).glob("*/result.json"))]
 
@@ -118,7 +128,9 @@ def run_tier2_kinetix(method: str, *, gpu=None, ledger=None, device: str = "gpu"
     res = launch(method, arms=["baseline", "null", "candidate"], points=[point], level_universe=case["universe"],
                  rollouts=rollouts or case["rollouts"], out=root, device=device, gpu=gpu, ledger=ledger)
     checks = [{"name": "worker_completed", "passed": res["returncode"] == 0,
-               "detail": {k: res[k] for k in ("run", "returncode", "wall_seconds", "xla_flags")}}]
+               "detail": dict({k: res[k] for k in ("run", "returncode", "wall_seconds", "xla_flags")},
+                              jax_default_matmul_precision=_manifest_value(res["run"], "jax_default_matmul_precision"),
+                              null_mode=_manifest_value(res["run"], "null_mode"))}]
     if res["returncode"] != 0:
         return {"method": method, "tier": 2, "policy": KF.NAME, "passed": False, "checks": checks,
                 "root": str(root), "error": res["stderr_tail"]}

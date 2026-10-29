@@ -24,7 +24,8 @@ import numpy as np
 
 from harnessstudio.policies import kinetix_flow as KF
 
-RUNNER_VERSION = "harnessstudio-kinetix-rtc12-2"   # repair 1: level-batched universe cases
+RUNNER_VERSION = "harnessstudio-kinetix-rtc12-3"   # repair 2: null = baseline program + candidate shadow
+NULL_MODE = "baseline_program+candidate_shadow"
 MAX_CASES_PER_ARM = 32          # the 32-episode cap counts batched cases
 MAX_ROLLOUTS_PER_ARM = 65536    # counts L * B per case
 
@@ -34,7 +35,8 @@ def protocol(case) -> dict:
             "upstream_sha256": KF.UPSTREAM_SHA256, "kinetix_commit": KF.KINETIX_COMMIT,
             "level_universe": list(case.universe), "frame_skip": 2, "max_timesteps": KF.MAX_TIMESTEPS,
             "action_noise_std": KF.ACTION_NOISE_STD, "wrappers": ["NoisyAction", "AutoReplay", "Log", "Batch"],
-            "level_batching": "jit(shard_map(vmap over levels)) as eval_flow.py:222-228",
+            "level_batching": "jit(shard_map(vmap over levels)) as eval_flow.py:222-228", "null_mode": NULL_MODE,
+            "jax_default_matmul_precision": case.matmul_precision,
             "inference_delay": case.d, "execute_horizon": case.s, "rollouts_per_level": case.rollouts,
             "block": case.block, "horizon_steps": case.horizon_steps, "metric": "first_episode_solved",
             "noise_mode": KF.NOISE_MODE, "seed": case.seed,
@@ -164,7 +166,10 @@ def main(argv=None) -> int:
     manifest = {"schema": "harnessstudio-kinetix-run/2", "runner_version": RUNNER_VERSION, "argv": argv,
                 "method": method.to_json(), "origin": origin, "arms": a.arms, "points": a.points,
                 "level_universe": a.level_universe, "rollouts_per_level": a.rollouts, "seed": a.seed, "block": a.block,
-                "devices": [str(d) for d in jax.devices()], "jax_version": jax.__version__}
+                "devices": [str(d) for d in jax.devices()], "jax_version": jax.__version__,
+                "jax_default_matmul_precision": jax.config.jax_default_matmul_precision, "null_mode": NULL_MODE}
+    from .runtime import require_default_precision
+    require_default_precision()
     (out / "manifest.json").write_text(json.dumps(manifest, indent=1))
     state = {"status": "running", "started_at": started, "gpu_hours_upper_bound": 0.0}
     attribution = {}

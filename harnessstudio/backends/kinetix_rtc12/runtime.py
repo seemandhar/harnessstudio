@@ -14,10 +14,15 @@ reshaped into one batch inside a jitted computation (the flat [H, L*B*A] action 
 - KinetixEnvPort is the arm-agnostic actuator queue: executes prev[:, :, :d] ++ new[:, :, d:s], then
   prev <- concat(new[:, :, s:], 0) (eval_flow.py:119-137); public observation {instruction, obs, prev_chunk};
   never terminates early (fixed ceil(256/s) decisions).
-- KinetixClient: baseline/naive = upstream FlowPolicy.action; a guide() sampler runs the per-rollout VJP
-  guided flow loop (model.py:230-265 structure); the null arm integrates the native batched velocity (the
-  forward of FlowPolicy.action) and ALSO returns the guided velocity stack as a jit output (B4; its sha256
-  enters the trace).
+- KinetixClient: baseline/naive = upstream FlowPolicy.action; the candidate runs the per-rollout VJP guided
+  flow loop (model.py:230-265 structure) and executes it.
+- Null (repair 2, null_mode 'baseline_program+candidate_shadow'): the null EXECUTES the baseline's own compiled
+  naive program (the same function object, identical arguments) and runs the candidate's compiled guided program
+  on the same inputs in shadow: it pays the candidate's compute, materializes its guidance (guided stack returned
+  as a jit output, sha256 per decision) and discards its chunk; both calls split the same rng once and the rng
+  outputs must be bitwise equal. The guided program with effective=False is retired: on GPU two different
+  compiled programs round differently (TF32-level, diag 8875ac23), so a null integrating its own copy of the
+  native forward could not equal the baseline bitwise. No arm may reach it.
 """
 from __future__ import annotations
 
@@ -65,6 +70,22 @@ def universe_tag(universe) -> str:
     return hashlib.sha256(json.dumps(list(universe)).encode()).hexdigest()[:8]
 
 
+ALLOWED_MATMUL_PRECISIONS = (None,)   # review-repair-2 P8: JAX default only; reviewed allowlist currently empty
+
+
+def matmul_precision():
+    """The process's effective jax_default_matmul_precision (None = JAX default)."""
+    import jax
+    return jax.config.jax_default_matmul_precision
+
+
+def require_default_precision():
+    value = matmul_precision()
+    if value not in ALLOWED_MATMUL_PRECISIONS:
+        raise RuntimeError(f"jax_default_matmul_precision={value!r} is not allowed (P8: JAX default only, no pin)")
+    return value
+
+
 class UniverseRng:
     """Per-level rng chains [L], advanced inside the level-vmapped jitted calls (eval_flow.py:145-148, 79, 74)."""
 
@@ -84,6 +105,7 @@ class KinetixUniverseCase:
         import kinetix.environment.wrappers as wrappers
         U = upstream(root)
         te = U["train_expert"]
+        self.matmul_precision = require_default_precision()
         universe = tuple(universe)
         if not universe or len(set(universe)) != len(universe) or any(lv not in KF.LEVELS for lv in universe):
             raise ValueError(f"the level universe must be distinct kinetix-rtc12 levels: {universe}")
@@ -204,7 +226,10 @@ def _functions(env, env_params, obs_dim, action_dim, d, s):
     guided_cache = {}
 
     def guided(sampler, effective):
-        """One compiled function per (sampler class + identity, arm effect); the bound guide is a static closure."""
+        """One compiled function per (sampler class + identity); the bound guide is a static closure.
+        effective=False (the pre-repair-2 null program) is retired and refused (review-repair-2 P1)."""
+        if not effective:
+            raise RuntimeError("guided(sampler, effective=False) is retired (repair 2): the null executes the naive program")
         k = (type(sampler).__module__, type(sampler).__qualname__, json.dumps(sampler.identity, sort_keys=True),
              bool(effective))
         if k not in guided_cache:
@@ -329,9 +354,19 @@ class KinetixClient:
         extras = {}
         if self.sampler is None:
             self.rng.rng, native = self.case.fns["naive"](self.rng.rng, obs, self.case.state_dicts, self.case.level_keys)
-        else:
-            fn = self.case.fns["guided"](self.sampler, arm == "candidate")
+        elif arm == "candidate":
+            fn = self.case.fns["guided"](self.sampler, True)
             self.rng.rng, native, guided = fn(self.rng.rng, obs, prev, self.case.state_dicts, self.case.level_keys)
+        else:  # null: execute the baseline's own program; run the candidate's program in shadow (repair 2, P1)
+            r_in = self.rng.rng
+            r_a, native = self.case.fns["naive"](r_in, obs, self.case.state_dicts, self.case.level_keys)
+            r_c, _shadow_chunk, guided = self.case.fns["guided"](self.sampler, True)(
+                r_in, obs, prev, self.case.state_dicts, self.case.level_keys)
+            import jax
+            if np.asarray(jax.random.key_data(r_c)).tobytes() != np.asarray(jax.random.key_data(r_a)).tobytes():
+                raise RuntimeError("null shadow rng differs from the executed naive call's rng")
+            self.rng.rng = r_a
+        if self.sampler is not None:
             digest = hashlib.sha256(np.ascontiguousarray(np.asarray(guided)).tobytes()).hexdigest()
             self.guidance_sha256.append(digest)
             self.last_guided = guided                        # [L, n, B, H, A] (parity diagnostics)
