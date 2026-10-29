@@ -111,23 +111,27 @@ class KinetixChild(unittest.TestCase):
         calls = {"baseline": lambda: f["naive"](case.level_keys, obs, case.state_dicts, case.level_keys)[1],
                  "null": lambda: f["guided"](g, False)(case.level_keys, obs, prev, case.state_dicts, case.level_keys)[1],
                  "candidate": lambda: f["guided"](g, True)(case.level_keys, obs, prev, case.state_dicts, case.level_keys)[1]}
-        times = {}
-        for k, fn in calls.items():
+        # Timing is REPORT-ONLY on this shared host (review-a5-tier2plan T1); the dot identity above is binding.
+        for fn in calls.values():
             fn().block_until_ready()                       # compile
-            reps = []
-            for _ in range(3):
+        load_before = os.getloadavg()
+        reps = {k: [] for k in calls}
+        for _ in range(3):                                 # arms interleaved round-robin per rep
+            for k, fn in calls.items():
                 t0 = time.perf_counter()
                 for _ in range(20):
                     fn().block_until_ready()
-                reps.append(time.perf_counter() - t0)
-            times[k] = statistics.median(reps)
+                reps[k].append(time.perf_counter() - t0)
+        load_after = os.getloadavg()
+        times = {k: statistics.median(v) for k, v in reps.items()}
         nc, nb = times["null"] / times["candidate"], times["null"] / times["baseline"]
         additive = times["null"] / (times["candidate"] + times["baseline"])
-        print("A5_TIMING", {k: round(v, 4) for k, v in times.items()}, round(nc, 3), round(nb, 3), round(additive, 3),
-              file=sys.stderr)
-        self.assertGreaterEqual(nc, 0.8, times)
-        self.assertGreaterEqual(nb, 1.3, times)
-        self.assertTrue(0.8 <= additive <= 1.25, (times, additive))
+        print("A5_TIMING", {k: round(v, 4) for k, v in times.items()},
+              {"null/candidate": round(nc, 3), "null/baseline": round(nb, 3), "null/(candidate+baseline)": round(additive, 3)},
+              {"window": "null/candidate >= 0.8, null/baseline >= 1.3, null/(candidate+baseline) in [0.8, 1.25]"},
+              {"loadavg_before": load_before, "loadavg_after": load_after}, file=sys.stderr)
+        if not (nc >= 0.8 and nb >= 1.3 and 0.8 <= additive <= 1.25):
+            print("A5_TIMING WARN outside window (report-only; indicative on a shared host)", file=sys.stderr)
 
     def test_worker_smoke_one_level_universe_null_is_m_and_caps(self):
         import json
