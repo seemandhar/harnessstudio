@@ -33,6 +33,7 @@ for _p in (str(STUDIO_SRC), str(HERE), str(HERE / "copied")):
         sys.path.insert(0, _p)
 
 from harnessstudio import config  # noqa: E402
+from harnessstudio.config import delegated_lease  # noqa: E402
 
 NAME = "harnessstudio"
 DEFAULT_PROTOCOL = HERE / "copied" / "protocol_v2_n1.json"
@@ -306,7 +307,8 @@ def prepare(args, name):
             assignments=assignments, placement=placement, placement_sha256=placement_sha,
             checkpoint_path=checkpoint, checkpoint_files=files, checkpoint_identity=checkpoint_identity,
             checkpoint_revision=revision, source_sha256=sources, repositories=repos, frozen_closure=frozen,
-            lease_owner="benchmark.harnessstudio." + uuid.uuid4().hex)
+            lease_owner=delegated_lease() or "benchmark.harnessstudio." + uuid.uuid4().hex,
+            lease_delegated=bool(delegated_lease()))
         plan["manifest_digest"] = json_hash(plan)
         write_json(output / "manifest.json", plan)
     except BaseException:

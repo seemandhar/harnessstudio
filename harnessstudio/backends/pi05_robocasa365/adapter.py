@@ -30,6 +30,7 @@ for _p in (str(STUDIO_SRC), str(GR00T), str(GR00T / "copied")):
         sys.path.insert(0, _p)
 
 from harnessstudio import config  # noqa: E402
+from harnessstudio.config import delegated_lease  # noqa: E402
 from harnessstudio.backends.gr00t_robocasa365 import adapter as gad  # noqa: E402
 
 NAME = "harnessstudio"
@@ -111,6 +112,16 @@ def task_registry(bench, episode_python, paths):
     if len(rows) != 1:
         raise RuntimeError("Pi0.5 backend returned no unique task registry")
     return json.loads(rows[0])
+
+
+def default_task_registry():
+    """The registry this backend builds cases from (its own horizons), with default runtime paths."""
+    args = parser().parse_args(["--policy", "pi0.5", "--benchmark", "robocasa365", "--harness", "harnessstudio"])
+    bench = config.policybench().resolve()
+    root, _checkpoint, _server_python, episode_python, sim_deps = runtime_paths(args, bench)
+    paths = [sim_deps, root / "packages/openpi-client/src", bench / "benchmarks/robocasa365",
+             bench / "benchmarks/robosuite", bench / "scripts"]
+    return task_registry(bench, episode_python, paths)
 
 
 def prepare(args, name):
@@ -202,7 +213,8 @@ def prepare(args, name):
                     workers_per_gpu=args.workers_per_gpu, calibrated_worker_mib=args.calibrated_worker_mib,
                     assignments=assignments, placement=placement, placement_sha256=gad.canonical_sha256(placement),
                     source_sha256=sources, repositories=repos, frozen_closure=frozen,
-                    lease_owner="benchmark.harnessstudio.pi05." + uuid.uuid4().hex)
+                    lease_owner=delegated_lease() or "benchmark.harnessstudio.pi05." + uuid.uuid4().hex,
+            lease_delegated=bool(delegated_lease()))
         plan["manifest_digest"] = json_hash(plan)
         write_json(output / "manifest.json", plan)
     except BaseException:

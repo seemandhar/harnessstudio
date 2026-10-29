@@ -7,5 +7,8 @@
     "CHUNKTRUST_LICENSE": "47c664305ab01245635e7f055f77c45a48f701807190ab4bcd5765eb54332ac2"
   },
   "paper": "arXiv:2609.39754v2",
-  "note": "Byte-identical copies. Never edit; a change needs a new method version and new provenance."
+  "note": "Byte-identical copies. Never edit; a change needs a new method version and new provenance.",
+  "dead_code_notes": {
+    "horizon.py": "The lazy function at lines ~290-292 imports robometaharness.unified, retired on 2026-10-28. It has no callers in HarnessStudio and is never executed; kept byte-identical (vendored). HarnessStudio never imports robometaharness at runtime."
+  }
 }

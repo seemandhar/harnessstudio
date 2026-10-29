@@ -26,6 +26,16 @@ def default_table(policy=DEFAULT_POLICY):
     return config.DATA_DIR / "canonical_tables" / name if name else "none"
 
 
+def task_registry(policy=DEFAULT_POLICY) -> dict:
+    """{group: [{name, horizon}, ...]} exactly as the policy's backend builds its cases."""
+    pa, script = backend(policy)
+    if pa.NAME == "pi0.5":
+        from ..backends.pi05_robocasa365 import adapter as pi05_adapter
+        return pi05_adapter.default_task_registry()
+    from ..bench.registry import load_task_registry
+    return load_task_registry(config.policybench())
+
+
 BACKEND_ADAPTER = backend()[1]   # GR00T default (kept for callers that predate multi-policy support)
 DEFAULT_TABLE = default_table()
 

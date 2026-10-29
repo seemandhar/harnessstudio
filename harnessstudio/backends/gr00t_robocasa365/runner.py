@@ -34,6 +34,77 @@ ADAPTER = HERE / "adapter.py"
 WORKER_REL = Path("harnessstudio/backends/gr00t_robocasa365/worker.py")
 
 
+def _ancestors(pid=None) -> list:
+    """[(pid, start_ticks)] of this process's live ancestors, nearest first."""
+    out, cursor, seen = [], os.getppid() if pid is None else pid, set()
+    while cursor not in (0, 1) and cursor not in seen:
+        seen.add(cursor)
+        identity = process_identity(cursor)
+        if identity is None:
+            break
+        out.append((cursor, int(identity["start_ticks"])))
+        try:
+            cursor = int(Path(f"/proc/{cursor}/stat").read_text().rsplit(")", 1)[1].split()[1])
+        except (OSError, ValueError, IndexError):
+            break
+    return out
+
+
+def require_delegated_lease(lease_dir, owner, gpu_ids, workers_per_gpu) -> dict:
+    """Check that an outer scheduler's lease covers this run; never acquire or release it.
+
+    The outer scheduler (e.g. a research pipeline that leased the GPUs before launching this run)
+    owns the reservation. The lease's holder must be a live ancestor of this runner (same boot, same
+    process start time), so a stale or foreign lease name cannot be borrowed. The run may only use
+    GPUs inside it, with at most its declared instances per GPU.
+    """
+    from harnessstudio.bench import resources
+    path = Path(lease_dir) / "resources.json"
+    leases = read_json(path).get("leases", {}) if path.exists() else {}
+    lease = leases.get(owner)
+    if lease is None:
+        raise resources.ResourceError(f"delegated lease {owner!r} is not in the registry {path}")
+    holder, ticks = lease.get("pid"), lease.get("process_start_ticks")
+    boot = Path("/proc/sys/kernel/random/boot_id").read_text().strip()
+    if lease.get("boot_id") != boot or holder is None or ticks is None:
+        raise resources.ResourceError(f"delegated lease {owner!r} was not taken by a process of this boot")
+    if (int(holder), int(ticks)) not in _ancestors():
+        raise resources.ResourceError(f"delegated lease {owner!r} is held by pid {holder}, which is not a live "
+                                      "ancestor of this run; refusing to borrow it")
+    outside = sorted(set(gpu_ids) - set(lease.get("gpu_ids", [])))
+    if outside:
+        raise resources.ResourceError(f"GPU(s) {outside} are outside delegated lease {owner!r}")
+    if workers_per_gpu > int(lease.get("instances_per_gpu", 1)):
+        raise resources.ResourceError(f"{workers_per_gpu} workers per GPU exceed delegated lease {owner!r} "
+                                      f"({lease.get('instances_per_gpu', 1)} instances per GPU)")
+    return lease
+
+
+def claim_lease(manifest, lease_dir, ids, inventory) -> bool:
+    """Take this run's own lease, or check the delegated one. Returns True when delegated."""
+    from harnessstudio.bench import resources
+    owner = manifest["lease_owner"]
+    workers_per_gpu = manifest.get("workers_per_gpu", 1)
+    if manifest.get("lease_delegated"):
+        require_delegated_lease(lease_dir, owner, ids, workers_per_gpu)
+        return True
+    leases = read_json(Path(lease_dir) / "resources.json") if (Path(lease_dir) / "resources.json").exists() else {}
+    if owner in leases.get("leases", {}):
+        resources.release(lease_dir, owner)
+    resources.acquire(lease_dir, owner, ids, inventory=inventory, instances_per_gpu=workers_per_gpu,
+                      calibrated_instance_mib=manifest.get("calibrated_worker_mib"))
+    return False
+
+
+def release_lease(manifest, lease_dir, delegated, cleanup_errors) -> bool:
+    """Release this run's own lease once its workers are reaped; a delegated lease is never released."""
+    from harnessstudio.bench import resources
+    if cleanup_errors or delegated:
+        return False
+    resources.release(lease_dir, manifest["lease_owner"])
+    return True
+
+
 def child_paths(manifest) -> list:
     frozen = Path(manifest["frozen_closure"]["root"])
     return [str(frozen), str(frozen / "plugins")]
@@ -239,12 +310,7 @@ def run(manifest_path, *, resume=False):
         inventory, mapping = topology_and_idle(ids, manifest["policybench"])
         lease_dir = config.leases_dir()
         owner = manifest["lease_owner"]
-        leases = read_json(lease_dir / "resources.json") if (lease_dir / "resources.json").exists() else {}
-        if owner in leases.get("leases", {}):
-            resources.release(lease_dir, owner)
-        workers_per_gpu = manifest.get("workers_per_gpu", 1)
-        resources.acquire(lease_dir, owner, ids, inventory=inventory, instances_per_gpu=workers_per_gpu,
-                          calibrated_instance_mib=manifest.get("calibrated_worker_mib"))
+        delegated = claim_lease(manifest, lease_dir, ids, inventory)
         attempt = {"id": f"attempt-{len(state['attempts']):03d}", "started_at": now(),
                    "started_epoch": time.time(), "gpu_ids": ids, "slots": slots,
                    "controller": process_identity(os.getpid()), "workers": {}, "status": "running"}
@@ -303,9 +369,8 @@ def run(manifest_path, *, resume=False):
                 gpu_hours_upper_bound=(time.time() - attempt["started_epoch"]) * len(ids) / 3600,
                 worker_hours_upper_bound=(time.time() - attempt["started_epoch"]) * len(slots) / 3600,
                 cleanup_errors=cleanup_errors, workers_reaped=not cleanup_errors)
-            if not cleanup_errors:
-                resources.release(lease_dir, owner)
-            attempt["lease_released"] = not cleanup_errors
+            attempt["lease_released"] = release_lease(manifest, lease_dir, delegated, cleanup_errors)
+            attempt["lease_delegated"] = delegated
             summary = summarize(manifest, force_evidence=True)
             attempt["status"] = ("complete" if summary["status"] == "complete" and not cleanup_errors
                                  else "stopped" if stopped else "incomplete")

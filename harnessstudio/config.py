@@ -3,6 +3,9 @@
 HARNESSSTUDIO_WORKSPACE    run outputs go to WORKSPACE/runs/harnessstudio/...   (default: current dir)
 HARNESSSTUDIO_LEASES       shared GPU lease registry directory                   (default: nearest
                            `.leases` directory at or above the workspace, else ~/.harnessstudio/leases)
+HARNESSSTUDIO_DELEGATED_LEASE  name of a GPU lease that an outer scheduler already holds for this run;
+                           the runner checks it covers the run's GPUs and neither acquires nor
+                           releases a lease of its own                           (default: unset)
 HARNESSSTUDIO_POLICYBENCH  RobotPolicyBench root (policy/simulator envs, checkpoints, GPU map)
                            (default: $RMH_POLICYBENCH, else WORKSPACE/../RobotPolicyBench)
 """
@@ -32,6 +35,11 @@ def leases_dir() -> Path:
         if (parent / ".leases").is_dir():
             return (parent / ".leases").resolve()
     return Path.home() / ".harnessstudio" / "leases"
+
+
+def delegated_lease() -> str | None:
+    """Lease owner handed down by an outer GPU scheduler, or None (the runner takes its own lease)."""
+    return os.environ.get("HARNESSSTUDIO_DELEGATED_LEASE") or None
 
 
 def policybench() -> Path:
