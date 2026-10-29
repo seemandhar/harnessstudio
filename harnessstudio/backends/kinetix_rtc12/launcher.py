@@ -38,8 +38,9 @@ def _child_env(device: str, gpu, frozen_root: Path) -> dict:
     return env
 
 
-def launch(method: str, *, arms, points, levels, rollouts: int, out: Path, device: str = "gpu", gpu=None,
+def launch(method: str, *, arms, points, rollouts: int, out: Path, device: str = "gpu", gpu=None,
            level_universe=KF.LEVELS, seed: int = 0, ledger=None, max_hours: float = 1.0) -> dict:
+    """One case per point; each case is the whole level universe, level-batched (repair 1)."""
     from ...core import registry
     from ...core.manifest import freeze, method_manifest
     from ...core.protocol import require_method, require_protocol
@@ -72,8 +73,7 @@ def launch(method: str, *, arms, points, levels, rollouts: int, out: Path, devic
             resources.acquire(config.leases_dir(), lease_owner, [int(gpu)])
             own_lease = True
     argv = [str(child), "-m", "harnessstudio.backends.kinetix_rtc12.worker", "--method", method,
-            "--arms", *arms, "--points", *[str(p) for p in points], "--levels", *levels,
-            "--level-universe", *level_universe, "--rollouts", str(rollouts), "--seed", str(seed),
+            "--arms", *arms, "--points", *[str(p) for p in points], "--level-universe", *level_universe, "--rollouts", str(rollouts), "--seed", str(seed),
             "--out", str(out / "run")]
     started = time.time()
     try:
@@ -100,7 +100,7 @@ def run_tier2_kinetix(method: str, *, gpu=None, ledger=None, device: str = "gpu"
     case = KF.TIER2_CASE
     root = Path(root or config.runs_dir() / "verify" / method / ("tier2-" + time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())))
     point = f"{case['inference_delay']}:{case['execute_horizon']}"
-    res = launch(method, arms=["baseline", "null", "candidate"], points=[point], levels=[case["level"]],
+    res = launch(method, arms=["baseline", "null", "candidate"], points=[point], level_universe=case["universe"],
                  rollouts=rollouts or case["rollouts"], out=root, device=device, gpu=gpu, ledger=ledger)
     checks = [{"name": "worker_completed", "passed": res["returncode"] == 0,
                "detail": {k: res[k] for k in ("run", "returncode", "wall_seconds")}}]
@@ -120,7 +120,7 @@ def run_tier2_kinetix(method: str, *, gpu=None, ledger=None, device: str = "gpu"
         checks.append({"name": "null_pays_guidance_materialized", "passed": ok,
                        "detail": {"null": [r["guidance_vjp_steps"] for r in null],
                                   "candidate": [r["guidance_vjp_steps"] for r in cand]}})
-    overhead = {arm: [{k: r.get(k) for k in ("policy_calls", "policy_seconds", "decisions", "solved_count", "rollouts")}
+    overhead = {arm: [{k: r.get(k) for k in ("policy_calls", "policy_seconds", "decisions", "solved_count", "rollouts_per_level")}
                       for r in rs] for arm, rs in (("baseline", base), ("null", null), ("candidate", cand))}
     checks.append({"name": "overhead_measured", "passed": True, "detail": overhead})
     return {"method": method, "tier": 2, "policy": KF.NAME, "case": case, "device": device, "root": str(root),

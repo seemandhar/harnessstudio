@@ -5,6 +5,8 @@ NumPy/JAX; the runtime lives in harnessstudio.backends.kinetix_rtc12 and runs in
 
 Protocol parameters inference delay d and execute horizon s (Capability.ASYNC_EXECUTION) are identical for
 every arm and enter the protocol hash. Only the sampler slot is supported in this version (SUPPORTED_SLOTS).
+Repair 1: one case (= one HarnessStudio episode) is the whole ordered level universe x B rollouts per level,
+level-batched exactly as the authors' eval_flow (jit(shard_map(vmap over levels))).
 """
 from __future__ import annotations
 
@@ -56,4 +58,4 @@ def kinetix_root() -> Path:
 CHILD_PYTHON = str(kinetix_root() / "env" / "bin" / "python")
 BACKEND_ADAPTER = "backends/kinetix_rtc12/launcher.py"
 CANONICAL_TABLE = None
-TIER2_CASE = {"level": "worlds/l/grasp_easy.json", "inference_delay": 1, "execute_horizon": 1, "rollouts": 64}
+TIER2_CASE = {"universe": ["worlds/l/grasp_easy.json"], "inference_delay": 1, "execute_horizon": 1, "rollouts": 64}
