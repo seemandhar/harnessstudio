@@ -18,10 +18,22 @@ from pathlib import Path
 from ... import config
 from ...policies import kinetix_flow as KF
 
-GPU_XLA_FLAGS = "--xla_gpu_deterministic_ops=true --xla_gpu_autotune_level=0"
+GPU_XLA_FLAGS = "--xla_gpu_deterministic_ops=true --xla_gpu_autotune_level=0"   # default (unchanged)
+ALLOWED_GPU_XLA_FLAGS = (GPU_XLA_FLAGS, "--xla_gpu_autotune_level=0")             # review-a5-tier2plan T2(a)
 
 
-def _child_env(device: str, gpu, frozen_root: Path) -> dict:
+def gpu_xla_flags() -> str:
+    """Effective GPU XLA flags for the kinetix child. HARNESSSTUDIO_KINETIX_XLA_FLAGS may select only one of
+    ALLOWED_GPU_XLA_FLAGS; anything else is refused (before any lease is taken)."""
+    value = os.environ.get("HARNESSSTUDIO_KINETIX_XLA_FLAGS")
+    if value is None:
+        return GPU_XLA_FLAGS
+    if value not in ALLOWED_GPU_XLA_FLAGS:
+        raise ValueError(f"HARNESSSTUDIO_KINETIX_XLA_FLAGS={value!r} is not allowed; use one of {ALLOWED_GPU_XLA_FLAGS}")
+    return value
+
+
+def _child_env(device: str, gpu, frozen_root: Path, xla_flags=None) -> dict:
     env = {k: v for k, v in os.environ.items() if not k.endswith("_API_KEY")}
     env["PYTHONPATH"] = os.pathsep.join([str(frozen_root), str(frozen_root / "plugins")])
     env["WANDB_MODE"] = "disabled"
@@ -33,7 +45,7 @@ def _child_env(device: str, gpu, frozen_root: Path) -> dict:
     else:
         env["JAX_PLATFORMS"] = "cuda"
         env["CUDA_VISIBLE_DEVICES"] = str(int(gpu))
-        env["XLA_FLAGS"] = GPU_XLA_FLAGS
+        env["XLA_FLAGS"] = xla_flags if xla_flags is not None else gpu_xla_flags()
         env["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
     return env
 
@@ -50,6 +62,9 @@ def launch(method: str, *, arms, points, rollouts: int, out: Path, device: str =
         require_protocol(KF, *(int(x) for x in str(p).split(":")))
     if device not in ("cpu", "gpu") or (device == "gpu" and gpu is None):
         raise ValueError("device must be 'cpu' or 'gpu' with a gpu id")
+    # GPU: allowlisted flags, resolved before any lease (T2a). CPU: the child inherits the parent's XLA_FLAGS
+    # (pre-existing behaviour); recorded either way (T2b).
+    xla_flags = gpu_xla_flags() if device == "gpu" else os.environ.get("XLA_FLAGS")
     child = Path(KF.CHILD_PYTHON)
     if not child.is_file():
         raise ValueError(f"kinetix child interpreter not found: {child}")
@@ -58,7 +73,7 @@ def launch(method: str, *, arms, points, rollouts: int, out: Path, device: str =
     mm = method_manifest(method_config, origin, policy=KF.NAME)
     frozen = freeze(mm, out / "frozen_closure")
     (out / "launch.json").write_text(json.dumps({"method_manifest_sha256": mm["sha256"], "frozen": frozen["root"],
-                                                 "device": device, "gpu": gpu, "xla_flags": GPU_XLA_FLAGS if device == "gpu" else None},
+                                                 "device": device, "gpu": gpu, "xla_flags": xla_flags},
                                                 indent=1))
     lease_owner, own_lease, led = None, False, None
     if device == "gpu":
@@ -77,7 +92,7 @@ def launch(method: str, *, arms, points, rollouts: int, out: Path, device: str =
             "--out", str(out / "run")]
     started = time.time()
     try:
-        proc = subprocess.run(argv, cwd=str(out), env=_child_env(device, gpu, Path(frozen["root"])),
+        proc = subprocess.run(argv, cwd=str(out), env=_child_env(device, gpu, Path(frozen["root"]), xla_flags if device == "gpu" else None),
                               capture_output=True, text=True, timeout=int(max_hours * 3600) + 600)
     finally:
         if led is not None and (out / "run").exists():
@@ -87,7 +102,7 @@ def launch(method: str, *, arms, points, rollouts: int, out: Path, device: str =
             resources.release(config.leases_dir(), lease_owner)
     (out / "stdout.log").write_text(proc.stdout)
     (out / "stderr.log").write_text(proc.stderr)
-    return {"out": str(out), "run": str(out / "run"), "argv": argv, "returncode": proc.returncode,
+    return {"out": str(out), "run": str(out / "run"), "argv": argv, "returncode": proc.returncode, "xla_flags": xla_flags,
             "wall_seconds": time.time() - started, "lease_owner": lease_owner, "stderr_tail": proc.stderr[-800:]}
 
 
@@ -103,7 +118,7 @@ def run_tier2_kinetix(method: str, *, gpu=None, ledger=None, device: str = "gpu"
     res = launch(method, arms=["baseline", "null", "candidate"], points=[point], level_universe=case["universe"],
                  rollouts=rollouts or case["rollouts"], out=root, device=device, gpu=gpu, ledger=ledger)
     checks = [{"name": "worker_completed", "passed": res["returncode"] == 0,
-               "detail": {k: res[k] for k in ("run", "returncode", "wall_seconds")}}]
+               "detail": {k: res[k] for k in ("run", "returncode", "wall_seconds", "xla_flags")}}]
     if res["returncode"] != 0:
         return {"method": method, "tier": 2, "policy": KF.NAME, "passed": False, "checks": checks,
                 "root": str(root), "error": res["stderr_tail"]}
