@@ -49,7 +49,11 @@ class KinetixChild(unittest.TestCase):
         self.assertEqual(jax.device_get(jax.random.key_data(case.level_keys)).tobytes(),
                          jax.device_get(jax.random.key_data(want)).tobytes())
 
-    def test_null_materializes_guidance_level_batched(self):  # EC4 / B4 / R8
+    def _null_programs(self, case, g):
+        """The null's actual compiled calls per decision (repair 2): the naive program and the candidate program."""
+        return case.fns["naive"], case.fns["guided"](g, True)
+
+    def test_null_materializes_guidance_level_batched(self):  # EC4 / B4 / R8, repair-2 P2(c)
         import jax
         import jax.numpy as jnp
         from harnessstudio.backends.kinetix_rtc12 import runtime as RT
@@ -58,26 +62,54 @@ class KinetixChild(unittest.TestCase):
         g = RTCGuidance("exp", 5.0)
         obs = jnp.zeros((3, 2, 679), jnp.float32)
         prev = jnp.zeros((3, 2, 8, 6), jnp.float32)
+        _naive, shadow = self._null_programs(case, g)
         args = (case.level_keys, obs, prev, case.state_dicts, case.level_keys)
-        counts = {}
-        for eff in (True, False):
-            fn = case.fns["guided"](g, eff)
-            jaxpr = str(jax.make_jaxpr(fn)(*args))
-            hlo = fn.lower(*args).compile().as_text()
-            self.assertNotIn("callback", jaxpr)
-            self.assertIn("transpose", jaxpr)              # the VJP survives in the null
-            self.assertGreater(hlo.count("dot("), 0)
-            counts[eff] = jaxpr.count("dot_general")
-        # the null runs every candidate dot (guidance) plus the native batched forward
-        self.assertGreaterEqual(counts[False], counts[True])
-        print("R8_DOT_GENERAL", counts, file=sys.stderr)
+        jaxpr = str(jax.make_jaxpr(shadow)(*args))
+        hlo = shadow.lower(*args).compile().as_text()
+        self.assertNotIn("callback", jaxpr)
+        self.assertIn("transpose", jaxpr)                  # the null's shadow program keeps the VJP
+        self.assertGreater(hlo.count("dot("), 0)
+        out = shadow(*args)
+        self.assertEqual(len(out), 3)                      # (rng, chunk, guided stack): the stack is a jit output
+        with self.assertRaises(RuntimeError):              # the pre-repair-2 null program is retired (P1)
+            case.fns["guided"](g, False)
 
-    def test_null_cost_is_candidate_plus_baseline(self):  # A5 (review-postbuild-repair-1 R8_ruling)
-        """The null pays exactly the candidate's computation plus the baseline's batched forward (B4).
+    def test_null_calls_naive_and_candidate_shadow_only(self):  # repair-2 P2(a)
+        from harnessstudio.backends.kinetix_rtc12 import runtime as RT
+        from harnessstudio.backends.kinetix_rtc12 import worker as W
+        from harnessstudio.core import registry
+        case = RT.KinetixUniverseCase((self.LEVEL,), rollouts=2, inference_delay=1, execute_horizon=1)
+        fns = case.fns
+        orig_naive, orig_guided = fns["naive"], fns["guided"]
+        calls = []
 
-        Replaces the retired EC4 window 0.8 <= null/candidate <= 1.25, which contradicted B4 and failed at
-        1.476 / 1.493 (repair-1 build; kept on record in git history and child-tests.log). Binding part: the dot
-        identity in jaxpr and compiled HLO. Timing on a shared host is an indicative sanity check only.
+        def naive(*a):
+            calls.append("naive")
+            return orig_naive(*a)
+
+        def guided(sampler, effective):
+            calls.append(f"guided({bool(effective)})")
+            return orig_guided(sampler, effective)
+
+        fns["naive"], fns["guided"] = naive, guided
+        try:
+            rec, port, client = W.run_case(registry.get("rtc")[0], "null", case)
+        finally:
+            fns["naive"], fns["guided"] = orig_naive, orig_guided
+        decisions = rec["decisions"]
+        self.assertEqual(calls[0], "naive")                # warm start (protocol, every arm)
+        per_decision = calls[1:]
+        self.assertEqual(len(per_decision), 2 * decisions)
+        self.assertEqual(per_decision, ["naive", "guided(True)"] * decisions)
+        self.assertNotIn("guided(False)", calls)
+        self.assertEqual(len(client.guidance_sha256), decisions)
+
+    def test_null_cost_is_candidate_plus_baseline(self):  # A5 on the null's ACTUAL calls (repair-2 P2(b)); timing report-only (T1)
+        """null = baseline program + candidate program per decision, by construction (repair 2).
+
+        Binding: dots(null's naive call) + dots(null's shadow call) == dots(baseline) + dots(candidate), in jaxpr and
+        compiled HLO. The retired EC4 window FAILED at 1.476 / 1.493 (eb7721e5) and the A5 timing assertion at
+        1.294 (ba8fda55, a5/child-tests.log); timing is printed only.
         """
         import jax
         import jax.numpy as jnp
@@ -85,33 +117,34 @@ class KinetixChild(unittest.TestCase):
         from harnessstudio.backends.kinetix_rtc12 import runtime as RT
         from harnessstudio.methods.rtc import RTCGuidance
         g = RTCGuidance("exp", 5.0)
-        f_small = RT.KinetixUniverseCase((self.LEVEL,), rollouts=2, inference_delay=1, execute_horizon=1)
+        small = RT.KinetixUniverseCase((self.LEVEL,), rollouts=2, inference_delay=1, execute_horizon=1)
         obs2 = jnp.zeros((1, 2, 679), jnp.float32)
         prev2 = jnp.zeros((1, 2, 8, 6), jnp.float32)
-        fns = {"baseline": (f_small.fns["naive"], (f_small.level_keys, obs2, f_small.state_dicts, f_small.level_keys)),
-               "candidate": (f_small.fns["guided"](g, True), (f_small.level_keys, obs2, prev2, f_small.state_dicts, f_small.level_keys)),
-               "null": (f_small.fns["guided"](g, False), (f_small.level_keys, obs2, prev2, f_small.state_dicts, f_small.level_keys))}
-        jaxpr_dots, hlo_dots = {}, {}
-        for k, (fn, args) in fns.items():
-            jaxpr = str(jax.make_jaxpr(fn)(*args))
-            jaxpr_dots[k] = jaxpr.count("dot_general")
-            hlo_dots[k] = fn.lower(*args).compile().as_text().count(" dot(")
-            if k == "null":
-                self.assertIn("transpose", jaxpr)
-                self.assertNotIn("callback", jaxpr)
-        print("A5_DOTS", jaxpr_dots, hlo_dots, file=sys.stderr)
-        self.assertGreater(jaxpr_dots["baseline"], 0)
-        self.assertEqual(jaxpr_dots["null"], jaxpr_dots["candidate"] + jaxpr_dots["baseline"])
-        self.assertEqual(hlo_dots["null"], hlo_dots["candidate"] + hlo_dots["baseline"])
+        a_naive = (small.level_keys, obs2, small.state_dicts, small.level_keys)
+        a_guided = (small.level_keys, obs2, prev2, small.state_dicts, small.level_keys)
+        null_naive, null_shadow = self._null_programs(small, g)
+        programs = {"baseline": (small.fns["naive"], a_naive), "candidate": (small.fns["guided"](g, True), a_guided),
+                    "null_naive": (null_naive, a_naive), "null_shadow": (null_shadow, a_guided)}
+        jd, hd = {}, {}
+        for k, (fn, args) in programs.items():
+            jd[k] = str(jax.make_jaxpr(fn)(*args)).count("dot_general")
+            hd[k] = fn.lower(*args).compile().as_text().count(" dot(")
+        print("A5_DOTS", jd, hd, file=sys.stderr)
+        self.assertGreater(jd["baseline"], 0)
+        self.assertEqual(jd["null_naive"] + jd["null_shadow"], jd["baseline"] + jd["candidate"])
+        self.assertEqual(hd["null_naive"] + hd["null_shadow"], hd["baseline"] + hd["candidate"])
 
         case = RT.KinetixUniverseCase((self.LEVEL,), rollouts=64, inference_delay=1, execute_horizon=1)
         obs = jnp.asarray(np.random.default_rng(0).standard_normal((1, 64, 679)).astype(np.float32))
         prev = jnp.zeros((1, 64, 8, 6), jnp.float32)
         f = case.fns
-        calls = {"baseline": lambda: f["naive"](case.level_keys, obs, case.state_dicts, case.level_keys)[1],
-                 "null": lambda: f["guided"](g, False)(case.level_keys, obs, prev, case.state_dicts, case.level_keys)[1],
-                 "candidate": lambda: f["guided"](g, True)(case.level_keys, obs, prev, case.state_dicts, case.level_keys)[1]}
-        # Timing is REPORT-ONLY on this shared host (review-a5-tier2plan T1); the dot identity above is binding.
+        an = (case.level_keys, obs, case.state_dicts, case.level_keys)
+        ag = (case.level_keys, obs, prev, case.state_dicts, case.level_keys)
+
+        def null_call():
+            f["naive"](*an)[1].block_until_ready()
+            return f["guided"](g, True)(*ag)[1]
+        calls = {"baseline": lambda: f["naive"](*an)[1], "null": null_call, "candidate": lambda: f["guided"](g, True)(*ag)[1]}
         for fn in calls.values():
             fn().block_until_ready()                       # compile
         load_before = os.getloadavg()
@@ -144,6 +177,10 @@ class KinetixChild(unittest.TestCase):
             (cid,) = att
             self.assertEqual(att[cid]["null"]["M"], 2)
             res = json.loads((out / "results/null" / cid / "result.json").read_text())
+            cand = json.loads((out / "results/candidate" / cid / "result.json").read_text())
+            self.assertEqual(res["guidance_sha256"][0], cand["guidance_sha256"][0])   # shadow == candidate at decision 0 (P2d)
+            self.assertEqual(res["protocol"]["null_mode"], "baseline_program+candidate_shadow")
+            self.assertIsNone(res["protocol"]["jax_default_matmul_precision"])
             self.assertEqual(res["guidance_vjp_steps"], 5 * res["decisions"])
             self.assertEqual(len(res["guidance_sha256"]), res["decisions"])
             self.assertEqual(res["decisions"], 256)
