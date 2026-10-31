@@ -21,3 +21,11 @@ def config():
         "hs_harness_vla.controller:HarnessVLA",
         {"max_turns": 40, "max_tool_calls": 60, "image_scale": 2, "wrist_image": True, "history_turns": 8,
          "llm_retries": 2, "sam3_url": "http://127.0.0.1:8117", "max_tokens": 800}))
+
+
+def config_sol():
+    """harness-vla with OpenAI gpt-6.1-sol as the planner (reasoning model: larger completion cap)."""
+    return config_from_card(Path(__file__).with_name("paper_sol.yaml"), controller=ModuleRef(
+        "hs_harness_vla.controller:HarnessVLA",
+        {"max_turns": 40, "max_tool_calls": 60, "image_scale": 2, "wrist_image": True, "history_turns": 8,
+         "llm_retries": 2, "sam3_url": "http://127.0.0.1:8117", "max_tokens": 6000}))

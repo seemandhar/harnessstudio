@@ -269,3 +269,16 @@ here). No object poses reach the planner in RPent's perception-isolated mode eit
 - 04:35 PT: `pytest` 37 passed; tier 0 / tier 1 PASS on the final code. RPent reference run at case 11/20.
 - 05:40 PT: RPent reference run finished: 2/20 (port on the same 20 cases: baseline 5, candidate 5). RPent's VLA
   server stopped by its launcher; SAM3 server (:8117, GPU 7) stopped by me afterwards (restart command above).
+
+## Variant: gpt-6.1-sol planner (`harness-vla-sol`), added by the coordinator 2026-10-31 ~05:55 PT
+
+Question: how much of the gap to the paper is the planner? Same controller, prompts, primitives, perception and
+policy as `harness-vla` v2; only the planner operator changes to OpenAI `gpt-6.1-sol` (default temperature,
+reasoning model, completion cap 6000; fidelity `adapted`). Cost probe (2 Goal-S cases, not scored): about 40k
+prompt + 0.8k completion tokens and ~50 s per episode.
+
+**Predeclared before any scored run:** candidate arm on the same 100 cases as the subset above (Goal-T and
+Goal-S, 10 tasks x 5 episodes, 300-step horizon, seeded pi05_libero on :8106); null arm on the 20 episode-0
+cases (leak and compute check); baseline reused from `runs/subset_v2` (the baseline arm never runs the
+controller, so it is identical for both planners). Pairing via `scripts/merge_arms.py`. Budget cap: about $30 of
+OpenAI usage; stop if the running total projects above it.
