@@ -121,6 +121,7 @@ fallback).
 | `chunktrust-ahs` | ChunkTrust, arXiv:2609.39754v2 (adaptive horizon from flow velocity) | faithful | execution_monitoring | T1 + velocity readout |
 | `harness-vla` | Harness VLA, arXiv:2607.08448 (zero-shot; NRP qwen3-vl planner) | adapted | agentic_orchestration | T0 + chunk, LLM, SAM3 |
 | `harness-vla-sol` | same, gpt-6.1-sol planner | adapted | agentic_orchestration | T0 + chunk, LLM, SAM3 |
+| `harness-vla-sol-nocue` | same, planner never told that the goal is not reached (fair ablation) | adapted | agentic_orchestration | T0 + chunk, LLM, SAM3 |
 | `harness-vla-sol-fewshot` | same, few-shot task memory built by `hs prepare` | adapted | agentic_orchestration | T0 + chunk, LLM, SAM3 |
 | `scale` | SCALE, arXiv:2602.04208 (OpenVLA uncertainty-aware decoding) | faithful | uncertainty_compute | T1 + decoding_hooks (`openvla-libero-hs`) |
 | `fast-harness` | FastHarness, arXiv:2610.31427 (gpt-6.1-sol reviewer) | adapted | uncertainty_compute | T0 + chunk, LLM (`robodojo-pi05-hs`) |
