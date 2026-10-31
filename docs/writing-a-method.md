@@ -150,7 +150,11 @@ budgets: {policy_calls: 2000, llm_calls: 20, max_tokens: 512}
 Then `text = await ctx.tools["llm"](messages, operator="planner")`. Images:
 `from harnessstudio.tools.llm import image_data_url` and send
 `{"type": "image_url", "image_url": {"url": image_data_url(obs["images"]["agentview"])}}`.
-The model is pinned (checked against `/models`, no fallback; Astra models are refused). A spent budget
+The model is pinned (checked against `/models`, no fallback; Astra models are refused). OpenAI models
+(`base_url: openai`) get `max_completion_tokens` automatically; set `temperature: null` for models that
+only accept their default. `await ctx.tools["llm"](messages, return_usage=True)` returns `(text, usage)`;
+`ctx.tools["llm"].last_usage` holds the latest call's token counts. Slow LLM-reviewed methods: pass
+`--action-timeout 1800` to `hs eval` / `hs prepare` / tier 2. A spent budget
 ends control and the episode finishes natively. Tier 1 runs without network: the controller class must
 define `TIER1_LLM_RESPONSES = [...]` (scripted replies). If the operator replaces the paper's model,
 use `fidelity: adapted` and list the substitution.
@@ -175,6 +179,11 @@ class Preparer:
 hs prepare M --config dev.yaml --case-namespace dev-seed1007 --policy-url ... --contract libero --profile ... --out prep/
 hs eval M --config eval.yaml --case-namespace seed7 --prepared prep/ ...
 ```
+
+Chained development: `hs prepare M ... --prepared prep_round1/ --out prep_round2/` starts from the earlier
+artifacts (passed to `Preparer.build(records, out_dir, previous={name: path})` when it accepts `previous`) and
+keeps all earlier development cases forbidden. Separately run arms can be paired with
+`hs pair --arm baseline=DIR --arm null=DIR --arm candidate=DIR --out OUT`.
 
 `prepared.json` pins every artifact by sha256 and lists the development case keys; evaluation refuses
 those cases (they show up as invalid and drop out of pairing). A case key is

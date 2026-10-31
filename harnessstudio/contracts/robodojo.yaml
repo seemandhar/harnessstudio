@@ -1,0 +1,91 @@
+# allenai vla-eval RoboDojoBenchmark (benchmarks/robodojo/benchmark.py, make_obs), RoboDojo f57e1633
+# (vla-eval pins ee67a146), dual ARX-X5, Isaac Sim 5.1, env_cfg arx_x5.
+#
+# Observation (make_obs): images = {cam_head, cam_left_wrist, cam_right_wrist}, each HxWx3 uint8 RGB
+#   480x640 (env_cfg/camera/template.py: Gemini_345Lg head + d435 wrists, 640x480); task_description =
+#   RoboDojo's per-episode instruction (e.g. build_tower: "Build a tower using the wooden blocks and
+#   wooden boards."); state = 14-D float32 qpos [left arm 6, left gripper 1, right arm 6, right gripper 1]
+#   (send_state default true). RoboDojo's world ee poses are dropped by the adapter, so there is no
+#   eef_position: state is joints only. Measured 2026-10-31 (native build_tower smoke through hs eval):
+#   images{cam_head, cam_left_wrist, cam_right_wrist: (480, 640, 3) uint8}, state (14,) float32.
+# Action: 14-D ABSOLUTE joint targets, same layout as state (one action = one RoboDojo take_action,
+#   interpolated over the task's control substeps).
+# Gripper (eval_env.take_action_batch, Assets/Robots/x5/robot_config.yml): the command is clipped to
+#   [0, 1] and mapped linearly onto finger joint7 in gripper_scale [-0.01, 0.044] m (sign +1, joint8
+#   mimics), so 0 = closed (-0.01 squeezes past the URDF lower limit 0) and 1 = fully open (0.044 =
+#   URDF upper limit). Reset starts open (1). The state's gripper entries are the last COMMANDED value
+#   re-normalised to [0, 1] (obs_manager), not a measured finger position.
+# Horizons: each task's own self.step_lim (task/RoboDojo/tasks/<task>.py, set in its *Common.__init__
+#   after super().__init__(); no config overrides it). RoboDojo ends the episode itself at step_lim
+#   (is_episode_end), so the horizon is advisory for ctx.remaining. Keep the harness max_steps above it
+#   (vla-eval default 2000). Isaac's context is process-global: one task per benchmark process.
+name: robodojo
+public_keys: [images, state, task_description]
+instruction_key: task_description
+state_key: state
+action_dim: 14
+control_mode: joint_abs
+action_layout: {left_arm: [0, 6], left_gripper: [6, 7], right_arm: [7, 13], right_gripper: [13, 14]}
+gripper_open: 1.0
+gripper_close: 0.0
+default_horizon: 1900   # max step_lim over all tasks (fasten_screws)
+horizons:
+  # Generalization (12, plus their _random variants)
+  stack_bowls: 800
+  stack_bowls_random: 800
+  push_T: 600
+  push_T_random: 600
+  pack_objects_into_box: 1300
+  pack_objects_into_box_random: 1300
+  fold_clothes: 500
+  fold_clothes_random: 500
+  hang_mugs: 800
+  hang_mugs_random: 800
+  sweep_blocks: 1000
+  sweep_blocks_random: 1000
+  pour_liquid_into_cup: 400
+  pour_liquid_into_cup_random: 400
+  make_toast: 1400
+  make_toast_random: 1400
+  arrange_largest_number: 1050
+  arrange_largest_number_random: 1050
+  sort_nesting_dolls_by_size: 1050
+  sort_nesting_dolls_by_size_random: 1050
+  store_laptop_and_headphones: 800
+  store_laptop_and_headphones_random: 800
+  stack_blocks: 550
+  stack_blocks_random: 550
+  # Open (8)
+  align_blocks: 200
+  solve_equation: 300
+  stack_blocks_by_language: 400
+  general_pickup: 200
+  classify_objects_by_language: 1100
+  pick_from_conveyor_by_image: 700
+  store_tools_in_toolbox: 900
+  pour_by_language: 800
+  # Memory (6)
+  cover_blocks: 800
+  match_and_pick_from_conveyor: 700
+  swap_T: 400
+  press_by_number: 700
+  swap_blocks: 700
+  imitate_sorting_sequence: 1600
+  # Precision (8)
+  fasten_screws: 1900
+  insert_tubes: 500
+  plug_in_charger: 400
+  pour_balls_into_vase: 600
+  play_Xylophone: 500
+  deposit_coin: 300
+  insert_key: 300
+  build_tower: 1050
+  # Long-Horizon (8)
+  put_bottles_into_dustbin: 700
+  classify_objects: 1100
+  fill_pen_holder: 1100
+  fill_egg_holder: 700
+  organize_table: 1000
+  play_stacking_toy: 1200
+  make_kong: 600
+  play_tic_tac_toe: 1100

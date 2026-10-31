@@ -50,9 +50,10 @@ class OperatorPin:
     base_url: str
     api_key_env: str
     original_model: str = ""     # the paper's model, kept for provenance when substituted
-    temperature: float = 0.0
+    temperature: Optional[float] = 0.0   # None = omit (some models accept only their default)
     seed: Optional[int] = None
     extra_body: Mapping[str, Any] = field(default_factory=dict)
+    token_param: Optional[str] = None    # "max_tokens" | "max_completion_tokens"; None = auto by endpoint
 
     def __post_init__(self):
         if "astra" in self.model.lower():
@@ -62,6 +63,8 @@ class OperatorPin:
                 raise RegistrationError("Operators need a name, model, base_url and api_key_env")
         if not str(self.api_key_env).isidentifier():
             raise RegistrationError("api_key_env must name an environment variable")
+        if self.token_param not in (None, "max_tokens", "max_completion_tokens"):
+            raise RegistrationError("token_param must be max_tokens or max_completion_tokens")
 
 
 @dataclass(frozen=True)

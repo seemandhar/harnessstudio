@@ -40,12 +40,67 @@ env budget): zero-shot Goal-T 79.0%, Goal-S 31.0% (Table 5).
 | Benchmark | `bench_ext/hs_harness_vla_bench.py:LIBEROProRGBDInstruction` (container side, Python 3.8): `harnessstudio.benchmarks.libero_rgbd._RGBDMixin` over `harnessstudio.benchmarks.libero_pro_instructions.LIBEROProBDDLInstruction`, depth + calibration for agentview and wrist |
 | Contract | `hs_harness_vla/contracts/libero_pro_rgbd.yaml` (passed to `--contract` by path) |
 | Configs | `methods/harness_vla/configs/libero_pro_goal_{task,swap}.yaml`: LIBERO-Pro image, GPU 7 EGL rendering, HF LIBERO-Pro data mounts, repo mounted at `/hs`, `server.timeout: 900` |
-| Planner | NRP `qwen3-vl` (served `Qwen/Qwen3.8-Flash-Next-FP8`), `enable_thinking: false`, temperature 0, max 800 output tokens per call; picked after an image probe on a LIBERO frame (kimi: reasoning ate the budget, 80 s, empty content; gemma-vl: 150 s timeout; gemma4-12b: empty content; glm-5: HTTP 400 on images) |
+| Planner | NRP `qwen3-vl` (served `Qwen/Qwen3.8-Flash-Next-FP8`), `enable_thinking: false`, v2 sampling temperature 0.7 / top_p 0.8 / top_k 20 / seed 7 (v1: temperature 0), max 800 output tokens per call; picked after an image probe on a LIBERO frame (kimi: reasoning ate the budget, 80 s, empty content; gemma-vl: 150 s timeout; gemma4-12b: empty content; glm-5: HTTP 400 on images) |
 | Budgets / episode | policy 400 samples, LLM 45 calls, 800 tokens/call, SAM3 + back-projection 60 calls |
+| Frozen code for the scored run | v2: method fingerprint `90318ab47e08ad601c2569df3f209016d6c9523cb7ba10362c805fb365850515`, file hashes and a copy of `hs_harness_vla/`, `bench_ext/`, `configs/` in `hs2-gpu/harness_vla/runs/subset_v2/code_{sha256.txt,snapshot/}` (v1 `25a3b6ee...` in `runs/subset_v1/`, stopped) |
+
+Commands (all from `/home/sejain/research/cvpr27/harnessstudio-v2`; run dir `R=/home/sejain/research/cvpr27/hs2-gpu/harness_vla`):
+
+```bash
+# SAM3 server (RPent's), GPU 7
+cd /home/sejain/research/cvpr27/RPent && CUDA_VISIBLE_DEVICES=7 HF_HUB_OFFLINE=1 \
+  SAM3_CHECKPOINT_PATH=/bigdata/sejain/frozen-harness-bench/models/rpent-sam3/sam3.pt \
+  /bigdata/sejain/frozen-harness-bench/venvs/rpent-libero-pro-20261020/bin/python \
+  -m rpent.robots.components.sam3_server --transport http --host 127.0.0.1 --port 8117
+# tiers
+.venv/bin/hs verify harness-vla --tier 0 && .venv/bin/hs verify harness-vla
+.venv/bin/hs verify harness-vla --tier 2 --config methods/harness_vla/configs/libero_pro_goal_task.yaml \
+  --policy-url ws://127.0.0.1:8106 --contract methods/harness_vla/hs_harness_vla/contracts/libero_pro_rgbd.yaml \
+  --profile pi05-libero-hs --out $R/runs/t2_final --benchmark-overrides '{"max_tasks": 2, "episodes_per_task": 1}'
+# scored subset: one process per (cell, arm), e.g. Goal-S candidate
+.venv/bin/hs eval harness-vla --arms candidate --config methods/harness_vla/configs/libero_pro_goal_swap.yaml \
+  --policy-url ws://127.0.0.1:8106 --contract methods/harness_vla/hs_harness_vla/contracts/libero_pro_rgbd.yaml \
+  --profile pi05-libero-hs --out $R/runs/subset_v2/goal_swap_candidate --port 8253 \
+  --benchmark-overrides '{"episodes_per_task": 5}'
+# pairing (harnessstudio.eval.pairing.summarize over the six record files) and report
+.venv/bin/python methods/harness_vla/scripts/merge_arms.py $R/runs/subset_v2/merged \
+  baseline=$R/runs/subset_v1/goal_task_baseline null=$R/runs/subset_v2/goal_task_null candidate=$R/runs/subset_v2/goal_task_candidate \
+  baseline=$R/runs/subset_v1/goal_swap_baseline null=$R/runs/subset_v2/goal_swap_null candidate=$R/runs/subset_v2/goal_swap_candidate
+.venv/bin/hs report $R/runs/subset_v2/merged
+```
+
+Arms run as separate processes (all six at once) so the night fits: the policy server is seeded (T1), so a case's
+native stream does not depend on which process or order it runs in, and pairing is by case key exactly as in
+`hs eval`.
 
 ## Results
 
 (pending)
+
+## RPent reference run (adapted, unmodified authors' code)
+
+Launcher: `hs2-gpu/harness_vla/rpent_ref/launch_rpent_ref.sh` (RPent @ 945682a run unmodified; outputs in
+`rpent_ref/episodes/<suite>-t<task>-s0/`, `result.json` per case scored from `states.json`, i.e. any
+`terminated`). Cases: the 20 episode-0 cases of the subset, interleaved T/S, one at a time.
+
+| | |
+|---|---|
+| Planner | `--planner api --model openai-chat:qwen3-vl --base-url https://ellm.nrp-nautilus.io/v1 --reasoning-effort none`, plus a request shim (`rpent_ref/rpent_no_think.py`) adding `enable_thinking: false` and temperature 0, so the operator matches the port; `--max-turns 40` |
+| Policy | RPent's own VLA server with the paper's RLinf `pi05_libero130` fullshot checkpoint, GPU 7 :8118 |
+| Perception | the same SAM3 server (:8117); RPent's own env server with 1024 px re-renders |
+| Horizon | `--max-episode-steps 300` (official); RPent settles 15 steps before the episode, vla-eval 10 |
+| Init states | RPent `--seed 0` = init state 0 = vla-eval episode_idx 0; task order and BDDL/init files are byte-identical to the HF LIBERO-Pro copy used by vla-eval (checked by sha256) |
+| Zero-shot? | memory dirs empty (`--memory-profile local` with a stub empty `MEMORY.md`), no exploration, no reset. **Not fully zero-shot:** RPent has no profile without `PROVEN_LEVERS` (seed-0 lessons, mostly libero_10), KEY HYPERPARAMETERS and the 80-task perception sweep text, so those memory-derived prompt sections remain; the three guides are read as in stock RPent |
+
+Comparison with the port is by case outcome only (different policy checkpoint and env server, so not exactly
+paired).
+
+Behaviour at the official horizon: when the 300 steps are used up, robosuite raises "executing action in terminated
+episode" inside RPent's env server, the RPC pipe breaks and the RPent planner reports an "infra crash". This is
+the horizon, not an infrastructure fault; the case is scored from `states.json` (no `terminated` before the
+horizon = failure), which is correct. RPent was built for a 10000-step budget and never hits this normally.
+Per case it used ~1.2-1.5 M input tokens (the RPent system prompt is ~33k characters plus guides and three
+images per state) and ~5-6 min.
 
 ## What is substituted
 
@@ -107,3 +162,20 @@ here). No object poses reach the planner in RPent's perception-isolated mode eit
   (loop guard); the open hand caught the cabinet top (hand-size sentence, travel-high rule); the planner held the
   bottle exactly above the cabinet top but misread the wrist image and moved away (controller-kept localization
   table with gripper offsets); release height rule generalized to the held object's hang.
+- 03:13 PT, last development check before freezing (original libero_goal, 10 tasks x ep 0, unscored, final code):
+  candidate 5/10, baseline 10/10 (pi0.5 is trained on exactly these tasks; the planner's staging can only get in
+  its way there). Failures: drawers (planner drives into the cabinet), plate push, bowl->plate, bottle->rack.
+- 03:14 PT: code frozen (hashes above); scored subset launched: 6 processes (Goal-T/Goal-S x baseline/null/candidate).
+- 03:15 PT: RPent adapted reference run launched (see "RPent reference run" below).
+- 03:23 PT: **scored v1 null/candidate arms stopped** after 2-8 episodes each (records kept in `runs/subset_v1/`):
+  with greedy decoding (temperature 0) the planner fell into deterministic loops, e.g. the same `back_project`
+  29 times in a row (Goal-S t0 ep0) or the same refused `move_to` 17 times (Goal-T t0 ep1), spending its whole
+  turn budget at step 0/90. Qwen's model card warns against greedy decoding for exactly this. v2 (method version 2,
+  fingerprint `90318ab4...`): Qwen's recommended non-thinking sampling (temperature 0.7, top_p 0.8, top_k 20, request
+  seed 7) and an identical-reply guard (a reply repeating the previous commands is not executed and is kept out of
+  the context, with a note). Checked on 2 unscored dev cases, then relaunched at 03:27 PT into `runs/subset_v2/`.
+  The baseline arms were not stopped: they never run the controller, so their records are the same for v1 and v2.
+  The RPent reference run was restarted with the same sampling (its first case had not finished).
+- 03:33 PT: tier 2 re-run with the frozen v2 code (`runs/t2_v2`, Goal-T tasks 0-1, ep 0): **PASS**, all episodes
+  valid, null vs baseline 2 M / 0 R / 0 X (baseline 0/2, null 0/2, candidate 0/2). (v1 code: `runs/t2_final`, also
+  PASS, 2 M.) Baseline arms finished: Goal-T 8/50, Goal-S 15/50.

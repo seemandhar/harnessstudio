@@ -1,0 +1,8 @@
+# harnessstudio.policies.robodojo_pi05_hs (HarnessPolicyMixin over vla-eval's RoboDojo pi0.5 server, released
+# RoboDojo-sim-arx_x5-joint-0/59999 checkpoint, config pi05_base_aloha_full_sim_arx-x5_seed_0): seeded,
+# isolated full [50, 14] chunks of absolute joint positions. Natively the server executes the whole chunk
+# open-loop (chunk_size defaults to the model's action_horizon = 50, Pi0Config default; upstream
+# eval_one_episode), so execute_horizon is 50.
+capabilities: [act, chunk, seeded_sampling, isolated_streams]
+chunking: harness
+execute_horizon: 50

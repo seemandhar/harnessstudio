@@ -1,3 +1,4 @@
-# harnessstudio.policy_ext.fake.FakePolicyServer(seeded=True): seeded chunks + a synthetic velocity readout
-capabilities: [act, chunk, seeded_sampling, isolated_streams, velocity_readout]
+# harnessstudio.policy_ext.fake.FakePolicyServer(seeded=True): seeded chunks + a synthetic velocity readout.
+# It accepts (and ignores) samplers, so decoding/denoising samplers can be checked for registration and null parity.
+capabilities: [act, chunk, seeded_sampling, isolated_streams, velocity_readout, decoding_hooks]
 chunking: harness

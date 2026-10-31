@@ -80,16 +80,20 @@ def _cmd_prepare(args) -> int:
               "development run uses a different benchmark seed that really changes the scenes.", file=sys.stderr)
     out = Path(args.out)
     collect_arm, keys = preparer_settings(config)
-    args.prepared = None
+    previous = None
+    if args.prepared:  # chained development: start from earlier artifacts, keep their cases forbidden
+        from .eval.prepare import load_prepared
+        _, _, previous = load_prepared(args.prepared, config)
     server = _server(args, collect_arm, development=True, experience_keys=keys)
     overrides = json.loads(args.benchmark_overrides) if args.benchmark_overrides else None
     with serve_background(server, host=args.host, port=args.port) as handle:
         url = f"ws://{args.connect_host}:{handle.port}"
         print(f"[hs prepare] arm={collect_arm} harness={url} policy={args.policy_url}", flush=True)
-        _run_benchmark(args.config, url, out / "vla_eval", overrides, args.pull, args.no_docker)
+        _run_benchmark(_with_timeout(args.config, getattr(args, "action_timeout", None)), url,
+                       out / "vla_eval", overrides, args.pull, args.no_docker)
         server.wait_idle()
     (out / "dev_records.jsonl").write_text("".join(json.dumps(r, default=str) + "\n" for r in server.records))
-    prepared = build_prepared(config, server.records, out)
+    prepared = build_prepared(config, server.records, out, previous=previous)
     print(json.dumps({k: prepared[k] for k in ("artifacts", "dev_episodes", "dev_valid", "dev_successes")}, indent=2))
     return 0
 
@@ -106,6 +110,16 @@ def _cmd_eval(args) -> int:
     return 0
 
 
+def _with_timeout(config, timeout):
+    """The benchmark's per-action timeout (vla-eval server.timeout); slow LLM-reviewed methods need more."""
+    if not timeout:
+        return config
+    from vla_eval.cli.config_loader import load_config
+    cfg = load_config(str(config)) if not isinstance(config, dict) else dict(config)
+    cfg.setdefault("server", {})["timeout"] = float(timeout)
+    return cfg
+
+
 def _run_benchmark(config, url: str, output_dir: Path, overrides, pull: bool, no_docker: bool) -> None:
     """One benchmark run per arm, always in a fresh process: Docker runs get their own container, and
     in-process (--no-docker) runs get a child interpreter, because some simulators' resets depend on what
@@ -118,7 +132,8 @@ def _run_benchmark(config, url: str, output_dir: Path, overrides, pull: bool, no
     code = ("import json, sys; from vla_eval.api import run; a = json.loads(sys.argv[1]); "
             "run(a['config'], server_url=a['url'], output_dir=a['out'], benchmark_overrides=a['overrides'], "
             "docker=False)")
-    payload = json.dumps({"config": str(config), "url": url, "out": str(output_dir), "overrides": overrides})
+    payload = json.dumps({"config": config if isinstance(config, dict) else str(config), "url": url,
+                          "out": str(output_dir), "overrides": overrides})
     proc = subprocess.run([sys.executable, "-c", code, payload])
     if proc.returncode != 0:
         raise RuntimeError(f"benchmark run failed with exit code {proc.returncode}")
@@ -137,7 +152,8 @@ def _run_arms(args) -> dict:
         with serve_background(server, host=args.host, port=args.port) as handle:
             url = f"ws://{args.connect_host}:{handle.port}"
             print(f"[hs eval] arm={arm} harness={url} policy={args.policy_url}", flush=True)
-            _run_benchmark(args.config, url, out / arm / "vla_eval", overrides, args.pull, args.no_docker)
+            _run_benchmark(_with_timeout(args.config, getattr(args, "action_timeout", None)), url,
+                           out / arm / "vla_eval", overrides, args.pull, args.no_docker)
             server.wait_idle()
         records[arm] = server.records
         (out / arm / "records.jsonl").write_text("".join(json.dumps(r, default=str) + "\n" for r in server.records))
@@ -169,6 +185,22 @@ def _tier2(args) -> int:
         print(f"  {arm}: {v['successes']}/{v['episodes']} success, {v['policy_samples']} policy samples, "
               f"{v['wall_seconds']} s")
     return 0 if ok else 1
+
+
+def _cmd_pair(args) -> int:
+    """Pair arms that were run separately (e.g. on different policy servers): ARM=DIR with DIR/records.jsonl."""
+    from .eval.pairing import summarize
+    records = {}
+    for spec in args.arm:
+        arm, _, d = spec.partition("=")
+        path = Path(d) / "records.jsonl" if Path(d).is_dir() else Path(d)
+        records[arm] = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+    summary = summarize(records)
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "summary.json").write_text(json.dumps(summary, indent=2))
+    args.dir = str(out)
+    return _cmd_report(args)
 
 
 def _cmd_report(args) -> int:
@@ -221,6 +253,7 @@ def main(argv=None) -> int:
     p.add_argument("--namespace", default="hs")
     p.add_argument("--case-namespace", default="")
     p.add_argument("--prepared", default=None)
+    p.add_argument("--action-timeout", type=float, default=None)
     p.add_argument("--host", default="0.0.0.0")
     p.add_argument("--port", type=int, default=0)
     p.add_argument("--connect-host", default="localhost")
@@ -228,6 +261,11 @@ def main(argv=None) -> int:
     p.add_argument("--pull", action="store_true")
     p.add_argument("--no-docker", action="store_true")
     p.set_defaults(fn=_cmd_verify)
+
+    p = sub.add_parser("pair", help="pair separately run arms: --arm baseline=DIR --arm null=DIR ...")
+    p.add_argument("--arm", action="append", required=True, help="ARM=DIR (DIR holds records.jsonl)")
+    p.add_argument("--out", required=True)
+    p.set_defaults(fn=_cmd_pair)
 
     p = sub.add_parser("report", help="print the paired summary of an hs eval directory")
     p.add_argument("dir")
@@ -245,6 +283,8 @@ def main(argv=None) -> int:
         p.add_argument("--case-namespace", default="",
                        help="part of every case key; use one per benchmark seed/split (e.g. seed7)")
         p.add_argument("--prepared", default=None, help="prepared.json (or its directory) from hs prepare")
+        p.add_argument("--action-timeout", type=float, default=None,
+                       help="benchmark per-action timeout in s (vla-eval server.timeout); raise for LLM-heavy methods")
 
     p = sub.add_parser("serve", help="run one arm's harness server (blocking)")
     serving(p)

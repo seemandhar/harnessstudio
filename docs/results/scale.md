@@ -90,7 +90,24 @@ actions were identical in that pass too.) The official `modeling_prismatic.py` d
 identical, so the decoder is checked on exactly the computation the official code runs (with the server's
 attention kernel). Fidelity stays `faithful`.
 
+**Tier 2** (2 real LIBERO-10 cases: tasks 0 and 1, episode 0; all three arms on server 8115):
+
+```bash
+cd /home/sejain/research/cvpr27/vla-eval-v0.8.0
+hs verify scale --tier 2 --config /home/sejain/research/cvpr27/hs2-gpu/configs/libero10_scale.yaml \
+  --policy-url ws://127.0.0.1:8115 --contract libero --profile openvla-libero-hs \
+  --out /home/sejain/research/cvpr27/hs2-gpu/results/scale/tier2 --benchmark-overrides '{"max_tasks": 2, "episodes_per_task": 1}'
+```
+
+`tier 2: scale: PASS`: all episodes valid; null vs baseline **2 M / 0 R / 0 X**; baseline 1/2, null 1/2, candidate 2/2
+(SCALE solved task 0 episode 0, which greedy fails at the 520-step horizon). Wall 1304 s for 6 episodes (the GPU
+was shared with a second OpenVLA server). Not part of the subset numbers below.
+
 ## Results
+
+Subset runs (started 03:05 PT): candidate on server 8116; baseline then null (tasks 0-2) on server 8115; null
+(tasks 3-9) on 8116 after the candidate. Both servers are the same file, config and checkpoint on GPU 5, so the
+null-vs-baseline attribution also checks cross-process determinism for tasks 3-9.
 
 (pending)
 

@@ -1,0 +1,7 @@
+# harnessstudio.policies.openvla_hs (HarnessPolicyMixin over vla-eval's OpenVLA server, per-suite LIBERO
+# fine-tunes): one 7-D action per request (OpenVLA has no chunks; natively it runs every step). Seeded
+# requests without a sampler decode greedily (= the native server); with a sampler they run that
+# server-side decoding hook (e.g. hs_scale.decoder:ScaleDecoder) with one torch generator per seed.
+capabilities: [act, chunk, seeded_sampling, isolated_streams, decoding_hooks]
+chunking: harness
+execute_horizon: 1

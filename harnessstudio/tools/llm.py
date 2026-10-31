@@ -92,8 +92,9 @@ class ScriptedOperator(Operator):
 class OpenAICompatibleOperator(Operator):
     _verified: dict = {}
 
-    def __init__(self, model: str, base_url: str, api_key_env: str, temperature: float = 0.0,
-                 timeout: float = 120.0, seed: Optional[int] = None, extra_body: Optional[Mapping] = None) -> None:
+    def __init__(self, model: str, base_url: str, api_key_env: str, temperature: Optional[float] = 0.0,
+                 timeout: float = 120.0, seed: Optional[int] = None, extra_body: Optional[Mapping] = None,
+                 token_param: Optional[str] = None) -> None:
         if any(w in model.lower() for w in FORBIDDEN_MODEL_WORDS):
             raise RegistrationError(f"Model {model!r} is not permitted")
         self.model = model
@@ -102,6 +103,9 @@ class OpenAICompatibleOperator(Operator):
             raise RegistrationError("base_url must be https, a local server, or a preset: " + ", ".join(PRESETS))
         self.api_key_env, self.temperature, self.timeout, self.seed = api_key_env, temperature, timeout, seed
         self.extra_body = dict(extra_body or {})
+        # OpenAI's newer models reject max_tokens and want max_completion_tokens.
+        self.token_param = token_param or ("max_completion_tokens" if "api.openai.com" in self.base_url
+                                           else "max_tokens")
 
     def _request(self, path: str, payload: Optional[dict] = None) -> dict:
         key = os.environ.get(self.api_key_env, "")
@@ -126,8 +130,9 @@ class OpenAICompatibleOperator(Operator):
 
     def complete(self, messages, max_tokens):
         self.verify()
-        payload = {"model": self.model, "messages": messages, "max_tokens": max_tokens,
-                   "temperature": self.temperature}
+        payload = {"model": self.model, "messages": messages, self.token_param: max_tokens}
+        if self.temperature is not None:
+            payload["temperature"] = self.temperature
         if self.seed is not None:
             payload["seed"] = int(self.seed)
         for k, v in self.extra_body.items():
@@ -144,9 +149,10 @@ class LLMTool:
     def __init__(self, ctx, operators: Mapping[str, Operator], max_calls: int, max_tokens: int) -> None:
         self._ctx, self._ops, self.max_calls, self.max_tokens = ctx, dict(operators), max_calls, max_tokens
         self.log: list = []
+        self.last_usage: dict = {}     # token usage of the most recent call (for cost-aware scheduling)
 
     async def __call__(self, messages: Sequence[Mapping[str, Any]], operator: Optional[str] = None,
-                       max_tokens: Optional[int] = None) -> str:
+                       max_tokens: Optional[int] = None, return_usage: bool = False):
         acc = self._ctx.accounting
         if acc.llm_calls >= self.max_calls:
             raise BudgetExceeded(f"llm budget of {self.max_calls} calls per episode is spent")
@@ -162,7 +168,8 @@ class LLMTool:
         request = json.dumps(text_only(messages), sort_keys=True, ensure_ascii=False)
         self._ctx._log("llm", operator=name, request_sha256=_sha(request), response=text,
                        seconds=round(elapsed, 3), usage=dict(usage))
-        return text
+        self.last_usage = dict(usage)
+        return (text, dict(usage)) if return_usage else text
 
 
 def build_operators(pins, scripted: Optional[Sequence[str]] = None) -> dict[str, Operator]:
@@ -170,4 +177,5 @@ def build_operators(pins, scripted: Optional[Sequence[str]] = None) -> dict[str,
     if scripted is not None:
         return {pin.name: ScriptedOperator(scripted) for pin in pins} or {"llm": ScriptedOperator(scripted)}
     return {pin.name: OpenAICompatibleOperator(pin.model, pin.base_url, pin.api_key_env, pin.temperature,
-                                               seed=pin.seed, extra_body=pin.extra_body) for pin in pins}
+                                               seed=pin.seed, extra_body=pin.extra_body,
+                                               token_param=getattr(pin, "token_param", None)) for pin in pins}

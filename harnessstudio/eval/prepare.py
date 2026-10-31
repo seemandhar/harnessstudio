@@ -29,14 +29,25 @@ def _sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def build_prepared(config: MethodConfig, records: list[dict], out_dir: Path) -> dict:
-    """Call the method's Preparer on development records and pin what it writes."""
+def build_prepared(config: MethodConfig, records: list[dict], out_dir: Path,
+                   previous: Optional[dict] = None) -> dict:
+    """Call the method's Preparer on development records and pin what it writes.
+
+    previous: the metadata of an earlier prepared.json when development is chained (hs prepare --prepared):
+    its artifacts are passed to Preparer.build(..., previous=...) if the Preparer accepts that argument, and
+    its development cases stay forbidden."""
+    import inspect
     if config.prepare is None:
         raise RegistrationError(f"{config.name} has no prepare stage")
     preparer = config.prepare.build()
     art_dir = Path(out_dir) / "artifacts"
     art_dir.mkdir(parents=True, exist_ok=True)
-    written = preparer.build([r for r in records if r.get("valid")], art_dir)
+    valid = [r for r in records if r.get("valid")]
+    if previous is not None and "previous" in inspect.signature(preparer.build).parameters:
+        prev_artifacts = {a["name"]: a["path"] for a in previous.get("artifacts", [])}
+        written = preparer.build(valid, art_dir, previous=prev_artifacts)
+    else:
+        written = preparer.build(valid, art_dir)
     artifacts = []
     for name, filename in sorted(written.items()):
         path = (art_dir / filename).resolve()
@@ -46,7 +57,9 @@ def build_prepared(config: MethodConfig, records: list[dict], out_dir: Path) -> 
     prepared = {
         "method": config.name, "method_fingerprint": config.fingerprint(), "created": time.time(),
         "artifacts": artifacts,
-        "dev_cases": sorted({(r["benchmark"], r["task"], r["episode_idx"]) for r in records}),
+        "dev_cases": sorted({(r["benchmark"], r["task"], r["episode_idx"]) for r in records}
+                            | {tuple(c) for c in (previous or {}).get("dev_cases", [])}),
+        "chained_from": (previous or {}).get("created"),
         "dev_episodes": len(records), "dev_valid": sum(bool(r.get("valid")) for r in records),
         "dev_successes": sum(bool(r.get("success")) for r in records),
     }

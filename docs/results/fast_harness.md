@@ -20,7 +20,17 @@ Status: **in progress** (overnight run, 2026-10-31). This document is updated as
    to the trace, so methods that schedule on token cost cannot read it. Returning `(text, usage)` optionally, or
    exposing the last usage, would help.
 4. **Long synchronous LLM steps:** the benchmark waits for every action while a method reviews (sync mode). The
-   vla-eval client action timeout must be raised in the run config (set in `methods/fast_harness/configs/`).
+   vla-eval client action timeout must be raised in the run config (`server.timeout: 1800` in
+   `methods/fast_harness/configs/`).
+5. **Action bounds in contracts (nice to have):** RoboDojo clips gripper commands to [0, 1] inside `take_action`; a
+   contract field for per-dimension clip bounds would let methods (and the framework) see the executed command instead
+   of each method re-deriving it (the controller does this for its proposals, see smoke attempt 1 below).
+6. **RoboDojo native runs (infrastructure, outside the core):** vla-eval 0.8.0's RoboDojo adapter targets RoboDojo
+   ee67a146; with the local f57e1633 checkout it misses that commit's render-sync Kit settings (first `get_obs`
+   segfault on a cold material cache), and Isaac segfaults at interpreter teardown (exit 139), which `hs eval
+   --no-docker` treats as a failed arm. Both are handled by an opt-in hook in the overlay venv
+   (`hs2_isaac_kit_args.{pth,py}`, `HS2_ISAAC_KIT_ARGS`, `HS2_ISAAC_FAST_EXIT=1`). A RoboDojo benchmark profile in the
+   core (or upstream fixes) should replace it.
 
 ## What was ported
 
@@ -78,11 +88,36 @@ and force the next review (the paper aborts the episode except in its degraded f
 - `hs verify fast-harness` (tier 1, fake stack, scripted reviewer): PASS (prepare builds a pinned artifact,
   development cases refused, every arm valid, shadow null reproduces baseline actions, deterministic, case-order
   independent, policy budget respected, clean import).
+- Reference code: the original's 196 unit tests pass and its offline demo reproduces the README table exactly
+  (adaptive teacher calls 26, 15, 14, 11, 13, 12 vs 37 all-review).
+- Port equivalence (`methods/fast_harness/tools/check_port.py <fast-harness clone> 300`): the ported memory, scheduler
+  and recovery state machine against the original code on 300 randomized operation sequences (memory updates, stage
+  matching, review decisions under every gating flag, intervals, recovery transitions incl. raised errors, artifact
+  round trip): **198,542 checks, 0 mismatches**.
 - RoboDojo-path CPU check (synthetic 14-D, 3 x 480x640 cameras, scripted reviewer): FK features, gripper
   diagnostics, an `edit` takeover (IK error ~1e-5), recovery local -> normal, error-memory reviews, schema-reject ->
   fallback all exercised; episode valid.
 - Reviewer probe (gpt-6.1-sol, strict schema, 6 synthetic 640x480 images + request JSON): ~5.7k prompt + ~0.8k
   completion tokens (~110 reasoning), 12 s per review; output parses and validates.
+- Infrastructure (built tonight): pi0.5 T1 server `harnessstudio/policies/robodojo_pi05_hs.py` + profile
+  `robodojo-pi05-hs` (seeded, bitwise-deterministic incl. after restart, native action identical to the stock vla-eval
+  server, `[50, 14]` chunks, ~0.35 s per sample, 17.4 GB on GPU 4); contract `harnessstudio/contracts/robodojo.yaml`;
+  native RoboDojo through `hs eval --no-docker` from an overlay venv on the existing Isaac Sim 5.1 env
+  (`/bigdata/sejain/hs2-cache/envs/hs2-robodojo`, env script `hs2_robodojo_env.sh`: one-GPU device shim because
+  Isaac's Vulkan opens every GPU, RoboDojo f57e1633's render-sync Kit settings, exit-status hook for Isaac's teardown
+  segfault). `hs eval identity` with pi0.5 on build_tower: valid, ~99 steps/min.
+- Real smoke, attempt 1 (60 steps, cold candidate, gpt-6.1-sol): valid episode, but 13 of 15 chunks were reviewer `eef`
+  takeovers. Cause: pi0.5's gripper outputs overshoot [0, 1] slightly; the ported FastHarness validator *blocks* such
+  proposals, a blocked proposal forbids student/edit mode, so the reviewer was forced into `eef` and had to call the
+  intent "misaligned". RoboDojo clips every gripper command to [0, 1] itself (`src/eval_client/eval_env.py:389`), so
+  the controller now clips the proposal the same way (no change to what executes; the raw range is kept in the
+  proposal diagnostics). Also: an empty / truncated completion (one call hit the 8000-token cap after 74 s) now counts
+  as an envelope rejection and is retried; the per-call cap is 4096 (FastHarness's default `max_tokens`). Kept at
+  `/bigdata/sejain/hs2-cache/robodojo/runs/fh_smoke.attempt1_blocked_grippers`. Cost: 31 calls, 252k prompt / 34k
+  completion tokens for 60 steps (~8.5k prompt tokens per review).
+- Real smoke, attempt 2 (same 60 steps after the fix): valid; 4 chunks x 15 steps, 4 reviews, 0 takeovers, all
+  `student` / `aligned` with grounded evidence (EEF deltas, wrist views); 27.6k prompt + 3.0k completion tokens
+  (~6.9k prompt per review, 9-12 s per review); 1.5 min wall.
 - Extra fake-stack check (cold vs warm): with an artifact from 6 development episodes the warm controller loads it
   (`memory_source=artifact`) and takes zero-call fast-path chunks: 3 LLM calls per 10-chunk episode vs 10 cold.
 
