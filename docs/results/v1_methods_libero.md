@@ -15,4 +15,15 @@ reproductions (medoid-bon and chunk-interrupt are components of larger papers; A
 
 ## Results
 
-(pending)
+### AAC, LIBERO-10 episode 0 (10 cases)
+
+All three arms 10/10: pi0.5 is at ceiling on standard LIBERO-10 episode 0, so an adaptive-horizon executor has
+no headroom here. Null vs baseline 9 M / 1 R / 0 X (the R: observations diverged at step 36 before any action
+did). Policy samples: baseline 246, null 4,940, candidate 7,060 (K = 20); wall 232 s / 1,262 s / 1,996 s.
+
+## Second screen: LIBERO-Pro (predeclared 2026-10-31 ~09:40 PT, before any run)
+
+Because pi0.5 is near ceiling on standard LIBERO, the same methods are screened where it is not: LIBERO-Pro
+`libero_object` and `libero_goal` with the `task` perturbation (instruction fix:
+`harnessstudio.benchmarks.libero_pro_instructions`), 10 tasks x episodes 0-1 = 20 cases per cell,
+`medoid-bon` and `chunk-interrupt`, three arms each, same server, config `hs2-gpu/configs/libero_pro_hs.yaml`.
