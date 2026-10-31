@@ -1,31 +1,26 @@
 [build-system]
-requires = ["setuptools>=68"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
 
 [project]
 name = "harnessstudio"
-version = "0.1.0"
-description = "Training-free harnesses around frozen robot policies: slot-filling methods, two-tier verification, paired evaluation"
+version = "2.0.0.dev0"
+description = "Training-free harnesses around frozen robot policies, as installable methods on allenai vla-eval"
+readme = "README.md"
 requires-python = ">=3.10"
-dependencies = []
+dependencies = ["vla-eval==0.8.0", "numpy>=1.24", "pyyaml>=6"]
 
 [project.optional-dependencies]
-test = ["numpy"]
+test = ["pytest>=8"]
 
 [project.scripts]
-rh = "harnessstudio.cli:main"
+hs = "harnessstudio.cli:main"
 
-[tool.setuptools.packages.find]
-include = ["harnessstudio", "harnessstudio.*"]
+[project.entry-points."harnessstudio.methods"]
+identity = "harnessstudio.methods.identity:config"
 
-[tool.setuptools.package-data]
-"harnessstudio" = ["backends/gr00t_robocasa365/COPIED.json",
-                   "backends/gr00t_robocasa365/copied/*.json",
-                   "backends/pi05_robocasa365/*.json",
-                   "bench/PROVENANCE.json",
-                   "runtime/PROVENANCE.json",
-                   "data/*.json",
-                   "data/canonical_tables/*.json",
-                   "methods/CYCLEVLA_SOURCE.json",
-                   "methods/chunktrust_ahs/PROVENANCE.json",
-                   "methods/chunktrust_ahs/CHUNKTRUST_LICENSE"]
+[tool.hatch.build.targets.wheel]
+packages = ["harnessstudio"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

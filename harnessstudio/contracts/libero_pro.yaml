@@ -1,0 +1,10 @@
+# allenai vla-eval LIBEROProBenchmark (same observation format as LIBERO).
+name: libero_pro
+public_keys: [images, task_description, states, controller_states]
+instruction_key: task_description
+optional_keys: [states, controller_states]   # present when the policy asks for state
+state_key: states
+action_dim: 7
+control_mode: eef_delta   # 3 position + 3 axis-angle rotation + 1 gripper
+suite_horizons: {libero_spatial: 220, libero_object: 280, libero_goal: 300, libero_10: 520, libero_90: 400}
+default_horizon: 520

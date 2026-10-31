@@ -1,0 +1,8 @@
+# Synthetic benchmark used by tier 1 (harnessstudio.verify.fixtures.FakeBenchmark).
+name: fake
+public_keys: [images, state, task_description]
+instruction_key: task_description
+state_key: state
+action_dim: 4
+control_mode: fake
+default_horizon: 12

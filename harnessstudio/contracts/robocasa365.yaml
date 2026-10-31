@@ -1,0 +1,9 @@
+# allenai vla-eval RoboCasa365Benchmark (benchmarks/robocasa365/benchmark.py, make_obs).
+# Per-task horizons come from the robocasa registry inside the benchmark; default_horizon is
+# advisory for ctx.remaining (the benchmark itself ends the episode).
+name: robocasa365
+public_keys: [images, state, task_description]
+instruction_key: task_description
+state_key: state
+control_mode: panda_omron
+default_horizon: 3000
