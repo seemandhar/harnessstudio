@@ -79,3 +79,15 @@ def test_libero_pro_perturbed_suites_use_base_horizon():
     assert c.horizon({"suite": "libero_object_with_mug"}) == 280
     assert c.horizon({"suite": "libero_10_task"}) == 520
     assert c.horizon({"suite": "libero_goal"}) == 300
+
+
+def test_attribution_classes():
+    from harnessstudio.eval.attribution import classify
+    base = {"action_sha256": list("aaaaa"), "obs_sha256": list("ooooo")}
+    assert classify(base, dict(base))["class"] == "M"
+    noisy = {"action_sha256": list("aaaaa"), "obs_sha256": list("ooxoo")}      # renderer noise, same actions
+    assert classify(base, noisy)["class"] == "M" and classify(base, noisy)["obs_noise_steps"] == [2]
+    branch = {"action_sha256": list("aaabb"), "obs_sha256": list("ooxxx")}     # obs first, then actions
+    assert classify(base, branch)["class"] == "R"
+    leak = {"action_sha256": list("aabaa"), "obs_sha256": list("ooooo")}       # action differs, same obs
+    assert classify(base, leak)["class"] == "X"
