@@ -132,3 +132,12 @@ def test_pairing_and_attribution_on_fake_stack():
     # a deliberately wrong "null" (the candidate) is caught as X or R, never M
     bad = summarize({"baseline": recs["baseline"], "null": recs["candidate"]})
     assert bad["null_attribution"]["M"] < 4
+
+
+def test_analytic_skills_reach_target_on_fake_stack():
+    from harnessstudio.verify import tier1
+    report = tier1.run(tm.skill_demo())
+    assert report.passed, report.lines()
+    recs = tier1._run(tm.skill_demo(), Arm.CANDIDATE, "fake-t0")
+    moves = [e for r in recs for e in r["events"] if e.get("name") == "move"]
+    assert moves and all(m["ok"] and m["error"] <= 0.05 for m in moves), moves

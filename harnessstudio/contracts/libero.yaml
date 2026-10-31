@@ -10,3 +10,6 @@ suite_horizons: {libero_spatial: 220, libero_object: 280, libero_goal: 300, libe
 default_horizon: 520
 eef_position: {path: [states], slice: [0, 3]}   # states = [eef pos3, eef axis-angle3, gripper qpos2]
 action_layout: {position: [0, 3], rotation: [3, 6], gripper: [6, 7]}   # pi0 servers declare one raw 7-D block
+eef_delta_scale: 0.05   # robosuite OSC_POSE: |action| = 1 -> 5 cm per step (approximate)
+gripper_open: -1.0
+gripper_close: 1.0

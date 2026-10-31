@@ -35,6 +35,10 @@ class Contract:
     eef_position: Mapping[str, Any] = field(default_factory=dict)
     # Fallback action layout (name -> [start, end]) for policies whose action_spec is one raw block
     action_layout: Mapping[str, Any] = field(default_factory=dict)
+    # Analytic-skill constants for eef_delta control: metres per unit position action, gripper commands
+    eef_delta_scale: Optional[float] = None
+    gripper_open: float = -1.0
+    gripper_close: float = 1.0
 
     def __post_init__(self):
         if not self.public_keys:

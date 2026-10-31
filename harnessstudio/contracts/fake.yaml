@@ -7,3 +7,5 @@ action_dim: 7
 control_mode: fake
 default_horizon: 12
 eef_position: {path: [state], slice: [0, 2]}
+action_layout: {position: [0, 3], rotation: [3, 6], gripper: [6, 7]}
+eef_delta_scale: 0.4   # FakeBenchmark: pos += 0.4 * action[:2]

@@ -40,6 +40,9 @@ class Embodiment:
     control_mode: str = "unknown"
     eef_path: tuple = ()               # keys into the public observation, e.g. ("states",)
     eef_slice: Optional[tuple] = None  # e.g. (0, 3)
+    eef_delta_scale: Optional[float] = None   # metres per unit position action (analytic skills)
+    gripper_open: float = -1.0
+    gripper_close: float = 1.0
 
     @classmethod
     def from_action_spec(cls, spec: Mapping[str, Mapping[str, Any]], control_mode: str = "unknown",

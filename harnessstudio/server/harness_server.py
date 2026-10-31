@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import logging
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from typing import Any, Mapping, Optional
 
@@ -107,6 +107,8 @@ class HarnessServer(ModelServer):
         embodiment = Embodiment.from_action_spec(self._probe.get("action_spec") or {}, self.contract.control_mode,
                                                  self.contract.action_dim, self.contract.eef_position,
                                                  self.contract.action_layout)
+        embodiment = replace(embodiment, eef_delta_scale=self.contract.eef_delta_scale,
+                             gripper_open=self.contract.gripper_open, gripper_close=self.contract.gripper_close)
         ectx = EpisodeContext(case=case, contract=self.contract, horizon=self.contract.horizon(task), arm=self.arm,
                               namespace=self.namespace, policy=policy, budgets=self.method.budgets, bridge=bridge,
                               decision_loop=DecisionLoop(self.method, embodiment), shadow=shadow,

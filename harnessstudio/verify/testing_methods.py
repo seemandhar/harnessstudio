@@ -111,3 +111,21 @@ def llm_planner() -> MethodConfig:
                         required=frozenset({"act", "chunk"}), controller=ModuleRef(f"{__name__}:LLMPlanner"),
                         null="shadow", budgets=Budgets(policy_calls=1000, llm_calls=2, max_tokens=64),
                         operators=(OperatorPin("planner", "test-model", "nrp", "NRP_API_KEY"),))
+
+
+class SkillDemo:
+    """Controller: analytic move to a nearby point, gripper close, then the policy as a skill."""
+
+    async def run(self, ctx) -> None:
+        from ..skills import eef_delta as sk
+        start = ctx.embodiment.eef_position(ctx.observe())
+        res = await sk.move_by(ctx, [0.3, -0.2], tolerance=0.05, max_steps=6)
+        ctx.record("move", ok=res.ok, steps=res.steps, error=res.final.get("error"), start=list(map(float, start)))
+        await sk.set_gripper(ctx, "close", steps=1)
+        await sk.vla_act(ctx, steps=100)
+
+
+def skill_demo() -> MethodConfig:
+    return MethodConfig(name="test-skill-demo", version="1", paper="none", fidelity=Fidelity.FAITHFUL,
+                        required=frozenset({"act", "chunk"}), controller=ModuleRef(f"{__name__}:SkillDemo"),
+                        null="shadow", budgets=Budgets(policy_calls=100))
