@@ -31,6 +31,7 @@ Harness VLA is the flagship agent baseline and forces the perception interface; 
 1. `hs new <slug> --category ... [--kind controller --llm]`; fill `paper.yaml` (fidelity, substitutions,
    operators with `original_model`, artifacts with sha256 + licence).
 2. Port the mechanism; `hs verify <name>` (tier 0 + 1) until PASS.
-3. Small real run: `hs eval` on a predeclared subset (official horizons), check null attribution (0 X).
+3. `hs verify <name> --tier 2 ...` on 2-4 real cases (every episode valid, null vs baseline 0 X), then
+   `hs eval` on a predeclared subset with official horizons; `hs report <dir>`.
 4. If reference code exists: run it on the same cases and compare pair by pair.
 5. Full benchmark only after the subset shows an improvement against baseline and null.

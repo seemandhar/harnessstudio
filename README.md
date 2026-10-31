@@ -40,7 +40,12 @@ hs verify medoid-bon                      # tier 1: baseline/null/candidate thro
 hs serve identity --policy-url ws://localhost:8101 --contract libero --profile pi05-libero-stock --port 8201
 vla-eval run --config my_libero.yaml      # with server.url: ws://localhost:8201
 
-# or let hs run all three arms and pair them
+# tier 2: all three arms on a few real cases (gate: every episode valid, null vs baseline has 0 X)
+hs verify medoid-bon --tier 2 --config my_libero.yaml --policy-url ws://localhost:8106 --contract libero \
+   --profile pi05-libero-hs --out runs/t2 --benchmark-overrides '{"max_tasks": 1, "episodes_per_task": 2}'
+
+# or let hs run all three arms and pair them; hs report prints the paired summary
+hs report runs/medoid-bon
 hs eval medoid-bon --config my_libero.yaml --policy-url ws://localhost:8101 --contract libero \
    --profile pi05-libero-hs --out runs/medoid-bon
 ```
