@@ -19,6 +19,11 @@ the host's NVIDIA driver wedged machine-wide (every CUDA/EGL/nvidia-smi client b
 - vla-eval's CPU render backend is bitwise deterministic across processes; with it the gate is 2 M on a CPU
   stand-in policy. GR00T + CPU rendering and the `hs eval medoid-bon` screen are scripted but not run (driver):
   `hs2-gpu/robocasa365/run_gr00t_cpu_render.sh`.
+- **After the driver recovered (CPU rendering, seeded GR00T on :8105):** gate 2 M / 0 R / 0 X; `hs eval medoid-bon`
+  on 4 cases (CloseToasterOvenDoor, NavigateKitchen x episodes 0-1): all 12 episodes valid; successes baseline
+  1/4, null 1/4, candidate 1/4; policy samples 116 / 928 / 928; null attribution 3 M / 1 R / 0 X. The R is
+  NavigateKitchen episode 1, whose first observation already differs between arms (environment-side, not the
+  harness; candidate: a disk-cache or process-history effect in RoboCasa365 resets, still open).
 - Found and fixed: RoboCasa365 resets depend on what the process ran before, so `hs eval --no-docker` now runs
   each arm's benchmark in its own child process (Docker runs already get one container per arm).
 
