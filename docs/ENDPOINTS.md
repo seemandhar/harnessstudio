@@ -18,8 +18,10 @@ From Python: `harnessstudio.endpoints.operator_entry(provider, model, name, ...)
 - **Astra (`gpt-6-astra`)**: confirm-before-use (user rule 2026-10-31, was banned 2026-10-20). Ask the user and get
   an explicit yes for that specific use (model, purpose, run scope, expected calls/cost); pass the record as
   `user_confirmation` when pinning. The registry refuses an Astra pin without it.
-- **Credentials** only through environment variables named in `api_key_env` (loaded from the private `.env` by
-  the launching shell: `set -a; . <private .env>; set +a`). Never write, print or log a key.
+- **Credentials** only through environment variables named in `api_key_env`, loaded by a launcher, never by
+  reading the file in an agent: inside RoboMetaHarness-claude run
+  `python3 scripts/with_keys.py --provider nrp [--provider openai] [--provider anthropic] -- harnessstudio/.venv/bin/hs eval ...`
+  (private `.claude/agents/.env`, allowlisted names via `robometaharness.credentials`). Never write, print or log a key.
 - A paper's original model that we cannot or may not use is replaced by the closest registered model
   (`closest_for` in the YAML) and recorded as `original_model`; the method is then `fidelity: adapted`.
 
@@ -54,7 +56,8 @@ OpenAI-compatible `/chat/completions` by the same LLM tool as NRP/OpenAI (the to
 header). Claude 5.x rejects `temperature`: pins carry `temperature: null` (the registry sets it). Some models spend
 hidden reasoning tokens (Haiku 5.5 returned empty content at `max_tokens: 60` for an image question): give headroom
 and treat an empty reply as a failure. ~1-2 s per call.
-The key is stored as `HS_ANTHROPIC_API_KEY` in the private `.env` files, **never** as `ANTHROPIC_API_KEY`: Claude
+The key is stored as `HS_ANTHROPIC_API_KEY` in `RoboMetaHarness-claude/.claude/agents/.env` only (the Codex
+project's loader rejects unknown names), **never** as `ANTHROPIC_API_KEY`: Claude
 Code reads that variable and would switch its own login to the key. The `claude -p` CLI (subscription login)
 remains an alternative that is not wired as an operator.
 
