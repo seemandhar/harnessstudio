@@ -1,6 +1,32 @@
 # FastHarness (arXiv:2610.31427) in HarnessStudio v2: port and adapted reproduction on RoboDojo
 
-Status: **in progress** (overnight run, 2026-10-31). This document is updated as runs finish.
+Status: **complete** (overnight run 2026-10-31, 02:20-09:15 PDT). All predeclared stages ran (A, B, D, and C
+without its null arm, dropped for budget); every episode valid; no Astra model used.
+
+## Summary (what the morning reader needs)
+
+- **Port:** `methods/fast_harness` (fidelity *adapted*: gpt-6.1-sol reviewer instead of GPT-6 Astra; experience frozen
+  by `hs prepare`). Tier 0 PASS, tier 1 PASS, port equivalence vs the original code 198,542/198,542 checks, **tier 2
+  PASS on real RoboDojo build_tower** (all valid, null vs baseline M 0 / R 1 / X 0; R = Isaac renderer branching from
+  step 0).
+- **Infrastructure built tonight:** RoboDojo through vla-eval natively (no Docker) inside HarnessStudio, a seeded T1
+  pi0.5 RoboDojo server, the `robodojo` contract; ~95 steps/min for the native policy.
+- **Main result (held-out, cold vs warm):** the paper's token reduction does **not** reproduce under the
+  HarnessStudio protocol. build_tower stage A (same held-out episode): warm -11% prompt tokens, 3.5% of chunks skipped,
+  same wall time. build_tower stage B: warm -44% raw, but the warm episode ended early on success; per executed step
+  -16%, 6% skipped. stack_bowls (stage C): same 26 reviews, warm **+26%** tokens (each warm review carries the stored
+  failure memory, +2.1k tokens), 19% skipped. Paper: -57.2% per task (build tower -67%, stack bowls -74%), ~75% skip.
+  Measured causes: the 8x8-thumbnail + joint stage features rarely match experience from other layouts (23-31% of
+  chunks within the 0.06 threshold), gpt-6.1-sol's build_tower stage slugs are unstable, and contact / stage-change
+  gating forces reviews anyway.
+- **Diagnostic (development-only, repeated layout as in the paper):** familiarity rises to 44-65%; the clean revisit
+  saved 17% tokens with 15% skips, but two revisits went wrong and their recovery reviews cost +14% / +134%.
+- **Success:** n = 1 per arm per layout and the renderer makes replays branch, so no success claim either way.
+  build_tower: baseline 0/2, null 1/2, cold 0/2 held-out (+2/2 dev episodes), warm 1/2 held-out; repeated-layout
+  revisits D1-D3 1/3.
+  stack_bowls held-out: baseline, cold and warm all succeeded (the dev episode failed).
+- **Cost:** 886 gpt-6.1-sol calls, 7.52M prompt + 0.73M completion tokens, **~$22.3** estimated at $2/$10 per M
+  (third-party price; budget cap $25); about 6.5 GPU-hours on GPU 4 only.
 
 ## Core requests (for the HarnessStudio core)
 
@@ -149,6 +175,11 @@ and force the next review (the paper aborts the episode except in its degraded f
   and the token budget allows, a second paper task, `stack_bowls` (step_lim 800): development layout group 1,
   episodes 0-1 (cold, `hs prepare`, case namespace `seed1`), held-out layout group 0, episode 0: cold, warm, baseline,
   then null if time remains.
+  *Amendment 08:23 PDT (budget, before any stage C episode ran):* after stage D the estimated spend was ~$19.3
+  (D3 alone used 0.94M prompt tokens); stage C with two development episodes projected to ~$25.2, above the $25 cap.
+  The first stage C launch was stopped during Isaac boot (no episode had started; kept as
+  `fh_C_prepare_seed1.aborted_budget`) and relaunched with **one** development episode (layout group 1, episode 0);
+  the stage C null arm is dropped.
 - **Stage D (development-only diagnostic, predeclared 05:55 PDT after stage A, before stage B outcomes; takes
   precedence over stage C):** stage A showed the warm arm almost never matches its experience on a new layout
   (median nearest-example distance 0.087 vs threshold 0.06). FastHarness's own protocol most likely repeats one layout,
@@ -248,8 +279,90 @@ renderer-branching noise documented above (n = 1 per arm).
 `hs pair` (baseline / null / cold candidate): 1 paired case, null vs baseline **M 0 / R 1 / X 0**, again diverging at
 step 0 (renderer branching).
 
+### Stage D (development-only diagnostic): repeating one layout, chained experience
+
+Layout group 1, episode 0 visited repeatedly; each visit starts from the experience accumulated so far
+(`/bigdata/sejain/hs2-cache/robodojo/runs/fh_D{1,2,3}`, chained `prepared.json`).
+
+| visit | experience at start | success | steps | reviews | prompt tok | completion tok | chunks | skip rate | familiar chunks (dist <= 0.06) | review triggers | wall (min) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1st (dev seed1/0, cold) | empty | yes | 701 | 49 | 403,495 | 39,356 | 49 | 0% | (cold) | full review | 17.2 |
+| D1 (2nd) | 2 dev episodes (97 examples) | yes | 702 | 41 | 334,906 | 32,742 | 48 | 14.6% | 65% | unknown 17, stage_changed 11, contact 8, ambiguous 4 | 14.8 |
+| D2 (3rd) | + D1 | no (0.1) | 1050 | 53 | 460,039 | 44,147 | 86 | 5.8% (+33 passthrough) | 44% | recovery 20, stage_changed 11, contact 10, unknown 4 | 21.9 |
+| D3 (4th) | + D2 | no (0.0) | 1050 | 108 | 943,352 | 87,385 | 103 | 1.0% | 52% | unknown 43, recovery 24, previous_uncertainty 12, contact 12 | 31.9 |
+
+Prompt tokens vs the first (cold) visit: D1 **-17%**, D2 +14%, D3 +134%; mean of D1-D3 +44% (per executed step:
+576 -> 477 / 438 / 898, mean +5%). The repeated layout makes features familiar (44-65% of chunks within 0.06,
+vs 11-23% across layouts), and on the clean revisit D1 the scheduler skipped 15% of chunks and saved 17% of tokens.
+But the token cost of an episode is dominated by whether it goes wrong: D2 lost board alignment at step 483 (recovery
+reviewed every chunk until its 24-chunk budget ran out, then 33 chunks ran unreviewed), D3 entered recovery 7 times
+with 21 reviewer takeovers. The renderer-branched replays of one layout (same scene, different outcomes) make the
+error/recovery path, not the learned skip schedule, the main driver of review cost here. Contact gating and stage
+changes keep forcing reviews even when features match (stage slugs are still unstable across visits).
+
 Raw warm vs cold: prompt tokens -44%, wall -37%. But the warm episode ended early on success (699 steps) while the
 cold one ran to the 1050-step limit, so most of that difference is episode length, not review scheduling: per
 executed step, prompt tokens are 521 (warm) vs 619 (cold), **-16%**; reviews per chunk 0.94 in both; skip rate 6.1%.
 Whether warm's success is due to the method cannot be told from one episode (stage A shows the null arm, which
 executes the native policy, succeeding where the baseline failed on the same layout).
+
+### Stage C: second task `stack_bowls` (step_lim 800)
+
+Development: layout group 1, episode 0 (cold, `fh_C_prepare_seed1`): **failed** (score 0.15), 800 steps, 73 reviews,
+581,126 / 60,338 tokens, 14 takeovers, 7 recoveries, 22.6 min. Frozen experience: 4 stages (stable slugs this time:
+`approach-bowl`, `grasp-bowl`, `transport-bowl`, `place-bowl`), 66 examples, **10 error cases**. Held-out layout
+group 0, episode 0:
+
+| arm | success | steps | reviews | prompt tok | completion tok | chunks | fast-path (skip) | prompt tok / review | familiar chunks | wall (min) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| baseline | yes | 274 | 0 | 0 | 0 | - | - | - | - | 2.7 |
+| cold | yes | 379 | 26 | 193,688 | 20,212 | 26 | 0 (0%) | 7,449 | 28% | 8.3 |
+| warm | yes | 389 | 26 | 244,314 | 20,485 | 32 | 6 (18.8%) | 9,397 | 31% | 8.7 |
+
+Warm vs cold: same number of reviews, **+26% prompt tokens**. The warm arm skipped 19% of its chunks but executed more,
+shorter chunks, and every warm review carries the stored experience (known stages + the 10 error cases with evidence
+text): its first review, before any execution, is already 7,369 prompt tokens vs 5,274 cold (+2.1k per review). On a
+task where development produced failure memory, experience makes each review more expensive while the skip rate stays
+low. (The null arm was dropped for budget, see the stage C amendment.)
+
+## Comparison to the paper
+
+| quantity | paper (pi0.5 + GPT-6 Astra, RoboDojo) | here (pi0.5 + gpt-6.1-sol, HarnessStudio protocol) |
+|---|---|---|
+| reviewer tokens, first vs later episodes | -57.2% per task (first episode vs mean of last five); build tower -67%; stack bowls -74% | build_tower held-out cold vs warm: -11% (stage A), -44% raw / -16% per step (stage B); repeated layout (dev-only): -17% on the clean revisit, +44% mean over 3 revisits; stack_bowls held-out: +26% |
+| review-skip rate when warm | build tower converges to ~75% skip, ~13 calls per episode | 3.5% / 6.1% (build_tower held-out), 19% (stack_bowls held-out), 1-15% on the repeated layout |
+| episode wall time | 85.5 -> 52.0 min (mean) | cold 24-28 min, warm 15-29 min, baseline 11-12 min (time tracks episode length and recovery activity) |
+| success | 97.19% (vs 80% for the GPT-as-policy baseline) | no claim (n = 1 per arm per layout; renderer branching) |
+
+What differs, and which of it plausibly explains the gap:
+
+1. **Protocol.** The paper accumulates experience over ~20 repetitions of (most likely) one fixed layout and compares
+   the first episode with the last five. Here evaluation episodes never update experience and are on layouts not seen
+   in development; stage features do not transfer across layouts (the largest measured effect). Even the
+   development-only repeated-layout diagnostic has 1 cold + 3 warm visits, not ~20.
+2. **Reviewer model.** gpt-6.1-sol instead of GPT-6 Astra (Astra is banned in this workspace). It produces fine-grained,
+   ordinal, run-to-run unstable stage slugs (26 in one episode), which fragments per-stage statistics so few stages
+   ever reach `min_samples` with a high Wilson bound; it also reports errors and takes over (edit/eef) in some
+   episodes, which triggers the always-reviewed recovery path.
+3. **Runtime.** The RoboDojo runtime (FK, edit/eef execution, gripper conventions) is not released; it is re-derived
+   here. Contact gating reads FK heights from it.
+4. **Simulator nondeterminism.** Isaac's renderer makes replays of the same scene diverge from step 0, so a single
+   episode per arm cannot separate method effects from outcome noise; episodes that go wrong cost 2x the tokens.
+
+## Run artifacts and reproduction
+
+- Runs: `/bigdata/sejain/hs2-cache/robodojo/runs/` — `fh_tier2_seed0/{baseline,null,candidate}`, `fh_prepare_seed1`
+  (prepared.json + experience.json), `fh_warm_seed0`, `fh_B_{cold,warm,base,null}`, `pair_B_cold`, `fh_D{1,2,3}`
+  (chained prepared.json), `fh_C_prepare_seed1`, `fh_C_{cold,warm,base}`, smokes (`fh_smoke`,
+  `fh_smoke.attempt1_blocked_grippers`), `fh_C_prepare_seed1.aborted_budget`; driver log `stage.log`, one log per run;
+  per-episode traces under `*/traces/` (every review: reason, stage, outcome, evidence, usage; every `fh_mem` mutation).
+- Drivers: `methods/fast_harness/configs/run_stage.sh`, `run_stage_d.sh`, `run_stage_c.sh`; configs next to them.
+- Environment: `source /bigdata/sejain/hs2-cache/envs/hs2_robodojo_env.sh` (overlay venv on the Isaac Sim 5.1 conda env,
+  GPU-4 device shim, Kit render-sync + exit hook); pi0.5 server: `/bigdata/sejain/hs2-cache/envs/launch_robodojo_pi05_8311.sh`
+  (port 8311, ~40 s start, 17.4 GB; stopped at 09:20 PDT, GPU 4 is free); checkpoint `/bigdata/sejain/hs2-cache/robodojo/pi05/hf/ckpt/RoboDojo/Pi_05/RoboDojo-sim-arx_x5-joint-0/59999`
+  (params + norm stats only); assets for build_tower (layout groups 0-2) and stack_bowls (0-1) added to the shared
+  RoboDojo asset tree (`asset_manifest_build_tower.json`, `asset_manifest_stack_bowls.json`).
+- Summaries: `python methods/fast_harness/tools/summarize.py LABEL=DIR ...`; `hs pair --arm baseline=... --arm null=...
+  --arm candidate=... --out ...`.
+- The `install_completion_tokens_operator` shim is still in `controller.py` so the code matches what produced these
+  results; it is redundant with core commit `e68c01b` and can be removed (re-run tier 0/1 afterwards).

@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hs-fast-harness"
+version = "0.1.0"
+description = "Experience-Driven Review Scheduling for Vision-Language-Action Policies"
+requires-python = ">=3.10"
+dependencies = ["harnessstudio"]
+
+[project.entry-points."harnessstudio.methods"]
+fast-harness = "hs_fast_harness:config"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hs_fast_harness"]

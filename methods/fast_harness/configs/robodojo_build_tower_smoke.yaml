@@ -1,0 +1,20 @@
+# Smoke variant of robodojo_build_tower.yaml: one build_tower episode truncated at 30 steps
+# by the harness (RoboDojo's own step_lim is 1050), for pipeline checks with an echo server.
+# A truncated episode is never a scored result. Override the step cap for a longer probe, e.g.
+#   --benchmark-overrides '{"max_steps": 100}'
+server:
+  url: "ws://localhost:8000"      # placeholder; hs eval overrides it
+  timeout: 1800                   # vla_eval ServerConfig.timeout: per-action reply wait (s)
+
+output_dir: "./results"
+
+benchmarks:
+  - benchmark: "vla_eval.benchmarks.robodojo.benchmark:RoboDojoBenchmark"
+    mode: sync
+    episodes_per_task: 1
+    max_steps: 30
+    action_dim: 14                # echo server sends 14-D zeros; without this it sends 7-D and every step errors
+    params:
+      root: /home/sejain/research/cvpr27/RoboDojo
+      tasks: [build_tower]
+      seed: 0

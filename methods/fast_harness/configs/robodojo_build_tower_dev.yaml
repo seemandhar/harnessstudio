@@ -1,0 +1,25 @@
+# RoboDojo build_tower, native (no Docker), for the FastHarness reproduction.
+# Run from the hs2-robodojo overlay venv after `source /bigdata/sejain/hs2-cache/envs/hs2_robodojo_env.sh`:
+#   hs eval <method> --config <this file> --policy-url ws://127.0.0.1:8311 --contract robodojo \
+#      --profile robodojo-pi05-hs --arms baseline --no-docker --out <dir>
+# `hs eval` overrides server.url and output_dir. One task per process (Isaac's simulation
+# context is process-global), so keep one task per config.
+server:
+  url: "ws://localhost:8000"      # placeholder; hs eval / vla-eval --server-url overrides it
+  # Client-side wait for each action reply (vla_eval ServerConfig.timeout, Connection.act()).
+  # Default 30 s; sync-mode methods may spend minutes on LLM calls inside one step.
+  timeout: 1800
+
+output_dir: "./results"
+
+benchmarks:
+  - benchmark: "vla_eval.benchmarks.robodojo.benchmark:RoboDojoBenchmark"
+    mode: sync                    # env waits for each action (default)
+    episodes_per_task: 2
+    action_dim: 14                # left arm 6, left gripper 1, right arm 6, right gripper 1 (absolute joints)
+    # max_steps omitted on purpose: the benchmark default (2000) is only a safety net above
+    # RoboDojo's own per-task step_lim (build_tower: 1050), which ends the episode.
+    params:
+      root: /home/sejain/research/cvpr27/RoboDojo
+      tasks: [build_tower]
+      seed: 1                     # DEVELOPMENT layout group arx_x5/1 (hs prepare --case-namespace seed1)
