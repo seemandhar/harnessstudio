@@ -54,6 +54,7 @@ def _run(config: MethodConfig, arm: Arm, profile_name: str, task_order: str = "f
         with serve(harness) as hh:
             run_fake(hh.url, n_tasks=n_tasks, episodes=episodes, horizon=horizon, task_order=task_order,
                      instruction=instruction, task_prefix=task_prefix)
+            harness.wait_idle()
     return harness.records
 
 

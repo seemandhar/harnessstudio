@@ -24,6 +24,7 @@ def run_arm(method, arm, profile, policy_kwargs, **bench):
         harness = HarnessServer(method, policy_url=ph.url, contract=load_contract("fake"), arm=arm, profile=profile)
         with serve(harness) as hh:
             results = run_fake(hh.url, **bench)
+            harness.wait_idle()
     return episodes(results), harness.records, policy
 
 

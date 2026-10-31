@@ -86,6 +86,7 @@ def _cmd_prepare(args) -> int:
         print(f"[hs prepare] arm={collect_arm} harness={url} policy={args.policy_url}", flush=True)
         run(args.config, server_url=url, output_dir=out / "vla_eval", pull=args.pull,
             benchmark_overrides=overrides, docker=None if not args.no_docker else False)
+        server.wait_idle()
     (out / "dev_records.jsonl").write_text("".join(json.dumps(r, default=str) + "\n" for r in server.records))
     prepared = build_prepared(config, server.records, out)
     print(json.dumps({k: prepared[k] for k in ("artifacts", "dev_episodes", "dev_valid", "dev_successes")}, indent=2))
@@ -113,6 +114,7 @@ def _cmd_eval(args) -> int:
             print(f"[hs eval] arm={arm} harness={url} policy={args.policy_url}", flush=True)
             run(args.config, server_url=url, output_dir=out / arm / "vla_eval", pull=args.pull,
                 benchmark_overrides=overrides, docker=None if not args.no_docker else False)
+            server.wait_idle()
         records[arm] = server.records
         (out / arm / "records.jsonl").write_text("".join(json.dumps(r, default=str) + "\n" for r in server.records))
     summary = summarize(records)

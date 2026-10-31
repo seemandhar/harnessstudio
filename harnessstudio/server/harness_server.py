@@ -83,6 +83,7 @@ class HarnessServer(ModelServer):
         self.out_dir = Path(out_dir) if out_dir else None
         self.records: list[dict] = []
         self._episodes: dict[str, _Episode] = {}
+        self._finalizing = 0
         self._probe: dict = {}
         self._tg: Optional[TaskGroup] = None
 
@@ -120,9 +121,14 @@ class HarnessServer(ModelServer):
     async def on_episode_start(self, config: dict[str, Any], ctx: SessionContext) -> None:
         if config.get("mode") == "live":
             raise RuntimeError("HarnessStudio v2.0 supports sync mode only")
-        leftover = self._episodes.pop(ctx.session_id, None)
+        leftover = self._episodes.get(ctx.session_id)
         if leftover is not None:  # the previous episode never got EPISODE_END (spec 16.5)
-            await self._finalize(leftover, None, "no_episode_end")
+            self._finalizing += 1
+            del self._episodes[ctx.session_id]
+            try:
+                await self._finalize(leftover, None, "no_episode_end")
+            finally:
+                self._finalizing -= 1
         task = config.get("task") or {}
         bench = self.contract.name + (f"@{self.case_namespace}" if self.case_namespace else "")
         case = CaseKey(bench, str(task.get("name", "")), int(task.get("episode_idx", 0)))
@@ -185,8 +191,12 @@ class HarnessServer(ModelServer):
                     ectx.accounting.termination = ep.bridge.termination or "method_returned"
                     action = await ectx._native_action()
         except Exception as exc:
+            self._finalizing += 1
             self._episodes.pop(ctx.session_id, None)
-            await self._finalize(ep, None, f"{type(exc).__name__}: {exc}")
+            try:
+                await self._finalize(ep, None, f"{type(exc).__name__}: {exc}")
+            finally:
+                self._finalizing -= 1
             raise
         action = np.asarray(action)
         if self.development:
@@ -197,9 +207,14 @@ class HarnessServer(ModelServer):
         await ctx.send_action({"actions": action})
 
     async def on_episode_end(self, result: dict[str, Any], ctx: SessionContext) -> None:
-        ep = self._episodes.pop(ctx.session_id, None)
+        ep = self._episodes.get(ctx.session_id)
         if ep is not None:
-            await self._finalize(ep, result or None, None if result else "empty_result")
+            self._finalizing += 1
+            del self._episodes[ctx.session_id]
+            try:
+                await self._finalize(ep, result or None, None if result else "empty_result")
+            finally:
+                self._finalizing -= 1
 
     async def _run_method(self, ep: _Episode) -> None:
         ectx = ep.ctx
@@ -214,7 +229,28 @@ class HarnessServer(ModelServer):
         finally:
             ectx.accounting.method_seconds += time.monotonic() - started
 
+    def idle(self) -> bool:
+        """True when no episode is running or being finalized (records are complete)."""
+        return not self._episodes and self._finalizing == 0
+
+    def wait_idle(self, timeout: float = 60.0) -> bool:
+        """Block (from another thread) until idle. vla-eval sends EPISODE_END without waiting for the
+        server, so a run can return before the last episode's record is written."""
+        deadline = time.monotonic() + timeout
+        while not self.idle():
+            if time.monotonic() > deadline:
+                return False
+            time.sleep(0.02)
+        return True
+
     async def _finalize(self, ep: _Episode, result: Optional[Mapping[str, Any]], invalid: Optional[str]) -> None:
+        self._finalizing += 1
+        try:
+            await self._finalize_inner(ep, result, invalid)
+        finally:
+            self._finalizing -= 1
+
+    async def _finalize_inner(self, ep: _Episode, result: Optional[Mapping[str, Any]], invalid: Optional[str]) -> None:
         ep.bridge.cancel()
         ectx = ep.ctx
         if ep.bridge.error is not None and invalid is None:
