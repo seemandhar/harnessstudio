@@ -535,3 +535,25 @@ Because the no-cue variant is the fair comparison with the frozen policy, `harne
 six remaining LIBERO-Pro cells (spatial / object / libero_10 x task / swap), 10 tasks x episodes 0-1, candidate
 arm only, same configs and servers; paired with the existing baseline and cue-version records on the same scenes
 (first-observation hashes checked). Budget about $25.
+
+### No-cue results on all eight cells (finished ~12:20 PT)
+
+All 120 new episodes valid; first observations match the baseline in 160/160 cases. Table:
+`runs/sol/eight_cells_nocue.json`.
+
+| Cell (10 tasks x episodes 0-1) | Baseline | With success cue | **No cue (fair)** | No cue vs baseline | p |
+|---|---|---|---|---|---|
+| Goal-T | 3 | 11 | 6 | +3 / -0 | 0.25 |
+| Goal-S | 6 | 13 | 11 | +9 / -4 | 0.27 |
+| Spatial-T | 8 | 9 | 12 | +7 / -3 | 0.34 |
+| Spatial-S | 7 | 12 | 5 | +1 / -3 | 0.63 |
+| Object-T | 2 | 14 | 14 | +14 / -2 | 0.004 |
+| Object-S | 7 | 15 | 15 | +10 / -2 | 0.039 |
+| LIBERO-10-T | 4 | 5 | 7 | +4 / -1 | 0.38 |
+| LIBERO-10-S | 2 | 5 | 5 | +4 / -1 | 0.38 |
+| **All (160)** | **39 (24.4%)** | **84 (52.5%)** | **75 (46.9%)** | **+52 / -16** | **1.4e-5** |
+
+Correction to the Goal-only ablation reading above: across all eight cells the success cue accounts for about a
+fifth of the gain (45 -> 36 extra successes over the baseline), concentrated in Goal-T, Goal-S and Spatial-S; on
+Object it makes no difference. **The fair zero-shot reproduction number is 75/160 (46.9%) vs 39/160 (24.4%) for
+the frozen pi05_libero policy (p = 1.4e-5).**
