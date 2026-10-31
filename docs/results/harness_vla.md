@@ -510,3 +510,21 @@ only called while the episode runs; that structural property is shared with the 
 Cases: Goal-T and Goal-S, 10 tasks x episodes 0-1 (40 cases; same scenes as episodes 0-1 of the 100-case runs,
 which ran sequentially from episode 0). Arm: candidate only, compared pair by pair with the cue version and the
 baseline on the same cases. Budget about $8.
+
+### Ablation results (finished ~12:05 PT)
+
+All 40 cases valid; first observations match the cue runs in 40/40 cases (same scenes).
+
+| Arm (Goal-T + Goal-S, episodes 0-1) | Goal-T | Goal-S | Total | vs baseline | vs cue version |
+|---|---|---|---|---|---|
+| baseline | 3/20 | 6/20 | 9/40 | | |
+| harness-vla-sol (success cue) | 11/20 | 13/20 | **24/40** | +18 / -3, p = 0.0015 | |
+| harness-vla-sol-nocue | 6/20 | 11/20 | **17/40** | +12 / -4, p = 0.077 | +3 / -10, p = 0.092 |
+
+**Reading:** about half of the harness's gain over the frozen policy on these cells (15 of the 24 - 9 = 15
+extra successes -> 8 without the cue) depends on telling the planner that the goal is not yet reached, i.e. on
+information from the benchmark's termination on success. Without it the planner finishes or idles believing
+the task is done, or stops retrying after a silent failure. The headline `harness-vla-sol` numbers above should
+be read as "with an oracle not-done signal"; the no-cue numbers are the fair comparison with the frozen policy.
+Whether the paper's RPent setup provides a similar signal (its env server also ends episodes on success) was not
+determined.

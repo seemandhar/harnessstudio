@@ -169,7 +169,9 @@ chunktrust-ahs: 100% over ~17.8k decisions).
 | SCALE | LIBERO-10, 60 cases (OpenVLA) | 29/60 (48%) | **38/60 (63%)**, p = 0.093 | 52.7 -> 63.3 |
 | FastHarness | RoboDojo build_tower / stack_bowls | - | token savings not reproduced on held-out layouts | -57% reviewer tokens |
 
-All with null vs baseline 0 X. Details, disclosures and an independent compliance audit: `docs/results/`
+All with null vs baseline 0 X. Caveat for Harness VLA: its planner is told the goal is not yet reached
+(LIBERO ends episodes on success); without that cue it solves 17/40 instead of 24/40 on the same Goal scenes
+(baseline 9/40), so about half of its gain depends on that oracle signal. Details, disclosures and an independent compliance audit: `docs/results/`
 (`OVERNIGHT-2026-10-31.md` is the summary). Adapted = the paper's LLM was substituted (Astra is not used).
 
 ## Status
