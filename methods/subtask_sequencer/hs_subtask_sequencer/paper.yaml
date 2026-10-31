@@ -1,0 +1,34 @@
+name: subtask-sequencer
+version: "2"
+changelog:
+  - "2: ported to v2 (async controller on EpisodeContext; stall signal from the contract's eef_position, fixed per-subtask step budgets when a benchmark exposes none; stall window anchored on the last decision at or before latest - window)"
+  - "1: HarnessStudio v1 controller (harnessstudio.methods.subtask_sequencer)"
+paper:
+  id: "arXiv:2207.05608v1"
+  title: "Inner Monologue: Embodied Reasoning through Planning with Language Models"
+  venue: "CoRL 2022"
+# Primary: the method owns the episode loop, plans an ordered list of subgoals and decides when to route
+# the policy to the next one (planning and tool routing). Secondary: its only lever is the text prompt the
+# frozen policy sees (instruction grounding), and the advance rule is a progress monitor on public
+# end-effector motion (execution monitoring).
+categories: {primary: agentic_orchestration, secondary: [language_alignment, execution_monitoring]}
+fidelity: tf_variant
+substitutions:
+  - "LLM planner -> fixed text rules split the instruction into self-contained imperative steps"
+  - "success-detector feedback -> public end-effector stall after a minimum dwell"
+  - "skill library -> the frozen robot policy prompted with the current step"
+  - "end-effector stall (benchmark exposes no eef_position) -> fixed per-subtask step budget, an equal share of the steps remaining when control starts"
+requires: {capabilities: [act, chunk]}
+# The controller adds no inference of its own: one policy sample per DecisionLoop decision, so calls equal
+# decisions <= ceil(horizon / executed chunk length). 2000 covers RoboCasa365's 3000-step advisory horizon
+# for any executed chunk of >= 2 steps (GR00T N1.5 executes 16 -> <= 188 calls) and LIBERO's 520 steps even
+# at one step per decision. Hitting the cap ends control and the episode finishes natively.
+budgets: {policy_calls: 2000, llm_calls: 0, tool_calls: 0, max_tokens: 0}
+null: shadow
+artifacts: []
+operators: []
+original:
+  repo: "none (no official code release)"
+  commit: ""
+  reported: "LLM-planned tabletop rearrangement and real-kitchen mobile manipulation with language feedback; no number transfers to frozen-VLA harnessing"
+description: "One instruction step at a time; advance when the end effector moves < 1 cm over 48 steps after >= 96 steps on the step. No extra inference, no LLM; null = baseline actions."

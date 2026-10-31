@@ -40,14 +40,19 @@ class Report:
 
 
 def _run(config: MethodConfig, arm: Arm, profile_name: str, task_order: str = "forward",
-         episodes: int = 2, n_tasks: int = 2, horizon: int = 12) -> list[dict]:
+         episodes: int = 2, n_tasks: int = 2, horizon: Optional[int] = None) -> list[dict]:
+    # A paper card may set tier1: {instruction: "...", horizon: N} to exercise multi-step behavior.
+    t1 = dict((config.card or {}).get("tier1") or {})
+    instruction = str(t1.get("instruction", "reach the goal of {name}"))
+    horizon = int(horizon or t1.get("horizon", 12))
     profile = load_profile(profile_name)
     policy = FakePolicyServer(chunking="harness", seeded=profile.seeded)
     with serve(policy) as ph:
         harness = HarnessServer(config, policy_url=ph.url, contract=load_contract("fake"), arm=arm, profile=profile,
                                 scripted_llm=True)
         with serve(harness) as hh:
-            run_fake(hh.url, n_tasks=n_tasks, episodes=episodes, horizon=horizon, task_order=task_order)
+            run_fake(hh.url, n_tasks=n_tasks, episodes=episodes, horizon=horizon, task_order=task_order,
+                     instruction=instruction)
     return harness.records
 
 

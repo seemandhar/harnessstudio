@@ -119,6 +119,7 @@ class DecisionLoop:
             if comp is not None and callable(fn):
                 diagnostics[slot] = fn()  # recorded in every arm (shadow evidence in the null)
         ctx._log("decision", chosen=chosen, samples=len(proposals), planned=k_exec, executed=executed,
+                 instruction=policy_text,  # None = the original instruction
                  **({"diagnostics": diagnostics} if diagnostics else {}))
         self.history.append({"decision": len(self.history), "samples": len(proposals), "chosen": chosen,
                              "executed": executed})

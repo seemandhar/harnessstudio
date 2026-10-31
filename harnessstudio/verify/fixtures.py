@@ -15,10 +15,11 @@ from vla_eval.specs import DimSpec
 
 
 class FakeBenchmark(StepBenchmark):
-    def __init__(self, n_tasks: int = 2, horizon: int = 12, action_dim: int = 7, task_order: str = "forward") -> None:
+    def __init__(self, n_tasks: int = 2, horizon: int = 12, action_dim: int = 7, task_order: str = "forward",
+                 instruction: str = "reach the goal of {name}") -> None:
         super().__init__()
         self.n_tasks, self.horizon, self.action_dim = n_tasks, horizon, action_dim
-        self.task_order = task_order
+        self.task_order, self.instruction = task_order, instruction
 
     def get_tasks(self) -> list[dict[str, Any]]:
         tasks = [{"name": f"fake_task_{i}"} for i in range(self.n_tasks)]
@@ -46,7 +47,7 @@ class FakeBenchmark(StepBenchmark):
         level = int((raw_obs["pos"][0] + 5.0) * 25.0) % 256
         return {"images": {"cam": np.full((8, 8, 3), level, dtype=np.uint8)},
                 "state": raw_obs["pos"].astype(np.float32),
-                "task_description": f"reach the goal of {task['name']}",
+                "task_description": self.instruction.format(name=task["name"]),
                 "secret_goal": self._goal.astype(np.float32)}
 
     def get_step_result(self, step_result: StepResult) -> dict[str, Any]:

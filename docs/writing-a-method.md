@@ -57,6 +57,7 @@ artifacts: []                     # {name, path, sha256, license}
 operators: []                     # {name, model, base_url_env, api_key_env, original_model}
 original: {repo: "...", commit: "...", reported: "..."}
 description: "One sentence."
+tier1: {instruction: "open the drawer and put the bowl in it", horizon: 24}   # optional: fake-stack instruction/horizon
 ```
 
 `config()` builds the MethodConfig from the card and wires components:
