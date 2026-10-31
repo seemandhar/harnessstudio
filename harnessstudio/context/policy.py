@@ -106,8 +106,10 @@ class PolicyHandle:
             raise PolicyError("This policy does not advertise seeded_sampling")
         reply = await self._request(protocol.make_request(raw_obs, seeds, sampler, readouts))
         # Only the requested readouts reach methods: server extras such as the seed would reveal the case.
-        keep = set(readouts) | ({"timesteps"} if "velocity" in readouts else set())
-        out = [Proposal.make(a, {k: v for k, v in e.items() if k in keep})
+        # A readout "r" may come with companion keys named "r_*" (e.g. velocity_timesteps).
+        def wanted(key: str) -> bool:
+            return any(key == r or key.startswith(f"{r}_") for r in readouts)
+        out = [Proposal.make(a, {k: v for k, v in e.items() if wanted(k)})
                for a, e in protocol.parse_response(reply, len(seeds))]
         self.samples += len(out)
         return out

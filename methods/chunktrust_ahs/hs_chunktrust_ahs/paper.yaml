@@ -1,0 +1,70 @@
+name: chunktrust-ahs
+version: "2"
+changelog:
+  - "v2: ported to HarnessStudio v2. v1's server-side VelocityReadout sampler is replaced by the v2 policy readout (proposer num_samples 1, readouts [velocity]); the executor reads extras['velocity'] instead of extras['sampler']['velocity'], gets the chunk as an array, permutes the v2 wire columns back to v1's GR00T flat order, and gains a compact diagnostics(). Algorithm, parameters, vendored files and fidelity unchanged: on 400 randomized multi-decision episodes (6,632 decisions, seed 0) the v2 executor's k, full info dict and final episode state are bitwise equal to v1's (check_parity.py)."
+  - "v1: HarnessStudio v1 built-in (harnessstudio.methods.chunktrust_ahs, MethodConfig version 1)"
+paper:
+  id: "arXiv:2609.39754v2"
+  title: "ChunkTrust: Adapting Execution Horizons for Robot Policies with Action-Expert Evidence"
+  venue: "arXiv preprint"
+  url: "https://arxiv.org/abs/2609.39754v2"
+  # v1 README row, kept verbatim: "sampler (velocity readout) + executor (adaptive horizon) | faithful, adapted reproduction"
+  v1_ref: "arXiv:2609.39754v2; training-free AHS only (QHA excluded); upstream hf618/ChunkTrust@a9fd5741 src/chunktrust/gr00t_ahs.py"
+# Primary: AHS chooses how much of each chunk to execute from action-expert evidence (the RoboMetaHarness
+# paper card papers/chunktrust.json gives primary_category_id execution_monitoring). Secondary: the same
+# evidence sets how often the policy is queried again (inference allocation).
+categories: {primary: execution_monitoring, secondary: [uncertainty_compute]}
+# v1: Fidelity.FAITHFUL, substitutions (). The paper's training-free AHS maps one-to-one (vendored upstream
+# numerics); QHA (trained auxiliary) is not part of this method. It is an adapted reproduction in setting
+# only (different policy checkpoint and benchmark than the paper's row), disclosed below.
+fidelity: faithful
+substitutions: []
+disclosures:
+  - id: A1
+    name: setting
+    text: "Adapted reproduction: the paper's GR00T N1.5 row is the zero-shot base checkpoint on RoboCasa GR1 Tabletop (Table 1 / App. Table 10: Base 43.25% -> AHS 44.92%); here GR00T N1.5 Human300 checkpoint-120000 on RoboCasa365 panda_omron. No paper number transfers."
+  - id: A2
+    name: training-free part only
+    text: "Only AHS (training-free). QHA, which trains an auxiliary, is excluded."
+  - id: A3
+    name: velocity dims
+    text: "All 32 padded GR00T model action dims of the velocity trace are used (velocity_dims 'all', as the upstream overlay code). For panda_omron 20 of them are padding; 'effective' (first 12) exists only as a non-default option."
+  - id: A4
+    name: ambiguous constants
+    text: "W_tau = 3 (paper; the N1.5 simulation_service.py CLI default is 1) and T_sel = 1.0 (N1.5 overlay default; the paper states 0.8 only for pi0.5 RoboCasa). Fixed before any outcome."
+  - id: A5
+    name: history timing
+    text: "The history is appended from the actually executed prefix after the steps run (upstream appends before env.step); equivalent except at episode termination."
+  - id: A6
+    name: noise
+    text: "Seeded per-decision noise (Protocol N1, core.noise.crn_seed) and seeded resets instead of GR00T's global unseeded torch stream."
+port_notes:
+  - id: P1
+    text: "Velocity readout: v1 recorded v_t with a server-side Sampler (VelocityReadout.on_step); v2 requests the policy readout 'velocity' with the sample (proposer readouts) and reads extras['velocity']. On GR00T N1.5 both are the action decoder's pred[:, -16:] at each of the 4 denoising steps, float32 [4, 16, 32]."
+  - id: P2
+    text: "Column order: v1's flat rows were the sorted GR00T keys (base_motion, control_mode, end_effector_position, end_effector_rotation, gripper_close); the v2 wire order is vla-eval's (position, rotation, gripper, base_motion, control_mode). The executor permutes back to v1's order (column_order 'v1') when the bound layout has the five GR00T groups, so float32 row norms in the speed-uniformity term are summed in v1's order. Otherwise (fake stack) the native order is used. Rows are passed C-contiguous, as v1's flats (a strided history changes the float32 summation order of np.linalg.norm). Without the permutation, k was unchanged on all parity decisions but the info floats differed on 85% of them."
+  - id: P3
+    text: "v1's derived null (shadow AHS, K = 16 executed) is v2's derived null: the readout is requested and the executor plans and records 16 executed actions per decision, cuts ignored."
+  - id: P4
+    text: "extras['native_length'] and the readout's timesteps are not used; used_h = min(16, chunk length) as in v1. On the fake stack (6-step chunks) only the candidate 4 fits, so k = 4 every decision."
+requires: {capabilities: [act, chunk, seeded_sampling, velocity_readout]}
+# One sample per decision; decisions bounded by the horizon (AHS re-plans every 4..16 steps).
+budgets: {policy_calls: null, llm_calls: 0, tool_calls: 0, max_tokens: 0}
+null: derived
+artifacts: []
+operators: []
+original:
+  repo: "hf618/ChunkTrust"
+  commit: a9fd57412b3a19a0728cd726b0558dd89395fb84
+  entry: "src/chunktrust/gr00t_ahs.py select_exec_k_horizon (vendored byte-identical as chunktrust_gr00t_ahs.py; episode state as the GR00T N1.5 overlay EvalTraceManager, env_idx 0, in horizon.py)"
+  license: "MIT (CHUNKTRUST_LICENSE)"
+  files:
+    chunktrust_gr00t_ahs.py: afccc1b0b0bc34cb54ba89586e8cd00ca5f323f40e0ace24e051aa855b9690c7
+    horizon.py: a8c58f8644710bd1bb0d329b0ca74dc4e721c205695fad211f66cba42e762afc
+    CHUNKTRUST_LICENSE: 47c664305ab01245635e7f055f77c45a48f701807190ab4bcd5765eb54332ac2
+  reference_config: "RoboMetaHarness-claude runs/chunktrust-beat-20261026/harnesses/chunktrust_ahs/config/ahs_reference.json"
+  ported_from: "HarnessStudio v1 (harnessstudio-ext-g) harnessstudio/methods/chunktrust_ahs/{__init__.py, modules.py}"
+  reported: null           # no paper number transfers (A1)
+  v1_evidence: "v1 README: chunktrust-ahs vs the native ChunkTrust v2.2 reference, 32 dev cases: 24 M / 8 R / 0 X; tier 2 CloseToasterOvenDoor trial 1: null vs baseline M, 45 / 29 policy calls."
+tier1: {instruction: "open the drawer and put the bowl in it", horizon: 48, chunk_len: 16}
+description: "ChunkTrust training-free AHS on the native sample's flow-velocity readout: execute the first k in {4, 8, 12, 16} actions chosen from spectral velocity stability and history speed uniformity with a forgetting Beta posterior (expected-round)."

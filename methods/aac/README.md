@@ -82,9 +82,9 @@ not `proposal_selection`: it never chooses among the samples (sample 0 always ru
 - **P2 layout.** v1 read `extras["policy"]["action_layout"]`. v2 gets the layout from `bind(embodiment)` or
   `dims`. AAC uses no proprioception, so `embodiment.eef_position` is not needed.
 - **P3 diagnostics.** `AACEntropyExecutor.diagnostics()` returns the same evidence as v1 (k, k_entropy,
-  k_motion, per-step entropies, chunk means, motion, `proposal0_equals_chunk`). The v2 DecisionLoop does
-  not write executor diagnostics to the trace, so they are not in the records (v1 traced them as
-  `executor_info`).
+  k_motion, per-step entropies, chunk means, motion, `proposal0_equals_chunk`). The v2 DecisionLoop writes
+  them to the trace after every decision, in every arm (`decision` events, `diagnostics.executor`;
+  v1 traced them as `executor_info`).
 
 ### On the fake stack (tier 1: 7-D position/rotation/gripper, chunk length 6)
 

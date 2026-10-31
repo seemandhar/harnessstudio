@@ -129,7 +129,7 @@ class _VelocityTrace:
 
 
 class HarnessGR00TN15Server(HarnessPolicyMixin, RoboCasa365GR00TModelServer):
-    harness_capabilities = frozenset({"act", "chunk", "seeded_sampling", "isolated_streams"})
+    harness_capabilities = frozenset({"act", "chunk", "seeded_sampling", "isolated_streams", "velocity_readout"})
 
     def __init__(
         self,

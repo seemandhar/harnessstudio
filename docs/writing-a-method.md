@@ -67,7 +67,7 @@ artifacts: []                     # {name, path, sha256, license}
 operators: []                     # {name, model, base_url_env, api_key_env, original_model}
 original: {repo: "...", commit: "...", reported: "..."}
 description: "One sentence."
-tier1: {instruction: "open the drawer and put the bowl in it", horizon: 24}   # optional: fake-stack instruction/horizon
+tier1: {instruction: "open the drawer and put the bowl in it", horizon: 24, chunk_len: 16}   # optional fake-stack settings
 ```
 
 `config()` builds the MethodConfig from the card and wires components:
@@ -106,6 +106,10 @@ Interfaces are in `harnessstudio/components/protocols.py`:
 | `observation_op` | `transform(obs) -> dict of replaced public keys` |
 | `action_op` | `transform(chunk, obs, memory) -> chunk` |
 | `gate` | `plan(obs, history) -> {"num_samples": k, ...}` |
+
+Readouts: a proposer may set `readouts = ("velocity",)` (needs capability `velocity_readout`); each
+proposal's extras then hold `velocity` and companion keys such as `velocity_timesteps`. Nothing else
+from the server reaches methods (seeds are stripped).
 
 Any component can define `diagnostics() -> dict` (JSON); it is written to the trace after every
 decision, in every arm. Any component can define `bind(embodiment)`. It receives `Embodiment.action_layout`

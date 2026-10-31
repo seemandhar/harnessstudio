@@ -1,0 +1,18 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hs-chunktrust-ahs"
+version = "2.0.0"
+description = "ChunkTrust AHS (arXiv:2609.39754v2): adaptive execution horizon from the policy's flow-velocity readout (training-free part, vendored upstream numerics). v2.0.0: ported to HarnessStudio v2."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Method wrapper: see the repository; vendored ChunkTrust files: MIT (hs_chunktrust_ahs/CHUNKTRUST_LICENSE)"}
+dependencies = ["harnessstudio", "numpy>=1.24"]
+
+[project.entry-points."harnessstudio.methods"]
+chunktrust-ahs = "hs_chunktrust_ahs:config"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hs_chunktrust_ahs"]

@@ -99,6 +99,6 @@ class FakePolicyServer(HarnessPolicyMixin, _FakeNative):
             if "velocity" in readouts:  # [denoise steps, H, A], deterministic in (obs, seed), like GR00T's readout
                 rng = np.random.default_rng([seed, _digest32(obs), 1])
                 extras["velocity"] = rng.normal(0.0, 1.0, (4, self.chunk_len, self.action_dim)).astype(np.float32)
-                extras["timesteps"] = [0.0, 0.25, 0.5, 0.75]
+                extras["velocity_timesteps"] = [0, 250, 500, 750]
             out.append((chunk, extras))
         return out

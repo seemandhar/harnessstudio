@@ -4,6 +4,7 @@ bounds, case-order independence and import closure in a clean interpreter.
 """
 from __future__ import annotations
 
+import dataclasses
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -47,9 +48,10 @@ def _run(config: MethodConfig, arm: Arm, profile_name: str, task_order: str = "f
     instruction = str(t1.get("instruction", "reach the goal of {name}"))
     horizon = int(horizon or t1.get("horizon", 12))
     profile = load_profile(profile_name)
-    policy = FakePolicyServer(chunking="harness", seeded=profile.seeded)
+    policy = FakePolicyServer(chunking="harness", seeded=profile.seeded, chunk_len=int(t1.get("chunk_len", 6)))
+    contract = dataclasses.replace(load_contract("fake"), default_horizon=horizon)  # method horizon = benchmark's
     with serve(policy) as ph:
-        harness = HarnessServer(config, policy_url=ph.url, contract=load_contract("fake"), arm=arm, profile=profile,
+        harness = HarnessServer(config, policy_url=ph.url, contract=contract, arm=arm, profile=profile,
                                 scripted_llm=True, **(server_kwargs or {}))
         with serve(harness) as hh:
             run_fake(hh.url, n_tasks=n_tasks, episodes=episodes, horizon=horizon, task_order=task_order,
