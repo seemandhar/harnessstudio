@@ -1,7 +1,7 @@
 # SCALE (arXiv:2602.04208) on OpenVLA / LIBERO through HarnessStudio v2
 
-Status (2026-10-31 09:45 PT): port done and verified; libero_10 subset + extension and a libero_goal subset complete;
-official-pipeline reference runs in progress.
+Status (2026-10-31 10:35 PT): **done**. Port verified; libero_10 subset + extension, a libero_goal subset and an
+official-pipeline reference run complete. All GPU work stopped (GPU 5 back to the GR00T server only).
 
 ## Summary
 
@@ -9,10 +9,13 @@ official-pipeline reference runs in progress.
   SCALE `predict_action` token for token (1050/1050 tokens, 150/150 actions, u, gamma and state on the same
   checkpoint and seeds). The server's native path is bitwise the stock vla-eval server (a 520-step episode).
 - Tier 0/1 PASS; tier 2 PASS (2 M / 0 R / 0 X).
-- LIBERO-10, 60 paired cases (predeclared 30 + 30 extension): baseline 29/60, null 29/60 (60 M / 0 R / 0 X),
-  **SCALE 38/60, +16 / -7, sign test p = 0.093** (paper: 52.7 -> 63.3). Same direction and size as the paper,
-  not significant at this n.
+- LIBERO-10, 60 paired cases (predeclared 30 + 30 extension cases with init states 3-5 on a fresh env, see the
+  extension caveat): baseline 29/60, null 29/60 (60 M / 0 R / 0 X), **SCALE 38/60, +16 / -7, sign test p = 0.093**
+  (paper: 52.7 -> 63.3). Same direction and size as the paper's LIBERO-Long gain, not significant at this n.
+  Note SCALE's defaults were tuned by the authors on LIBERO-Long, the suite where it gains here; on Goal
+  (defaults applied unchanged) we measured +6 / -5.
 - LIBERO-Goal, 30 paired cases: baseline 23/30, null 23/30 (30 M), SCALE 24/30, +6 / -5 (p = 1.0): no effect seen.
+- Official SCALE repo's own eval (reference, n = 20 per mode, unpaired): greedy 13/20, SCALE 16/20.
 
 ## Core requests
 
@@ -20,7 +23,9 @@ Both were implemented by the coordinator in `e68c01b` (2026-10-31): `fake-t2.yam
 (plain `hs verify scale` passes; the method-local profile copy was removed) and `hs pair --arm ARM=DIR ...`
 pairs separately run arms. Still open (minor): `hs pair` keeps only the last `--arm` per arm name, so an arm
 split across two servers must be concatenated into one `records.jsonl` first (done here); vla-eval cannot start
-at an episode offset (worked around below with a benchmark subclass, `hs2-gpu/scale/bench/libero_offset.py`).
+at an episode offset (worked around below with a benchmark subclass, `hs2-gpu/scale/bench/libero_offset.py`,
+which does not replay earlier resets, so its cases are not vla-eval's sequential episodes; a proper option would
+replay the skipped resets or accept an explicit episode list).
 
 ## What was built
 
@@ -31,6 +36,7 @@ at an episode offset (worked around below with a benchmark subclass, `hs2-gpu/sc
 | `methods/scale/` (`hs-scale`, entry point `scale`) | `hs_scale.decoder:ScaleDecoder` (the algorithm: Eq. 2-8, official arithmetic op for op), `hs_scale:SingleSample` proposer (K = 1), `paper.yaml` (fidelity `faithful`, requires `decoding_hooks`). |
 | `hs2-gpu/configs/openvla_libero10_hs.yaml`, `hs2-gpu/configs/libero10_scale.yaml`, `hs2-gpu/start_openvla.sh` | server launch config (same args as vla-eval's `openvla/libero_10.yaml`), LIBERO-10 benchmark overlay (Docker, GPU 5), launcher. |
 | `hs2-gpu/scale/{obs_recorder.py, check_server.py, agree_official.py}` | observation recorder relay, wire-level server checks, token-level agreement with the official code. |
+| `hs2-gpu/scale/{run_arm.sh, chain_*.sh, restart_server.sh, pair_runs.py, ovr_*.json}`, `hs2-gpu/configs/{openvla_libero_*_hs.yaml, libero_*_scale.yaml, libero10_scale_offset.yaml}`, `hs2-gpu/scale/bench/libero_offset.py`, `hs2-gpu/scale/run_official.sh` | arm runners and the exact chains used, per-suite server/benchmark configs, the episode-offset benchmark subclass, the official-pipeline runner (official env: `/bigdata/sejain/hs2-cache/scale-official/`, official code: `/bigdata/sejain/hs2-cache/src/scale` @ b4ad2a6). |
 
 SCALE hyperparameters (official `configs/scale.yaml`, "tuned on LIBERO-Long and applied unchanged"):
 `T0 = 1.0, epsilon = 1e-12, num_logits = 256, kappa = 2.0, alpha = 0.8, attn_sensitivity = 0.3`.
@@ -160,17 +166,24 @@ hs pair --arm baseline=.../subset_l10_base/baseline --arm null=.../subset_l10_nu
 (Task lists: `hs2-gpu/scale/ovr_null_{a,b}.json`. Per-task and per-case table: `results/scale/subset_l10_paired/extra.json`
 from `hs2-gpu/scale/pair_runs.py`.)
 
-### Extension: libero_10 episodes 3-5 (complete)
+### Extension: libero_10 init states 3-5 on a fresh env (complete)
 
 Same setup, LIBERO initial states 3, 4, 5 for every task (30 new cases). vla-eval always runs episodes
 0..N-1, so the benchmark is `hs2-gpu/scale/bench/libero_offset.py:LIBEROEpisodeOffset` (vla-eval's
 LIBEROBenchmark; `episode_offset = 3` is added to the task's `episode_idx` in place before the runner builds the
-EPISODE_START payload, so case keys and seeds carry the true episode index), mounted into the container
+EPISODE_START payload, so case keys and seeds carry the init-state index 3-5), mounted into the container
 (`hs2-gpu/configs/libero10_scale_offset.yaml`). Arms: baseline + null (tasks 0-6) on 8115, candidate + null
 (tasks 7-9) on 8116. The extension baseline started at 05:35 PT, before the subset's second null part finished
 (05:53); the rule was met, so it counts. It would have been reported but not counted otherwise.
 
-| Arm | Episodes 3-5 (30) | vs baseline | **All libero_10, episodes 0-5 (60)** | vs baseline |
+**Caveat (from the coordinator's audit):** the subclass adds the offset without replaying earlier resets. vla-eval
+reuses one env per task and LIBERO re-places fixtures at every `reset()`, so these 30 cases have LIBERO init states
+3-5 but the fixture placements of resets 1-3 of a fresh env, **not** vla-eval's sequential episodes 3-5. Pairing
+inside the extension is valid (same offset and fresh benchmark process in every arm), but these records carry
+episode keys 3-5 that would **not** pair with a later sequential vla-eval run under the same keys, and "episodes
+0-5" below means "sequential episodes 0-2 + offset cases 3-5".
+
+| Arm | Offset cases 3-5 (30) | vs baseline | **All libero_10: episodes 0-2 + offset cases 3-5 (60)** | vs baseline |
 |---|---|---|---|---|
 | baseline (greedy) | 13/30 | - | **29/60 (48%)** | - |
 | null (derived) | 13/30 | +0 / -0 | **29/60** | +0 / -0 (p = 1.0) |
@@ -184,7 +197,8 @@ EPISODE_START payload, so case keys and seeds carry the true episode index), mou
   alphabet soup + tomato sauce 3 -> 5, cream cheese + butter 5 -> 6, stove + moka 4 -> 5, black bowl drawer 4 -> 4,
   book caddy 5 -> 5, both moka pots 1 -> 1, microwave 2 -> 2, **white mug left / yellow-white mug right 3 -> 1**.
 - Reading: the direction matches the paper (SCALE paper, OpenVLA LIBERO-Long: 52.7 -> 63.3; here 48 -> 63 on 60
-  paired cases), but the paired sign test gives p = 0.093: **not significant at 0.05** with n = 60. Combined
+  paired cases), but the paired sign test gives p = 0.093: **not significant at 0.05** with n = 60. The paper's
+  SCALE defaults were tuned on LIBERO-Long, so this is the suite most favourable to them. Combined
   tables merge `hs pair` inputs (`results/scale/l10_all/<arm>/records.jsonl` = subset + extension records);
   summaries in `results/scale/{ext_l10,l10_all}_paired/`.
 
@@ -210,7 +224,7 @@ Result (complete, 90 episodes all valid):
   1 -> 2, wine bottle on cabinet 2 -> 3; bowl on cabinet 3 -> 2, wine bottle on rack 2 -> 1, turn on stove 3 -> 2;
   the other four unchanged. Not extended (time).
 
-### Official SCALE pipeline, for reference (running)
+### Official SCALE pipeline, for reference (complete)
 
 The official repo's own `run_libero_eval.py` (its LIBERO install, TF preprocessing, flash-attention-2, global
 seed 7, `env.seed(0)`), libero_10, `--num_trials_per_task 2` (initial states 0 and 1 of each task), `greedy` and
@@ -218,6 +232,17 @@ seed 7, `env.seed(0)`), libero_10, `--num_trials_per_task 2` (initial states 0 a
 Different random streams and preprocessing from the HarnessStudio runs, so only rates are comparable, not pairs.
 (Run outside a container first, robosuite's EGL device index 5 rendered on physical GPU 6; those runs were stopped
 after one episode and discarded. TensorFlow's preallocation was turned off with `TF_FORCE_GPU_ALLOW_GROWTH`.)
+
+| libero_10, init states 0-1 of each task (20) | greedy | SCALE |
+|---|---|---|
+| official pipeline (`run_libero_eval.py`, seed 7) | 13/20 (65%), 3,271 s | **16/20 (80%)**, 3,205 s |
+| HarnessStudio, same init states (subset episodes 0-1) | 10/20 | 12/20 |
+
+- Both pipelines move the same way (+3 official, +2 here), at n = 20 each; neither difference means much alone.
+- Greedy outcomes are pipeline-sensitive: on the same 20 init states the official greedy and vla-eval greedy agree
+  on only 8 of 20 episodes (TF vs PIL crop/resize, flash-attention-2 vs SDPA, `env.seed(0)` reuse order), which is
+  why the HarnessStudio comparisons are paired within one pipeline. Official logs:
+  `hs2-gpu/results/scale/official_{greedy,scale}_n2/logs/`, `hs2-gpu/logs/scale_official_{greedy,scale}.log`.
 
 ## Deviations and disclosures
 

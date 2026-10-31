@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hs-scale"
+version = "0.1.0"
+description = "SCALE: Self-uncertainty Conditioned Adaptive Looking and Execution for Vision-Language-Action Models"
+requires-python = ">=3.10"
+dependencies = ["harnessstudio"]
+
+[project.entry-points."harnessstudio.methods"]
+scale = "hs_scale:config"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hs_scale"]
