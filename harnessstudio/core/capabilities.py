@@ -1,7 +1,7 @@
 """Policy capability names (spec section 4.1).
 
 T0: act. T1: chunk, seeded_sampling, isolated_streams. T2: denoise_hooks, velocity_readout,
-differentiable_denoiser. T3: attention_readout, logits_readout, predicted_futures.
+differentiable_denoiser, decoding_hooks (autoregressive policies). T3: attention_readout, logits_readout, predicted_futures.
 """
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ CAPABILITIES: dict[str, str] = {
     "denoise_hooks": "Sampler.on_step runs at every denoising step",
     "velocity_readout": "flow velocities are returned as extras",
     "differentiable_denoiser": "Sampler.guide gets a VJP of the denoised estimate",
+    "decoding_hooks": "a server-side Sampler changes autoregressive token decoding (temperature, attention)",
     "attention_readout": "action-token attention is returned as extras",
     "logits_readout": "token logits are returned as extras",
     "predicted_futures": "predicted future frames are returned as extras",

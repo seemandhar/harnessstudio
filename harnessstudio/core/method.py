@@ -193,9 +193,9 @@ def validate(config: MethodConfig) -> MethodConfig:
     for r in readouts:
         if r in needs and needs[r] not in config.required:
             raise RegistrationError(f"Readout {r!r} needs capability {needs[r]!r}")
-    if "sampler" in config.slots and "denoise_hooks" not in config.required \
-            and "differentiable_denoiser" not in config.required:
-        raise RegistrationError("A sampler needs 'denoise_hooks' or 'differentiable_denoiser'")
+    if "sampler" in config.slots and not {"denoise_hooks", "differentiable_denoiser",
+                                           "decoding_hooks"} & set(config.required):
+        raise RegistrationError("A sampler needs 'denoise_hooks', 'differentiable_denoiser' or 'decoding_hooks'")
     for a in config.artifacts:
         if not isinstance(a, ArtifactPin):
             raise RegistrationError("Artifacts must be ArtifactPins")
