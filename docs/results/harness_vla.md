@@ -292,7 +292,7 @@ All runs valid. Candidate on the predeclared 100 cases, paired with the `subset_
 |---|---|---|---|---|
 | baseline (pi05_libero alone) | 8/50 | 15/50 | 23/100 | |
 | harness-vla, NRP qwen3-vl planner (v2) | 9/50 | 21/50 | 30/100 | +22 / -15, p = 0.32 |
-| **harness-vla-sol, gpt-6.1-sol planner** | **27/50** | **28/50** | **55/100** | **+41 / -9, p = 4.5e-6** |
+| **harness-vla-sol, gpt-6.1-sol planner** | **27/50** | **28/50** | **55/100** | **+41 / -9, p = 5.6e-6** |
 | paper, zero-shot (Claude Code, RLinf pi05_libero130) | 79.0% | 31.0% | | |
 
 Episode 0 only (20 cases, all three arms): baseline 5/20, null 5/20 (null vs baseline 17 M / 3 R / 0 X; the 3 R
