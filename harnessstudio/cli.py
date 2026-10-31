@@ -194,7 +194,8 @@ def _cmd_pair(args) -> int:
     for spec in args.arm:
         arm, _, d = spec.partition("=")
         path = Path(d) / "records.jsonl" if Path(d).is_dir() else Path(d)
-        records[arm] = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+        # repeated --arm NAME=DIR flags are concatenated (an arm split across policy servers)
+        records.setdefault(arm, []).extend(json.loads(line) for line in path.read_text().splitlines() if line.strip())
     summary = summarize(records)
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
