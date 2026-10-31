@@ -3,9 +3,12 @@
 Adds two observation keys:
   depth:  {camera: float32 [H, W] metres}, flipped on both axes exactly like vla-eval's RGB images
   camera: {camera: {"world_to_pixel": [4, 4], "intrinsics": [3, 3], "camera_to_world": [4, 4],
-                    "height": H, "width": W, "flipped": True}}
-Matrices are robosuite's (camera_utils) for the unflipped image; harnessstudio.tools.geometry handles
-the flip. No object poses or other simulator state are added.
+                    "height": H, "width": W, "pixel_flip": "horizontal"}}
+Matrices are robosuite's (camera_utils). robosuite pixel (col, row) appears in the published image at
+(W-1-col, row): OpenGL renders upside down and vla-eval flips both axes, so the net difference is a
+horizontal flip (checked on real LIBERO frames: the projected end effector lands on the fingertips, and
+back-projection through depth is within 3-11 mm while the gripper is closed on an object).
+harnessstudio.tools.geometry applies the mapping. No object poses or other simulator state are added.
 """
 from __future__ import annotations
 
@@ -67,7 +70,7 @@ class _RGBDMixin:
                     "world_to_pixel": np.asarray(cu.get_camera_transform_matrix(sim, cam, h, w), dtype=np.float64),
                     "intrinsics": np.asarray(cu.get_camera_intrinsic_matrix(sim, cam, h, w), dtype=np.float64),
                     "camera_to_world": np.asarray(cu.get_camera_extrinsic_matrix(sim, cam), dtype=np.float64),
-                    "height": h, "width": w, "flipped": True,
+                    "height": h, "width": w, "pixel_flip": "horizontal",
                 }
         if depth:
             obs["depth"] = depth

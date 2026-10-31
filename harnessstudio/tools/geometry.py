@@ -7,9 +7,15 @@ import numpy as np
 
 
 def _unflip(u: float, v: float, cam: Mapping) -> tuple[float, float]:
-    if cam.get("flipped"):
+    """Published image (u, v) <-> robosuite pixel (col, row); the mapping is its own inverse."""
+    flip = cam.get("pixel_flip", "none")
+    if flip == "horizontal":
+        return cam["width"] - 1 - u, v
+    if flip == "both":
         return cam["width"] - 1 - u, cam["height"] - 1 - v
-    return u, v
+    if flip == "none":
+        return u, v
+    raise ValueError(f"unknown pixel_flip {flip!r}")
 
 
 def world_to_pixel(xyz, cam: Mapping) -> tuple[float, float]:
