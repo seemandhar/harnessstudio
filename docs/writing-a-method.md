@@ -163,7 +163,11 @@ hs eval M --config eval.yaml --case-namespace seed7 --prepared prep/ ...
 ```
 
 `prepared.json` pins every artifact by sha256 and lists the development case keys; evaluation refuses
-those cases. Components receive artifacts through `load_artifacts(artifacts)` (name -> path); controllers
+those cases (they show up as invalid and drop out of pairing). A case key is
+`(contract[@case-namespace], task, episode_idx)`. On LIBERO / LIBERO-Pro the scene is fixed by
+`episode_idx` (the benchmark seed does not change it), so do not set a namespace: develop on episodes
+0..k-1 and evaluate on more episodes; the development ones are excluded automatically. Set a namespace
+only when the development run uses a benchmark seed that really changes the scenes (RoboCasa365 `seed`). Components receive artifacts through `load_artifacts(artifacts)` (name -> path); controllers
 read `ctx.artifacts`. `harnessstudio.components.memory` has `write_trajectories` / `TrajectoryStore`
 (nearest-neighbour retrieval over stored states). Report zero-shot and prepared results separately.
 

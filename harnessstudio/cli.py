@@ -73,9 +73,9 @@ def _cmd_prepare(args) -> int:
         print(f"{config.name} has no prepare stage", file=sys.stderr)
         return 1
     if not args.case_namespace:
-        print("hs prepare needs --case-namespace (e.g. dev-seed1007) so development cases stay distinguishable",
-              file=sys.stderr)
-        return 1
+        print("[hs prepare] no --case-namespace: development cases keep their plain keys and evaluation will "
+              "refuse them (right for LIBERO, where episode_idx fixes the scene). Use a namespace only when the "
+              "development run uses a different benchmark seed that really changes the scenes.", file=sys.stderr)
     out = Path(args.out)
     collect_arm, keys = preparer_settings(config)
     args.prepared = None
