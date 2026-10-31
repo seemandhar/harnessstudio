@@ -1,0 +1,16 @@
+# hs_harness_vla_bench:LIBEROProRGBDInstruction (LIBERO-Pro + metric depth + camera calibration, sensor data only).
+# Same keys as harnessstudio/contracts/libero_pro.yaml plus depth/camera (see harnessstudio/benchmarks/libero_rgbd.py).
+name: libero_pro_rgbd
+public_keys: [images, task_description, states, controller_states, depth, camera]
+instruction_key: task_description
+optional_keys: [states, controller_states, depth, camera]
+state_key: states
+action_dim: 7
+control_mode: eef_delta   # 3 position + 3 axis-angle rotation + 1 gripper
+suite_horizons: {libero_spatial: 220, libero_object: 280, libero_goal: 300, libero_10: 520, libero_90: 400}
+default_horizon: 520
+eef_position: {path: [states], slice: [0, 3]}   # states = [eef pos3, eef axis-angle3, gripper qpos2]
+action_layout: {position: [0, 3], rotation: [3, 6], gripper: [6, 7]}
+eef_delta_scale: 0.05
+gripper_open: -1.0
+gripper_close: 1.0

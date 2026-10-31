@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hs-harness-vla"
+version = "1.0.0"
+description = "Harness VLA (arXiv:2607.08448) zero-shot mode for HarnessStudio v2"
+requires-python = ">=3.10"
+dependencies = ["harnessstudio"]
+
+[project.entry-points."harnessstudio.methods"]
+harness-vla = "hs_harness_vla:config"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hs_harness_vla"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"hs_harness_vla/contracts" = "hs_harness_vla/contracts"

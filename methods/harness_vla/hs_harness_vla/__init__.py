@@ -1,0 +1,23 @@
+"""harness-vla: Harness VLA (arXiv:2607.08448) zero-shot mode as a HarnessStudio controller method.
+
+A planner REPL over the paper's fixed primitive library (MOVE_TO, MOVE_POSE, ROTATE_WRIST, ROTATE_PITCH,
+SET_GRIPPER, RELEASE, VLA_ACT) with SAM3 + depth perception, ported from the authors' RPent code
+(Apache-2.0). See README.md and paper.yaml for what is reproduced and what is substituted.
+"""
+from __future__ import annotations
+
+from pathlib import Path
+
+from harnessstudio.core.card import config_from_card
+from harnessstudio.core.method import ModuleRef
+
+from .controller import HarnessVLA  # noqa: F401
+
+CONTRACT = Path(__file__).with_name("contracts") / "libero_pro_rgbd.yaml"
+
+
+def config():
+    return config_from_card(Path(__file__).with_name("paper.yaml"), controller=ModuleRef(
+        "hs_harness_vla.controller:HarnessVLA",
+        {"max_turns": 40, "max_tool_calls": 60, "image_scale": 2, "wrist_image": True, "history_turns": 8,
+         "llm_retries": 2, "sam3_url": "http://127.0.0.1:8117", "max_tokens": 800}))

@@ -1,10 +1,21 @@
 # Harness VLA (arXiv:2607.08448), zero-shot mode, on LIBERO-Pro Goal (2026-10-31, overnight)
 
-Status: **in progress** (this file is updated during the night; the last section has the latest state).
+Status: **complete** (05:45 PT): package, tiers 0/1/2, predeclared 100-case subset (3 arms), RPent reference run on the 20 ep-0 cases.
 
 ## Core requests
 
-None so far (everything needed lives in `methods/harness_vla/`).
+1. **Case keys collide inside LIBERO-Pro `libero_goal_task`.** Two tasks there carry the same BDDL instruction
+   ("put the wine bottle in the bowl": files `put_the_cream_cheese_in_the_bowl.bddl` and
+   `put_the_wine_bottle_on_top_of_the_cabinet.bddl`). `harnessstudio/server/harness_server.py:_case` keys a case by
+   `(contract, suite/name, episode_idx)`, so both tasks map to the same keys: `traces/<key>.json` of the first task
+   is overwritten by the second, and `harnessstudio/eval/pairing.py:summarize` raises "duplicate case keys" (so a
+   one-process `hs eval` over all of Goal-T would crash at the pairing step, after writing `records.jsonl`).
+   Change: include a per-task identifier in the key when the EPISODE_START task payload has one (vla-eval's sync
+   runner forwards every str/int/float/bool/list field of the task dict: e.g. `task_id`/`task_idx` if present, or
+   `filename_instruction`, which `LIBEROProBDDLInstruction` adds), e.g. `name = f"{suite}/{name}#{task_id}"`, and
+   use the same key for the trace file name. Workaround here: records are paired by occurrence order
+   (`methods/harness_vla/scripts/merge_arms.py:disambiguate`), valid because every arm runs tasks in the same
+   order; the first task's 5 per-episode trace files per arm are overwritten on disk, its records are not.
 
 ## Predeclared subset (written before any scored episode)
 
@@ -73,9 +84,60 @@ Arms run as separate processes (all six at once) so the night fits: the policy s
 native stream does not depend on which process or order it runs in, and pairing is by case key exactly as in
 `hs eval`.
 
-## Results
+## Results (v2, complete: 100/100 cases valid in every arm)
 
-(pending)
+Paired summary (`hs report hs2-gpu/harness_vla/runs/subset_v2/merged`; baseline records from the v1 launch, see Log):
+
+| Cell | Cases | Baseline | Null | Candidate | Cand vs base (wins / losses) |
+|---|---|---|---|---|---|
+| Goal-T (`libero_goal`, `task`) | 50 | 8 | 8 | 9 | +6 / -5 |
+| Goal-S (`libero_goal`, `swap`) | 50 | 15 | 15 | 21 | +16 / -10 |
+| Both | 100 | 23 | 23 | **30** | +22 / -15 (sign test p = 0.32) |
+| episode_idx 0 only (original declaration) | 20 | 5 | 5 | 5 | +2 / -2 |
+
+- Candidate vs null: +22 / -15 (the null reproduces the baseline outcome on every case).
+- Null attribution (null vs baseline): **90 M / 10 R / 0 X**. All 10 R are Goal-S cases where the observation hashes
+  diverged before any action did (steps 40-256), i.e. the simulator/renderer branched with identical actions
+  (the arms ran in different containers next to each other on GPU 7; the T1 policy cannot cause an observation
+  change). Outcomes still agree on all 10.
+- Not an improvement claim: n = 50 per cell, one seed, p = 0.32; no full-benchmark run follows from this.
+
+Per task (successes out of 5 episodes; baseline = null on every task):
+
+| Goal-S task | Base | Cand | | Goal-T task (instruction sent) | Base | Cand |
+|---|---|---|---|---|---|---|
+| open the middle drawer of the cabinet | 0 | 0 | | open the bottom drawer of the cabinet | 0 | 0 |
+| open the top drawer and put the bowl inside | 5 | **0** | | open the top layer of the drawer and put the cream cheese inside | 0 | 1 |
+| push the plate to the front of the stove | 0 | 0 | | push the cream cheese to the front of the stove | 0 | 0 |
+| put the bowl on the plate | 3 | 4 | | put the cream cheese on the rack | 0 | **3** |
+| put the bowl on the stove | 4 | **0** | | put the plate on the stove | 0 | 0 |
+| put the bowl on top of the cabinet | 0 | **5** | | put the plate on the top of the drawer | 1 | 0 |
+| put the cream cheese in the bowl | 0 | **3** | | put the wine bottle in the bowl (t2, file put_the_wine_bottle_on_top_of_the_cabinet) | 0 | 1 |
+| put the wine bottle on the rack | 0 | **3** | | put the wine bottle in the bowl (t6, file put_the_cream_cheese_in_the_bowl) | 0 | 0 |
+| put the wine bottle on top of the cabinet | 0 | 1 | | put the wine bottle on the plate | 3 | 1 |
+| turn on the stove | 3 | 5 | | turn off the stove | 4 | 3 |
+
+Reading: the harness does what the paper says it should on swapped scenes where the policy goes to the old
+location (SAM3 + depth find the moved object/fixture; VLA grasps; scripted transport/release): bowl to cabinet top
+0 -> 5, cream cheese to bowl 0 -> 3, bottle to rack 0 -> 3. It loses tasks the frozen policy already solves end to
+end (open top drawer + bowl 5 -> 0, bowl to stove 4 -> 0): from the planner's staged poses the VLA grasp often
+misses, and the scripted placement (a descent that stalls on the stove, releases that do not satisfy the predicate)
+is worse than the policy's own pick-and-place. On Goal-T the net effect is about zero: most redirected goals need a grasp the policy cannot
+do from a staged pose (the plate, pushing) or drawer approaches the planner drives into the cabinet.
+
+Cost and behaviour (from the traces, `scripts/trace_stats.py`):
+
+| Arm | LLM calls / ep | LLM tokens / ep | SAM3 + back-proj. / ep | wall s / ep | Policy samples (total) |
+|---|---|---|---|---|---|
+| baseline | 0 | 0 | 0 | 25 | 2653 |
+| null | 7.3 | 42.3k | 2.9 | 61 | 2653 (native) |
+| candidate | 10.2 | 64.7k | 3.5 | 70 | 1343 (method) |
+
+Candidate commands over 100 episodes: move_to 497, segment 326, vla_act 129, back_project 25, set_gripper 23,
+release 14, rotate 2. vla_act with `object_lifted` detected a lift in 41/129 calls (Goal-S 31/54, Goal-T 10/75).
+58 + 60 move_to calls returned `stalled`; the identical-reply guard rejected 116 replies (91 on Goal-S). Median
+steps at success ~130-140 of 300. Planner stops: 6 episodes ended by turn budget (5) or `finish` (1); the rest ran
+to the horizon or to success.
 
 ## RPent reference run (adapted, unmodified authors' code)
 
@@ -85,7 +147,7 @@ Launcher: `hs2-gpu/harness_vla/rpent_ref/launch_rpent_ref.sh` (RPent @ 945682a r
 
 | | |
 |---|---|
-| Planner | `--planner api --model openai-chat:qwen3-vl --base-url https://ellm.nrp-nautilus.io/v1 --reasoning-effort none`, plus a request shim (`rpent_ref/rpent_no_think.py`) adding `enable_thinking: false` and temperature 0, so the operator matches the port; `--max-turns 40` |
+| Planner | `--planner api --model openai-chat:qwen3-vl --base-url https://ellm.nrp-nautilus.io/v1 --reasoning-effort none`, plus a request shim (`rpent_ref/rpent_no_think.py`) adding `enable_thinking: false`, temperature 0.7, top_p 0.8, top_k 20 and seed 7, so the operator matches the port's v2 operator; `--max-turns 40` (40 model requests) |
 | Policy | RPent's own VLA server with the paper's RLinf `pi05_libero130` fullshot checkpoint, GPU 7 :8118 |
 | Perception | the same SAM3 server (:8117); RPent's own env server with 1024 px re-renders |
 | Horizon | `--max-episode-steps 300` (official); RPent settles 15 steps before the episode, vla-eval 10 |
@@ -94,6 +156,19 @@ Launcher: `hs2-gpu/harness_vla/rpent_ref/launch_rpent_ref.sh` (RPent @ 945682a r
 
 Comparison with the port is by case outcome only (different policy checkpoint and env server, so not exactly
 paired).
+
+Result (20/20 cases finished, `rpent_ref/comparison.txt`, `scripts/compare_rpent.py`):
+
+| Cases (episode_idx 0) | RPent reference | Port: baseline (openpi pi05_libero) | Port: candidate |
+|---|---|---|---|
+| Goal-T, 10 | 1 (t2 "put the wine bottle in the bowl") | 2 (t7, t8) | 1 (t7) |
+| Goal-S, 10 | 1 (t6 "put the cream cheese on the bowl") | 3 (t3, t7, t8) | 4 (t4, t7, t8, t9) |
+| Both, 20 | **2** | 5 | 5 |
+
+No case is solved by both the RPent reference and the port's candidate. RPent per case: ~1.42 M input tokens,
+~6.4k output tokens, ~6 min; one case (Goal-T t2, a success) logged an NRP connection error late in the episode.
+With the same NRP operator, the open-weight planner is the limiting factor in both implementations; n = 20 says
+nothing finer than that.
 
 Behaviour at the official horizon: when the 300 steps are used up, robosuite raises "executing action in terminated
 episode" inside RPent's env server, the RPC pipe breaks and the RPent planner reports an "infra crash". This is
@@ -119,7 +194,8 @@ Fidelity `adapted` (also in `hs_harness_vla/paper.yaml`):
 | RPent evaluate prompt + guides + memory (MEMORY.md, task-family, seed-0 recipes, PROVEN_LEVERS) | `hs_harness_vla/prompts.py`: role, rules, localization and primitives from the prompt/guides, condensed; every memory-derived part removed | zero-shot mode |
 | `finish` ends the episode | the arm holds its pose until the horizon | HarnessStudio would otherwise hand the rest of the episode to the native policy |
 | planner keeps its own localization table in its reasoning (RPent PERCEPTION_ALGORITHM step 6) | the controller keeps the table from the planner's own `segment` results and reports the gripper's offset to each entity every turn | the open-weight planner misread positions from the wrist image (dev case: held the bottle right above the cabinet top and moved away) |
-| no loop guard | an identical motion command right after it failed/stalled is refused without env steps | dev case: 20 identical stalled `move_to` calls |
+| no loop guard | an identical motion command right after it failed/stalled is refused without env steps; a reply repeating the previous reply's commands is not executed and kept out of the context | dev case: 20 identical stalled `move_to` calls; scored v1: 29 identical `back_project` calls |
+| Claude / Codex default sampling | Qwen's recommended non-thinking sampling: temperature 0.7, top_p 0.8, top_k 20, request seed 7 (v1 used temperature 0 and looped) | model card; greedy decoding repeats |
 | no gripper geometry in the prompt | one sentence on the hand's size (~20 cm across the fingers, ~12 cm tall) and "travel high, descend vertically" | dev cases: the open hand caught the cabinet top edge |
 
 Privileged-state audit of RPent's LIBERO env server (`robots/libero/env_server.py`, `tools.py`): it exposes
@@ -138,6 +214,13 @@ here). No object poses reach the planner in RPent's perception-isolated mode eit
   contact primitive for non-standard objects (e.g. it does not grasp the plate).
 - Perception resolution: 256x256 instead of 1024x1024 hi-res.
 - Scale: 10 tasks x 5 episodes per cell, one seed; the paper uses 10 seeds per task. Not comparable to Table 5.
+- The prompt rules added during development (hand size, travel high, localization table, loop guards) were
+  developed on unscored original-libero_goal cases, but two Goal-T cases (t0/t1 ep 0) were seen in the first
+  tier-2 smoke before the `finish` rule was added (disclosed in the Log).
+- 10 of 100 null/baseline pairs are R (environment branched with identical actions); the null still matches
+  the baseline outcome on all 100.
+- The RPent reference run is not strictly zero-shot (PROVEN_LEVERS and other memory-derived prompt text cannot
+  be switched off in RPent) and uses a different policy checkpoint and env server.
 
 ## Log
 
@@ -179,3 +262,10 @@ here). No object poses reach the planner in RPent's perception-isolated mode eit
 - 03:33 PT: tier 2 re-run with the frozen v2 code (`runs/t2_v2`, Goal-T tasks 0-1, ep 0): **PASS**, all episodes
   valid, null vs baseline 2 M / 0 R / 0 X (baseline 0/2, null 0/2, candidate 0/2). (v1 code: `runs/t2_final`, also
   PASS, 2 M.) Baseline arms finished: Goal-T 8/50, Goal-S 15/50.
+- 04:30 PT: all six scored processes done (v2 null/candidate ~65-70 min per arm, run in parallel). Paired
+  (`runs/subset_v2/merged/summary.json`): baseline 23/100, null 23/100, candidate 30/100; null attribution
+  90 M / 10 R / 0 X; all 100 cases valid in every arm. Each single-arm `hs eval` process ended with the pairing
+  error from Core request 1 after writing its `records.jsonl` (Goal-T only; expected, records complete: 50 each).
+- 04:35 PT: `pytest` 37 passed; tier 0 / tier 1 PASS on the final code. RPent reference run at case 11/20.
+- 05:40 PT: RPent reference run finished: 2/20 (port on the same 20 cases: baseline 5, candidate 5). RPent's VLA
+  server stopped by its launcher; SAM3 server (:8117, GPU 7) stopped by me afterwards (restart command above).

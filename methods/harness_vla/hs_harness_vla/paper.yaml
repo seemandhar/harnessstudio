@@ -1,0 +1,36 @@
+name: harness-vla
+version: "2"
+paper: {id: "arXiv:2607.08448v5", title: "Harness VLA: Steering Frozen VLAs into Reliable Manipulation Primitives via Memory-Guided Agents", venue: "arXiv 2026"}
+categories: {primary: agentic_orchestration, secondary: [skill_composition, observation_grounding]}
+fidelity: adapted
+substitutions:
+  - "Claude Code / Codex planner (claude-opus, gpt-6 family) -> NRP open-weight qwen3-vl (served Qwen/Qwen3.8-Flash-Next-FP8), non-thinking, temperature 0.7 / top_p 0.8 / top_k 20, seed 7"
+  - "Claude Code / Codex structured tool calls over an MCP runtime -> one JSON reply per turn ({thought, commands[1-3]}), parsed by the controller"
+  - "RLinf pi05_libero130 fullshot SFT policy -> openpi pi05_libero (HarnessStudio seeded T1 server, profile pi05-libero-hs)"
+  - "RPent 1024x1024 high-resolution re-renders and world maps -> the benchmark's 256x256 agentview/wrist RGB-D (shown to the planner upsampled 2x)"
+  - "robot0_eef_quat read from the raw simulator observation -> eef orientation from the published axis-angle in states (same rotation, public proprio)"
+  - "object_names (list of simulator body names in RPent's state view) -> dropped (not public sensor data)"
+  - "RPent env server with a 10000-step episode budget -> official vla-eval LIBERO-Pro horizon (libero_goal: 300 steps)"
+  - "RPent pi0_pick / pi0_doubled with RLinf chunks -> vla_act over HarnessStudio decisions (10 executed actions per chunk), default max_chunks 12 (RPent: 24 / 20)"
+  - "prompts: RPent evaluate prompt + strict/pro hybrid guides condensed for an open-weight model; all Task Specific / Global Memory content (PROVEN_LEVERS, seed-0 recipes, MEMORY.md) removed (zero-shot)"
+  - "finish / spent turn budget -> the arm holds its pose until the horizon (RPent ends the episode)"
+requires: {capabilities: [act, chunk]}
+budgets: {policy_calls: 400, llm_calls: 45, tool_calls: 60, max_tokens: 800}
+null: shadow
+artifacts: []
+operators:
+  # Pinned 2026-10-31 after GET /models and image probes on a LIBERO frame: qwen3-vl answered in ~22 s
+  # (non-thinking); kimi (Kimi-K2.7-Code) spent 1500 tokens on reasoning with empty content in 80 s; gemma-vl
+  # timed out at 150 s; gemma4-12b returned empty content; glm-5 rejected the image request (HTTP 400).
+  # Sampling: Qwen's recommended non-thinking settings (temperature 0.7, top_p 0.8, top_k 20; the model card warns
+  # that greedy decoding causes endless repetition, which v1 hit), fixed request seed 7.
+  - {name: planner, model: qwen3-vl, base_url: nrp, api_key_env: NRP_API_KEY,
+     original_model: "Claude Code (claude-opus-4-8) / Codex (GPT-6 family) as reported in the paper",
+     temperature: 0.7, seed: 7, extra_body: {chat_template_kwargs: {enable_thinking: false}, top_p: 0.8, top_k: 20}}
+original: {repo: "RPent (Apache-2.0), local /home/sejain/research/cvpr27/RPent", commit: "945682a",
+           reported: "zero-shot LIBERO-Pro Goal (Table 5, 10 seeds/task, Claude Code): Task-T 79.0%, Pos-S 31.0%"}
+description: "Zero-shot Harness VLA: an LLM planner REPL over analytic primitives and a frozen-VLA contact primitive, grounded by SAM3 + metric depth."
+tier1: {instruction: "put the black bowl on the plate", horizon: 40, chunk_len: 6}
+changelog:
+  - "v1: first HarnessStudio v2 port of the zero-shot mode (2026-10-31); scored run stopped after a few episodes: greedy decoding looped on identical replies"
+  - "v2: Qwen-recommended sampling (temperature 0.7, top_p 0.8, top_k 20, seed 7) and an identical-reply guard"
