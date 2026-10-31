@@ -9,4 +9,4 @@
 - **Verified live** through `harnessstudio.tools.llm`: GET /models, text, system+JSON, a 256x256 image
   (claude-sonnet-5-5, claude-haiku-5-5).
 - **Compatibility:** no other host gets the header (unit test); all method fingerprints unchanged (no card uses
-  Claude); `scripts/regress.py` on this worktree: see regress.json.
+  Claude); `scripts/regress.py` on the worktree: ok (48 unit tests, tier 0 + tier 1 of 15 methods); report archived at `/home/sejain/research/cvpr27/hs2-gpu/regress_reports/hs2-ext-anthropic.regress.json`.
