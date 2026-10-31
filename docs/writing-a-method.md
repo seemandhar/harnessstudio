@@ -122,6 +122,22 @@ are ignored. Do not branch on the arm; components never see it.
 | `ctx.memory` | per-episode scratch dict |
 | `ctx.record(event, **fields)`, `ctx.stop(reason)` | trace an event; end control (the episode finishes natively) |
 
+**Runtime LLMs.** Declare operators in the card and budgets for them:
+
+```yaml
+operators: [{name: planner, model: "Qwen/Qwen3-VL-32B-Instruct", base_url: nrp, api_key_env: NRP_API_KEY,
+             original_model: "claude-opus-4-7"}]
+budgets: {policy_calls: 2000, llm_calls: 20, max_tokens: 512}
+```
+
+Then `text = await ctx.tools["llm"](messages, operator="planner")`. Images:
+`from harnessstudio.tools.llm import image_data_url` and send
+`{"type": "image_url", "image_url": {"url": image_data_url(obs["images"]["agentview"])}}`.
+The model is pinned (checked against `/models`, no fallback; Astra models are refused). A spent budget
+ends control and the episode finishes natively. Tier 1 runs without network: the controller class must
+define `TIER1_LLM_RESPONSES = [...]` (scripted replies). If the operator replaces the paper's model,
+use `fidelity: adapted` and list the substitution.
+
 Controllers declare `null: shadow` (the controller runs and pays its calls in the null arm while the
 executed actions are native) and must cap `budgets.policy_calls`.
 
