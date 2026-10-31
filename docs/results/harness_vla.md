@@ -498,3 +498,15 @@ harness's advantage partly reflects this); controller-side aids not in the paper
 identical-reply guard, failed-command refusal, a localization table); SAM3 calls bypass `ctx.tools`; gpt-6.1-sol
 is unseeded; few-shot development uses a namespace, so the framework's dev-case refusal cannot fire and
 held-out evaluation relies on `episode_offset` (the exactly-paired 60 cases are the valid comparison).
+
+## Ablation: no success cue (`harness-vla-sol-nocue`), predeclared 2026-10-31 ~11:25 PT before any run
+
+The audit found that the planner is told on every turn that the goal is not yet reached, which relies on LIBERO
+ending episodes on success. This ablation removes that information (`success_cue=false`): the system prompt says
+the planner is not told whether the goal holds and should `finish` when the images show the task is complete;
+the per-turn state has no status line. Everything else is identical to `harness-vla-sol`. (The planner is still
+only called while the episode runs; that structural property is shared with the baseline and with RPent.)
+
+Cases: Goal-T and Goal-S, 10 tasks x episodes 0-1 (40 cases; same scenes as episodes 0-1 of the 100-case runs,
+which ran sequentially from episode 0). Arm: candidate only, compared pair by pair with the cue version and the
+baseline on the same cases. Budget about $8.

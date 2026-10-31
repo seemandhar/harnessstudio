@@ -117,8 +117,26 @@ stale (positions differ between scenes, fixtures can be swapped). If THIS scene 
 does not apply, fall back to the rules above."""
 
 
-def system_prompt(horizon: int, memory: bool = False) -> str:
+SUCCESS_CUE_TEXT = (
+    "SUCCESS: the benchmark's hidden goal predicate for the task language. The episode ends by itself the moment the\n"
+    "predicate holds.")
+NO_CUE_TEXT = (
+    "SUCCESS: the benchmark's hidden goal predicate for the task language. You are NOT told whether it holds: judge\n"
+    "completion yourself from the camera images.")
+FINISH_CUE_TEXT = (
+    "Use it ONLY when the task can no\n"
+    "    longer be completed. NEVER finish because you think the task is done: success ends the episode immediately,\n"
+    "    so if you are reading this message the goal has NOT been reached yet. Find what is still missing and act.")
+FINISH_NO_CUE_TEXT = (
+    "Use it when the images show the\n"
+    "    task is complete, or when it can no longer be completed.")
+
+
+def system_prompt(horizon: int, memory: bool = False, success_cue: bool = True) -> str:
     text = SYSTEM.format(horizon=int(horizon))
+    if not success_cue:  # ablation: no information derived from the benchmark's termination on success
+        assert SUCCESS_CUE_TEXT in text and FINISH_CUE_TEXT in text, "prompt text changed; update the ablation"
+        text = text.replace(SUCCESS_CUE_TEXT, NO_CUE_TEXT).replace(FINISH_CUE_TEXT, FINISH_NO_CUE_TEXT)
     if not memory:
         return text
     text = text.replace("(Harness VLA, zero-shot)", "(Harness VLA, few-shot: task memory)", 1)

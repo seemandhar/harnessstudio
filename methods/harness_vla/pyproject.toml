@@ -12,6 +12,7 @@ dependencies = ["harnessstudio"]
 [project.entry-points."harnessstudio.methods"]
 harness-vla = "hs_harness_vla:config"
 harness-vla-sol = "hs_harness_vla:config_sol"
+harness-vla-sol-nocue = "hs_harness_vla:config_sol_nocue"
 harness-vla-sol-fewshot = "hs_harness_vla:config_sol_fewshot"
 
 [tool.hatch.build.targets.wheel]

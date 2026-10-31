@@ -88,10 +88,14 @@ class HarnessVLA:
 
     def __init__(self, max_turns: int = 40, max_tool_calls: int = 60, image_scale: int = 2, wrist_image: bool = True,
                  history_turns: int = 8, llm_retries: int = 2, sam3_url: str = "http://127.0.0.1:8117",
-                 max_tokens: int = 800, memory: bool = False, memory_chars: int = 9000) -> None:
+                 max_tokens: int = 800, memory: bool = False, memory_chars: int = 9000,
+                 success_cue: bool = True) -> None:
         self.max_turns, self.max_tool_calls = int(max_turns), int(max_tool_calls)
         self.image_scale, self.wrist_image = int(image_scale), bool(wrist_image)
         self.history_turns, self.llm_retries, self.max_tokens = int(history_turns), int(llm_retries), int(max_tokens)
+        # success_cue=False (ablation): never tell the planner that the episode ends on success or that the goal
+        # is not reached; it must judge completion from the images and `finish` when it believes it is done.
+        self.success_cue = bool(success_cue)
         # Few-shot (memory) mode: task memory from the development stage (ctx.artifacts["memory"], read-only).
         self.memory, self.memory_chars = bool(memory), int(memory_chars)
         # Endpoint of the SAM3 server (a deployment detail, not a method parameter): env var overrides the default.
@@ -124,7 +128,7 @@ class HarnessVLA:
     def _state_text(self, ctx) -> str:
         state = prim.proprio(ctx)
         out = {"robot_state": state, "steps_left": int(ctx.remaining), "gripper_command": self.gripper_cmd,
-               "status": "goal NOT reached yet (the episode ends by itself on success)"}
+               **({"status": "goal NOT reached yet (the episode ends by itself on success)"} if self.success_cue else {})}
         eef = state.get("eef_pos")
         if self.landmarks and eef and len(eef) >= 3:
             table = {}
@@ -239,7 +243,7 @@ class HarnessVLA:
     async def run(self, ctx) -> None:
         llm = ctx.tools["llm"]
         horizon = ctx.steps + ctx.remaining
-        system = {"role": "system", "content": system_prompt(horizon, memory=self.memory)}
+        system = {"role": "system", "content": system_prompt(horizon, memory=self.memory, success_cue=self.success_cue)}
         first = [{"type": "text", "text": FIRST.format(instruction=ctx.instruction)}]
         if self.memory:
             entries = read_memory(ctx.artifacts.get("memory"))
