@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hs-llm-subtask-planner"
+version = "2.0.0"
+description = "Inner Monologue-style LLM subtask planner + VLM progress check around a frozen policy (tf_variant)."
+requires-python = ">=3.10"
+dependencies = ["harnessstudio"]
+
+[project.entry-points."harnessstudio.methods"]
+llm-subtask-planner = "hs_llm_subtask_planner:config"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hs_llm_subtask_planner"]

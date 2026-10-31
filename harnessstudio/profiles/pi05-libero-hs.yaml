@@ -1,0 +1,7 @@
+# harnessstudio.policies.pi05_openpi (HarnessPolicyMixin over vla-eval's openpi pi0.5 server, pi05_libero):
+# seeded, isolated full chunks; natively the server executes 10 actions per chunk
+# (configs/model_servers/pi0/libero.yaml chunk_size: 10). The stock server types chunk_size as int,
+# so raw chunks come through the HarnessStudio extension, not chunk_size: null.
+capabilities: [act, chunk, seeded_sampling, isolated_streams]
+chunking: harness
+execute_horizon: 10

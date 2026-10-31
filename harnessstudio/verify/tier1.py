@@ -80,8 +80,9 @@ def run(config: MethodConfig, profile: Optional[str] = None, module: Optional[st
     report.add(f"null ({config.null}) reproduces baseline actions", not mism and config.null != "custom",
                f"{len(mism)} cases differ" if mism else ("custom null: compare by hand" if config.null == "custom" else ""))
 
-    null_cost = sum(r["accounting"]["method_policy_samples"] + r["accounting"]["shadow_policy_samples"] for r in arms[Arm.NULL])
-    cand_cost = sum(r["accounting"]["method_policy_samples"] for r in arms[Arm.CANDIDATE])
+    total = lambda recs: sum(r["accounting"]["method_policy_samples"] + r["accounting"]["native_policy_samples"]  # noqa: E731
+                             + r["accounting"]["shadow_policy_samples"] for r in recs)
+    null_cost, cand_cost = total(arms[Arm.NULL]), total(arms[Arm.CANDIDATE])
     # Informational: executors that cut chunks make the candidate re-plan more often than the null.
     report.add("policy compute (informational)", True,
                f"null {null_cost} vs candidate {cand_cost} samples"

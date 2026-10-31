@@ -1,0 +1,4 @@
+# Stock vla-eval openpi pi0.5 LIBERO server (configs/model_servers/pi0/libero.yaml), unchanged:
+# it buffers 10-action chunks and returns one action per observation.
+capabilities: [act]
+chunking: server

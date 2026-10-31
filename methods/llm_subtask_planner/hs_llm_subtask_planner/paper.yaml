@@ -1,0 +1,22 @@
+name: llm-subtask-planner
+version: "2"
+paper: {id: "arXiv:2207.05608v1", title: "Inner Monologue: Embodied Reasoning through Planning with Language Models", venue: "CoRL 2022"}
+categories: {primary: agentic_orchestration, secondary: [language_alignment]}
+fidelity: tf_variant
+substitutions:
+  - "NRP-hosted open-weight qwen3-vl replaces the paper's InstructGPT planner and success detector"
+  - "the frozen robot policy's own prompt replaces the paper's skill library"
+  - "success detection reads one public camera image (no scene descriptor)"
+requires: {capabilities: [act, chunk]}
+null: shadow
+budgets: {policy_calls: 2000, llm_calls: 16, max_tokens: 256}
+operators:
+  # Pinned 2026-10-28 after GET /models and an image probe (alias qwen3-vl). Hidden reasoning is
+  # disabled: with it on, short answers come back empty.
+  - {name: planner, model: qwen3-vl, base_url: nrp, api_key_env: NRP_API_KEY, original_model: "InstructGPT (text-davinci-002)",
+     temperature: 0.0, extra_body: {chat_template_kwargs: {enable_thinking: false}}}
+original: {repo: "none (paper only)", reported: "real-robot and simulated tabletop rearrangement"}
+description: "LLM splits the instruction into subtasks; the policy executes each as its prompt; a VLM checks completion every 96 steps."
+changelog:
+  - "v1: HarnessStudio v1 controller slot (tools API)"
+  - "v2: ported to HarnessStudio v2 (ctx API, paper card, pinned operator in the card)"

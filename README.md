@@ -1,387 +1,108 @@
 <h1 align="center">HarnessStudio</h1>
 
 <p align="center">
-  <b>Training-free harnesses around frozen robot policies.</b><br>
-  Write a method as a small config, verify it in two tiers, run it against matched controls.
+  <b>Training-free harnesses around frozen robot policies, as installable methods.</b><br>
+  One paper = one package. Verify it in seconds, then run it against matched controls on real benchmarks.
 </p>
 
-<p align="center">
-  <img src="docs/architecture.png" alt="HarnessStudio architecture" width="100%">
-</p>
+A *harness* is everything around a frozen robot policy that is not its weights: what it observes, which
+instruction it gets, how many samples are drawn and which one runs, how much of a chunk executes, when
+execution is interrupted, which scripted skills run instead of the policy, and which LLM agent plans the
+episode. HarnessStudio turns each published harness into a **method package** that plugs into typed
+slots around a frozen policy, the way nerfstudio turns NeRF variants into method configs.
 
-A *harness* is everything around a robot policy that is not its weights: how many action samples
-you draw, which one you execute, when you cut a chunk short, what instruction you send, or an LLM
-agent that plans subtasks. HarnessStudio turns each harness into a **method config** that fills
-typed slots around a frozen policy, the way nerfstudio turns NeRF variants into method configs.
-The framework owns the episode loop, the policy server, seeding, budgets and the controls, so a
-new method is usually a few dozen lines.
+v2 runs on [allenai/vla-evaluation-harness](https://github.com/allenai/vla-evaluation-harness)
+(`vla-eval==0.8.0`, a pip dependency, not a fork), so every method runs on its benchmarks (LIBERO,
+LIBERO-Pro, RoboCasa365, ...) and with its policy servers (π0.5, GR00T, ...).
 
-- **One command per stage:** `rh verify` → `rh run` → `rh eval`
-- **Training-free by construction:** zero trainable parameters, frozen hashed artifacts
-- **Fair by construction:** every candidate is compared with a seeded baseline *and* an
-  automatically derived null arm that pays the same compute but executes native actions
-- **pip-installable plugins:** ship a method as its own package via an entry point
-- **Policies:** GR00T N1.5 and Pi0.5 (openpi) on RoboCasa365
-
-## Contents
-
-- [Install](#install)
-- [Quick start](#quick-start)
-- [Slots](#slots)
-- [Agent harnesses: the controller slot](#agent-harnesses-the-controller-slot)
-- [Built-in methods](#built-in-methods)
-- [Write your own method](#write-your-own-method)
-- [Verification and evaluation](#verification-and-evaluation)
-- [Results](#results)
-- [Repository layout](#repository-layout)
-- [Limits](#limits)
+```
+vla-eval benchmark (Docker, unchanged)  ◄─ws─►  HarnessStudio harness server  ◄─ws─►  policy server
+ thinks it talks to a policy                    method + components + tools          frozen π0.5 / GR00T / ...
+                                                budgets, traces, paired arms
+```
 
 ## Install
 
 ```bash
-git clone https://github.com/seemandhar/harnessstudio && cd harnessstudio
-python3 -m venv .venv && .venv/bin/pip install -e '.[test]'
-.venv/bin/rh list
+git clone -b v2 https://github.com/seemandhar/harnessstudio && cd harnessstudio
+uv venv --python 3.11 .venv && uv pip install --python .venv/bin/python -e '.[test]'
+.venv/bin/hs list
 ```
-
-The framework itself has no dependencies. Tier 1 runs anywhere. GPU runs need the policy and
-simulator environments; point HarnessStudio at them with environment variables:
-
-| Variable | Default | What it is |
-|---|---|---|
-| `HARNESSSTUDIO_WORKSPACE` | current directory | where `runs/` and caches go |
-| `HARNESSSTUDIO_POLICYBENCH` | `../RobotPolicyBench` | GR00T env, RoboCasa365, robosuite and their task registry |
-| `HARNESSSTUDIO_OPENPI_ROOT` | `../openpi-robocasa` | openpi checkout and venv for Pi0.5 |
-| `HARNESSSTUDIO_LEASES` | nearest `.leases/` | shared GPU lease registry |
-
-Each GPU run freezes HarnessStudio's source into the run directory and puts that copy on the
-child `PYTHONPATH`, so policy environments never need HarnessStudio installed, and an edit to the
-live source during a run stops it instead of silently mixing versions.
 
 ## Quick start
 
 ```bash
-rh list                                              # methods, fidelity, paper, policy compatibility
-rh verify medoid-bon --policy gr00t-n1.5             # tier 1: CPU contract checks, seconds
-rh verify medoid-bon --policy gr00t-n1.5 --tier 2 --gpu 0   # tier 2: real episodes on one GPU
-rh run medoid-bon --policy pi0.5 --group composite_unseen --task CuttingToolSelection --trial 0 --gpu 0
-rh eval medoid-bon --groups atomic_seen --tasks CloseBlenderLid NavigateKitchen --trials 2 3 --gpus 0,1
+hs list                                   # installed methods, categories, required capabilities
+hs verify identity --tier 0               # static checks
+hs verify medoid-bon                      # tier 1: baseline/null/candidate through real vla-eval on a fake stack (CPU, seconds)
+
+# real benchmark: run one arm's harness server in front of any vla-eval policy server
+hs serve identity --policy-url ws://localhost:8101 --contract libero --profile pi05-libero-stock --port 8201
+vla-eval run --config my_libero.yaml      # with server.url: ws://localhost:8201
+
+# or let hs run all three arms and pair them
+hs eval medoid-bon --config my_libero.yaml --policy-url ws://localhost:8101 --contract libero \
+   --profile pi05-libero-hs --out runs/medoid-bon
 ```
 
-`rh run` writes an `episode.mp4` and a per-decision `trace.jsonl`. `rh eval` runs baseline, null
-and candidate on the same seeded scenes and reports paired outcomes, null parity and cost.
+## Methods are packages
 
-## Slots
-
-| Slot | Runs in | Interface | Typical use |
-|---|---|---|---|
-| `sampler` | policy server | `on_step(step, x_t, v_t, ctx)` | read or steer the flow-matching velocity at each denoising step |
-| `proposer` | worker | `num_samples` K | draw K seeded action chunks per decision (sample 0 is the native stream) |
-| `selector` | worker | `select(chunks, extras, obs) -> index` | best-of-N, consensus, verifier scores |
-| `executor` | worker | `plan`, `continue_after`, `record_executed`; declares `min_k`, `per_step` | adaptive horizons, early cuts |
-| `episode_op` | worker | `start_episode(instruction, obs) -> instruction` | instruction rewriting |
-| `controller` | worker | `run(tools)`; declares `min_act_steps`, optional `llm` | agent harnesses that own the decision loop |
-
-Modules only ever see the **public observation** (the policy's own inputs), the candidate chunks
-and declared extras, and the action layout of the policy (`extras["policy"]`), so one method
-works on several policies. They never see the case, seed, arm, reward, success or simulator state.
-
-### How the controls are derived
-
-| Arm | Samples | Executes | Instruction |
-|---|---|---|---|
-| baseline | 1 | native chunk | original |
-| null | K (pays the compute) | sample 0, full chunk | original |
-| candidate | K | the selected sample, the executor's `k` | the method's |
-
-The null is derived by fixed per-slot rules, not designed per method. Sample 0 uses the same
-noise seed in all three arms (common random numbers), so the null should reproduce the baseline
-action for action. Any difference is classified per episode as **M** (matched), **R** (branched
-by renderer noise, unattributable) or **X** (a harness leak), using first-divergence attribution.
-An X blocks the method.
-
-## Agent harnesses: the controller slot
-
-A controller gets the whole episode through a small tool API instead of one decision at a time:
-
-```python
-class SubtaskPlanner:
-    def __init__(self, min_act_steps, llm, max_subtasks=4, steps_per_subtask=240, check_every=96, check_camera=None):
-        ...
-
-    def run(self, tools):
-        plan = parse_plan(tools.llm([{"role": "user", "content": PLAN_PROMPT.format(instruction=tools.instruction)}]))
-        for subtask in plan:
-            tools.act(subtask, steps=96)          # whole policy decisions, normal slot pipeline
-            image = tools.image_data_url(tools.image("video.robot0_agentview_left"))
-            done = tools.llm([...image..., f"Is '{subtask}' done? yes/no"])
+```
+methods/<slug>/
+  pyproject.toml          # [project.entry-points."harnessstudio.methods"] <name> = "hs_<slug>:config"
+  hs_<slug>/paper.yaml    # paper card: categories, fidelity, substitutions, capabilities, artifacts, LLM operators
+  hs_<slug>/__init__.py   # components + config()
 ```
 
-| Tool | What it does |
+`pip install -e methods/<slug>` and it shows up in `hs list`. Full guide: [docs/writing-a-method.md](docs/writing-a-method.md).
+
+**Slot methods** fill the default decision loop:
+`observation_op → instruction_op → gate → proposer (+ sampler in the policy server) → selector → action_op → executor (+ monitor)`.
+**Controller methods** own the episode through `ctx` (`observe`, `policy.act/sample`, `execute`, `decide`,
+`tools["llm"]`), for agent harnesses such as LLM planners.
+
+Slots map onto the 12 harness categories shared with RoboMetaHarness:
+
+| Category | Component |
 |---|---|
-| `tools.act(prompt=None, steps=None)` | runs whole policy decisions through proposer/selector/executor with this prompt until `steps` are executed; each decision executes at least `min_act_steps` |
-| `tools.observe()`, `tools.image(key)` | the current public observation |
-| `tools.llm(messages)` | one call to the method's pinned runtime LLM, within its per-episode call budget |
-| `tools.instruction`, `steps`, `remaining`, `ended`, `memory` | read-only episode state and a scratch dict |
+| observation_grounding | `observation_op` |
+| language_alignment | `instruction_op` |
+| proposal_selection | `proposer` + `selector` |
+| sampler_guidance | `sampler` (in the policy server) |
+| uncertainty_compute | `gate` |
+| execution_monitoring, contact_feedback | `executor` + `monitor` |
+| memory_retrieval | `action_op` (+ experience store) |
+| agentic_orchestration | controller |
+| skill_composition | skills (planned) |
+| world_model_verification | `selector` over predicted futures (planned) |
+| experience_evolution | `prepare` stage (planned) |
 
-Rules that keep agent harnesses comparable:
+## Fair by construction
 
-- **Shadow-mode null.** In the null arm the controller still runs and pays for every LLM call, but
-  `act()` executes native decisions with the original instruction, so the null still matches the
-  baseline action for action.
-- **Budgets.** The policy-call bound uses `min_act_steps`. The LLM budget (`max_calls` per
-  episode, `max_tokens` per call) is frozen in the config. When it is spent, control ends and the
-  episode finishes natively.
-- **Pinned runtime model.** `llm` names one model on an OpenAI-compatible endpoint. The first call
-  checks the provider's `/models` list, with no fallback. The API key comes from the environment
-  variable the method names, and only that variable reaches the episode worker (every other
-  `*_API_KEY` is stripped). Requests are logged by hash, responses in full; keys never are.
-- **Tier 1 never touches the network.** It swaps the LLM for scripted responses
-  (`TIER1_LLM_RESPONSES` on the controller class).
+Every comparison runs three arms on the same seeded episodes:
 
-## Built-in methods
-
-| Method | Slots | Fidelity | Source |
-|---|---|---|---|
-| `identity` | none | faithful | the native seeded policy |
-| `chunktrust-ahs` | sampler (velocity readout) + executor (adaptive horizon) | faithful, adapted reproduction | ChunkTrust, arXiv:2609.39754v2 |
-| `medoid-bon` | proposer (K=8) + selector (MBR medoid) | component | CycleVLA, arXiv:2601.02295v2 (MBR selection only) |
-| `chunk-interrupt` | executor (per-step stall cut) | tf_variant | VLA-Corrector, arXiv:2607.01804v1 (truncation only) |
-| `llm-subtask-planner` | controller (LLM plan + VLM progress check) | tf_variant | Inner Monologue, arXiv:2207.05608v1 |
-| `subtask-sequencer` | controller (rule-based instruction steps, advance on end-effector stall) | tf_variant | Inner Monologue, arXiv:2207.05608v1 (no LLM, no extra inference) |
-
-Fidelity labels are required: `faithful` reproduces a paper, `component` ports one part of it,
-`tf_variant` replaces a trained part and must name each substitution.
-
-| Policy | Chunk | Capabilities | Methods it can run |
-|---|---|---|---|
-| GR00T N1.5 (Human300, checkpoint-120000) | 16 | chunks, seeded and isolated sampling, denoise step, velocity readout, proprio, variable execute | all six |
-| Pi0.5 (openpi `pi05_pretrain_human300`, step 75000) | 5 | chunks, seeded and isolated sampling, proprio, variable execute | all but `chunktrust-ahs` (its flow loop is inside a jitted JAX call) |
-
-Reusable modules in `harnessstudio.modules` (not registered as built-ins): `TrajectoryMedoid`
-selector, `PublicStasis` executor, `InstructionRewrite` episode op.
-
-## Write your own method
-
-```python
-# my_pkg/__init__.py
-from harnessstudio.core.capabilities import caps
-from harnessstudio.core.method import Fidelity, MethodConfig, ModuleRef
-
-class Pool:                                  # proposer: how many seeded samples per decision
-    def __init__(self, num_samples=2):
-        self.num_samples = num_samples
-
-class First:                                 # selector: pick one of them
-    def select(self, chunks, extras, obs):
-        return 0
-
-def config():
-    return MethodConfig(
-        name="first-sample", version="1", paper="none", fidelity=Fidelity.FAITHFUL, substitutions=(),
-        required=caps("action_chunk", "seeded_sampling", "isolated_streams"),
-        slots={"proposer": ModuleRef("my_pkg:Pool", {"num_samples": 2}),
-               "selector": ModuleRef("my_pkg:First")})
-```
-
-```toml
-# pyproject.toml
-[project.entry-points."harnessstudio.methods"]
-first-sample = "my_pkg:config"
-```
-
-```bash
-.venv/bin/pip install -e my_pkg && rh list && rh verify first-sample --policy pi0.5
-```
-
-`examples/plugin_method/` is a complete package. Registration and tier 1 enforce:
-zero trainable parameters, hashed and licensed artifacts, honest fidelity labels, public inputs
-only (a recording proxy; a workflow check, not a sandbox, so read plugin source), fresh module
-state per episode and arm, and the derived null.
-
-## Verification and evaluation
-
-| Stage | Command | Cost | Checks |
-|---|---|---|---|
-| Tier 1 | `rh verify M --policy P` | CPU, seconds | registration, capabilities, null derivation, leakage proxy, budget bound, seed rule, case-order independence, determinism, plugin closure (child-interpreter import), controller shadow mode |
-| Tier 2 | `rh verify M --policy P --tier 2 --gpu G` | 1 GPU, one case | real baseline, null and candidate episodes; null vs baseline must be M (or R, then M on one fresh re-pair); native-equality probe for samplers; per-step vs chunk stepping for per-step executors; measured overhead |
-| Screen | `rh eval M --groups ... --tasks ... --trials ... --gpus ...` | N GPUs | paired seeded arms, episode validation, M/R/X for the null, wins/losses, paired p, inference and wall-time ratios |
-| Reproduce | `rh reproduce M --reference-run DIR` | N GPUs | the method vs an independent reference implementation's run on the same scenes, pair by pair |
-| Resets | `rh probe-resets --groups ... --tasks ... --trials ...` | 1 GPU | canonical reset table for a new case list (policy-free) |
-
-Every GPU run takes a lease in the shared `.leases` registry, uses only GPUs with no foreign
-processes, and is charged to a GPU-hour ledger that refuses runs past its cap. Passing tier 2
-or a screen is integration or development evidence. It is not proof that a method helps;
-improvement claims need a predeclared subset, fresh validation and a full evaluation.
-
-## Results
-
-All numbers are from real RoboCasa365 episodes run with this repository. **None is a claim that a
-method improves success rates.** They show that the framework reproduces native policies exactly,
-that derived nulls hold, and what each method costs.
-
-### Exactness
-
-| Check | Result |
+| Arm | What runs |
 |---|---|
-| `identity` vs native seeded GR00T (ChunkTrust v2.2 base16), `CloseToasterOvenDoor` trial 1 | bitwise identical: 29/29 decisions (inputs, actions, noise seeds), same outcome |
-| `chunktrust-ahs` vs the native ChunkTrust v2.2 reference, 32 dev cases | 24 M / 8 R / **0 X**; the 25% R rate matches ChunkTrust's measured render-branch rate (23%) |
-| Sampler native-equality probe on the real GR00T model | no-op, clone-splice, velocity readout and repeat are all bit-identical to native `get_action` |
-| Per-step vs 16-step chunk stepping (identity) | M |
+| baseline | the native policy (sample 0 noise stream, full native chunk, original instruction) |
+| null | pays the candidate's compute but executes natively (derived automatically for slot methods; *shadow* mode for controllers) |
+| candidate | the method |
 
-### Plain GR00T through HarnessStudio, all unseen tasks (80 episodes)
+Methods only ever see the public observation (the contract's allowlist); the policy still gets the raw
+observation, so the baseline is exactly the native vla-eval policy. Per-step observation and action
+hashes give each null/baseline pair an **M** (matched), **R** (environment branched, e.g. renderer) or
+**X** (harness leak) label. Budgets cap policy samples, LLM calls and tokens; a spent budget ends method
+control and the episode finishes natively. Runtime LLMs are pinned (one exact model, `/models` check, no
+fallback).
 
-The frozen policy with no harness (`identity`, baseline arm), run by HarnessStudio on all 16
-Composite-Unseen tasks × 5 seeded trials (official horizons, GPUs 0–4, three runs of ≤32 episodes
-because small mode caps a run at 32). Compared with a native GR00T run of the same checkpoint on 16 × 5
-unseeded scenes, and with RoboCasa's published multitask number:
+## Policy capability tiers
 
-| | Successes | Rate | 95% CI |
-|---|---|---|---|
-| HarnessStudio, plain GR00T (seeded scenes) | 4/80 | 5.0% | 2.0–12.2% |
-| Native GR00T run (unseeded scenes) | 5/80 | 6.25% | 2.7–13.8% |
-| RoboCasa published (50 trials per task) | — | 4.4% | — |
+| Tier | Server | Unlocks |
+|---|---|---|
+| T0 | any vla-eval policy server, unchanged (`allenai-passthrough`, `pi05-libero-stock`) | agent, instruction and monitoring methods |
+| T1 | HarnessStudio subclass via `HarnessPolicyMixin`: seeded, isolated full chunks | best-of-N, executors, exact derived nulls |
+| T2/T3 | denoising hooks, velocity / attention / logits / predicted futures | steering and introspection methods |
 
-80/80 episodes valid with no infrastructure errors; Fisher exact p = 1.0 against the native run. The
-scenes differ, so this is a rate comparison, not a pairing. Successes land on different tasks in the two
-runs (studio: ArrangeTea 2, WaffleReheat 1, WashFruitColander 1; native: WashFruitColander 2, GarnishPancake,
-RecycleBottlesByType, WeighIngredients 1 each): at about 5% success, the scene matters more than the task.
+## Status
 
-### Development screen: `subtask-sequencer` on GR00T, all unseen tasks (32 cases)
-
-Plain GR00T often completes the first step of a composite instruction and then stalls (seen in the
-80-episode run's videos). `subtask-sequencer` splits the instruction into its imperative steps with
-fixed text rules (10 of 16 unseen tasks split into 2–3 steps; the rest run unchanged), prompts one step
-at a time, and advances when the end effector moves less than 1 cm over 48 steps after at least 96
-steps on the step. Thresholds were fixed before the screen. Candidate on 16 tasks × trials 0–1, paired
-with the plain-policy episodes on the same seeded scenes (identical protocol fingerprint):
-
-| | Value |
-|---|---|
-| Episodes | 32 valid, 0 invalid |
-| Successes, candidate / plain policy | 1/32 / 0/32 (one paired win, BreadSelection trial 1; p 0.5) |
-| Inference ratio | 1.009 (no extra policy calls, no LLM) |
-
-The sequencer advanced steps as designed, but this is not a measured gain, and the plain policy had no
-successes on these 32 scenes, so regressions could not show up. Following the subset-first rule, the
-full 80-episode run was not started. No null arm was run: with no extra compute, the shadow-mode null
-executes the baseline's actions (tier 2: null vs baseline M).
-
-### Tier 2 on GR00T N1.5 (`CloseToasterOvenDoor` trial 1, 450 steps)
-
-| Method | Null vs baseline | Policy calls, candidate / baseline | Notes |
-|---|---|---|---|
-| `identity` | M | 29 / 29 | |
-| `medoid-bon` | M | 232 / 29 | the null draws 8 samples per decision and still matches: streams are isolated |
-| `chunktrust-ahs` | M | 45 / 29 | native-equality probe passed |
-| `chunk-interrupt` | M | 37 / 29 | per-step stepping check: M |
-| `llm-subtask-planner` | M (shadow mode: 6 real LLM calls, native actions) | 29 / 29 | candidate switched among 3 LLM subtask prompts; wall time 514 s vs 18 s, all of it LLM latency |
-
-### Pi0.5 on RoboCasa365 unseen tasks
-
-Case: `CuttingToolSelection` trial 0 (composite_unseen; 1800 steps = 1.5 × the official horizon, as in
-openpi-robocasa). Every arm completed validly.
-
-| Method | Null vs baseline | Policy calls, candidate / baseline | Wall s, candidate / baseline | Notes |
-|---|---|---|---|---|
-| `identity` | M (360/360) | 360 / 360 | 150 / 142 | |
-| `medoid-bon` | M (360/360) | 2880 / 360 | 747 / 168 | the null draws 8 samples per decision and still matches |
-| `chunk-interrupt` | M (360/360) | 360 / 360 | 173 / 173 | per-step vs chunk stepping: M. No cuts fired: with 5-step chunks and `min_k=4` the only cut point is step 4 |
-| `llm-subtask-planner` | M (360/360, shadow mode) | 360 / 360 | 539 / 141 | 8 LLM calls; the candidate drove Pi0.5 with 3 subtask prompts |
-
-**A bug tier 2 caught.** The first Pi0.5 runs of `medoid-bon` and `chunk-interrupt` stopped at the first
-decision with "native/null action drift", and the per-step check came back X. Same request, same seed,
-different actions in different server processes. The cause was XLA's GPU autotuner, which times candidate
-kernels at compile time: three concurrent server processes returned three different actions (up to
-0.002 apart). With `--xla_gpu_autotune_level=0` they were bitwise identical. The Pi0.5 backend now
-sets that flag, the server refuses to start without it, and the backend version moved to
-`harnessstudio-pi05-2` so older runs cannot be paired with newer ones. The `identity` and planner
-rows above ran before the fix and happened to match; `medoid-bon` and `chunk-interrupt` are the
-re-runs under the fixed backend.
-
-### Development screen: `medoid-bon` on GR00T, unseen tasks (8 cases)
-
-GR00T N1.5 scores 4.4% on Composite-Unseen in RoboCasa's published multitask table (Pi0.5: 1.2%).
-The screen uses the four unseen tasks where a native GR00T run had any success (WashFruitColander,
-GarnishPancake, RecycleBottlesByType, WeighIngredients; 2700–3150 steps) × trials 0 and 1, with a
-fresh canonical reset table (`rh probe-resets`: 0 divergent resets). Baseline, null and candidate on
-the same seeded scenes; null and candidate ran in parallel on separate GPUs.
-
-| | Value |
-|---|---|
-| Episodes | 24 valid, 0 invalid |
-| Null vs baseline | 3 M / 5 R / **0 X** |
-| Successes: candidate / baseline / null | 1/8 / 0/8 / 0/8 (one paired win, WashFruitColander trial 0; paired p 0.5) |
-| Policy calls: candidate / baseline | 11,728 / 1,466 |
-| Inference ratio, candidate / baseline | 7.12 |
-| Inference ratio, candidate / null | 1.008 |
-
-What this shows about the framework:
-
-- **The derived null pays the candidate's compute** (1.008×) and never leaks: 0 X.
-- **R is the renderer, not the harness.** A second, independent baseline run on the same scenes
-  matched the first exactly on 2 cases and branched on the other 5. Every branch began with one camera
-  image differing while state and seed matched; the GR00T server never returned a different action
-  for the same input. The 5 R pairs above are exactly those 5 cases.
-- **Long episodes branch more:** 5/8 pairs at 2700–3150 steps, against about 25% on 450-step tasks.
-  Mechanism claims on long tasks need more cases or a render fix.
-
-One success in eight episodes is not evidence that `medoid-bon` helps.
-
-### Development screen: `medoid-bon` on GR00T, seen tasks (8 cases)
-
-| | Value |
-|---|---|
-| Episodes | 24 valid, 0 invalid |
-| Null vs baseline | 5 M / 3 R / 0 X |
-| Successes, candidate vs baseline | 3/8 vs 3/8 (1 win, 1 loss, paired p 0.75) |
-| Inference ratio, candidate / baseline | 6.93 |
-| Inference ratio, candidate / null | 1.01 (the derived null pays the candidate's compute) |
-
-Eight cases cannot separate methods. The screen shows that the pipeline produces complete,
-validated, cost-matched paired records.
-
-## Repository layout
-
-```
-harnessstudio/
-  core/        method configs, registry, arms, budget, noise (CRN), pipeline, controller, llm operator
-  runtime/     policy-facing contract (PublicObservation, bounded decision core, parity guard)
-  policies/    policy descriptors: capabilities, action layout, chunk length, backend
-  backends/    gr00t_robocasa365/, pi05_robocasa365/: policy server, episode worker, runner
-  methods/     built-in methods
-  modules/     reusable slot modules
-  verify/      tier 1 (synthetic fixtures) and tier 2
-  eval/        paired screen, reproduce, M/R/X attribution, GPU ledger
-  bench/       simulator and resource utilities (vendored, see PROVENANCE.json)
-examples/plugin_method/   a complete plugin package
-tests/                    unit and integration tests (no GPU needed)
-```
-
-## Limits
-
-- Two policies so far, both on RoboCasa365. Adding a policy means a policy descriptor and a
-  backend (server + episode worker); methods need no change.
-- Paired runs use seeded resets (`7 + 50·task_index + trial`) and common random numbers. These
-  are disclosed adaptations of the official unseeded protocols, so compare HarnessStudio arms
-  with each other, not with published unseeded numbers.
-- Renderer noise can branch a pair (R). R pairs are allowed and unattributable for mechanism
-  claims.
-- Pi0.5 has no canonical reset table yet, so its runs skip the reset-divergence table check.
-- The Pi0.5 server runs with XLA autotuning off (`--xla_gpu_autotune_level=0`) for cross-process
-  bitwise determinism; this is a disclosed change from openpi's default XLA settings.
-- Runtime LLM latency is real cost: a controller's wall time is reported, and the null arm pays it
-  too.
-- No license file has been chosen yet; all rights reserved until one is added. The vendored
-  ChunkTrust files keep their own license (`methods/chunktrust_ahs/CHUNKTRUST_LICENSE`).
-
-## Changelog
-
-### 2026-10-29 - Kinetix RTC backend (`kinetix-flow`), protocol-level delay and execute horizon, `guide()` sampler hook
-
-- New policy `kinetix-flow`: the RTC paper's frozen Kinetix flow policies (bc/31) from real-time-chunking-kinetix@9296f31d (MIT), with backend `kinetix_rtc12` running in the authors' pinned JAX environment. One episode = (inference delay d, execute horizon s) x the whole ordered level universe x B rollouts, level-batched as the authors' `eval_flow` (`jit(shard_map(vmap over levels))`). Only the sampler slot is supported.
-- New built-in methods `rtc` and `rtc-hard-masking` (Real-Time Chunking guidance, arXiv 2506.07339v2) through a `guide()` sampler hook. d and s are protocol-level (`async_execution`), identical in every arm, and part of the protocol hash.
-- kinetix-flow null arm: executes the baseline's own compiled program and runs the candidate's compiled program in shadow (cost and guidance materialized, chunk discarded).
-- Exactness, CPU: bitwise identical to the authors' code on a predeclared sample (3 levels x 5 delay points x naive/RTC/hard masking x 64 rollouts, two s > d points, 15 null cases). Reached after two disclosed repairs (level batching; null program); attempt 2 failed, attempts 3 and 4 exact. GPU (RTX A6000, default TF32 matmul precision): separate compiled programs round differently, so GPU comparisons with the authors' numbers are statistical only. Tier 2 with deterministic GPU ops: null = baseline on every rollout (M) for rtc and identity.
-- Unchanged: the episode-execution path (core/pipeline.py, core/runtime.py, arms, noise, budget, runtime/*, GR00T and Pi0.5 policies and backends) is byte-identical. Changed control-plane files: cli.py, core/capabilities.py, core/method.py, core/protocol.py (new), core/registry.py, core/slots.py, policies/__init__.py, verify/tier1.py, verify/tier2.py, verify/guide_contract.py (new). These are covered by the unit suite, tier 1 of every registered method on gr00t-n1.5 / pi0.5 / kinetix-flow (only plugin-closure file counts differ), and GPU tier 2 of identity and medoid-bon on GR00T N1.5 (M).
-- Paper-scale Kinetix numbers (Fig. 5 right panel: naive, RTC, hard masking) are measured by the authors' code and attributed to this port by the CPU equivalence; they are not measured through HarnessStudio. BID, the execution-horizon panel and TE are not attributed.
+v2.0.0.dev0. See [docs/superpowers/specs/2026-10-31-harnessstudio-v2-design.md](docs/superpowers/specs/2026-10-31-harnessstudio-v2-design.md)
+for the design and roadmap, and `docs/results/` for gate results.
