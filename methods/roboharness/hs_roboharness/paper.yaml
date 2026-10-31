@@ -40,3 +40,4 @@ description: "Memory-augmented policy harness: success/failure memory retrieval,
 tier1: {instruction: "pick up the block and place it in the bowl", horizon: 40, chunk_len: 10}
 changelog:
   - "v1 (2026-10-31): first port from the released code (commit 716defc) and arXiv v3"
+  - "result v1 (2026-10-31): LIBERO-Pro 4 cells x 10 tasks x 2 eps, 22/80 vs pi0.5 baseline 23/80 (4 wins / 5 losses, p = 1.0); docs/results/roboharness.md"

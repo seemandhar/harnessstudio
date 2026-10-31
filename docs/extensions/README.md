@@ -9,6 +9,5 @@ the evaluator -> independent diff review -> merge into `v2` only when `scripts/r
 
 ## Open backlog
 - `claude_cli` LLM operator (docs/ENDPOINTS.md "Claude"): lets methods pin Claude models.
-- Astra confirm-before-use in `OperatorPin` / the LLM tool (pending: core files are imported by the running
-  RoboHarness evaluation; apply after it finishes).
+- (done 2026-10-31) Astra confirm-before-use in `OperatorPin` / the LLM tool: `astra-confirm.md`.
 - Items in `docs/core-todo.md`.

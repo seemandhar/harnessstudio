@@ -1,6 +1,6 @@
 # RoboHarness (arXiv:2603.24060v3) in HarnessStudio v2
 
-Status: LIBERO-Pro subset running (2026-10-31). Package: `methods/roboharness` (entry point `roboharness`).
+Status: LIBERO-Pro subset complete (2026-10-31, 80/80 paired cases valid). Package: `methods/roboharness` (entry point `roboharness`).
 
 ## What was ported
 
@@ -57,6 +57,38 @@ failures, labelled by the environment), which HarnessStudio does not allow.
 
 Predeclared subset: LIBERO-Pro {spatial, object} x {task, swap}, all 10 tasks x episodes 0-1 (80 paired cases),
 official horizons, pi0.5 (openpi pi05_libero, seeded), orchestrator NRP qwen3-vl. Table III rows are reported as
-a sub-subset.
+a sub-subset. Candidates ran as 12 task shards on the same policy server as the baseline (pairing exact).
 
-(pending)
+| Cell | Paired | Baseline | RoboHarness | Wins / losses | p (McNemar) |
+|---|---|---|---|---|---|
+| Spatial, task perturbation | 20 | 9 | 9 | 1 / 1 | 1.0 |
+| Spatial, position (swap) | 20 | 8 | 8 | 2 / 2 | 1.0 |
+| Object, task perturbation | 20 | 2 | 2 | 0 / 0 | 1.0 |
+| Object, position (swap) | 20 | 4 | 3 | 1 / 2 | 1.0 |
+| **All** | **80** | **23 (28.8%)** | **22 (27.5%)** | **4 / 5** | **1.0** |
+| Table III "Pos" rows only (6 tasks) | 12 | 9 | 6 | 1 / 4 | 0.375 |
+| Table III "Task" rows only (14 tasks) | 28 | 9 | 9 | 1 / 1 | 1.0 |
+
+Paper (pi0.5, 199 rollouts/task): Pos 2.33% -> 57.2%, Task 0.86% -> 55.2%. **Not reproduced: no measurable effect
+on this subset.**
+
+What the harness did (80 candidate episodes, median 10.4 min each, ~50 VLM calls per episode, 3 provider errors):
+the orchestrator chose `visual_overlay` 584 times, `remove_distractor` 305, `key_step_retry` 605 and
+`task_decompose` 25 (across all plan attempts); the verifier rejected 179 of 531 edited frames; edited frames
+reached the policy on 4.4 decisions per episode (the 40-step visual quota); 17 decompositions locked the policy
+onto the first subtask for the rest of the episode (released behavior: subtasks advance only on a success signal
+that never arrives mid-episode); no rollback fired (the VLM never chose Encore, and `key_step_retry` never came
+with the `{start, end}` dict the timeout needs).
+
+Why the gap to the paper, in order of likely size:
+1. **Baseline protocol.** Our pi0.5 already solves 28.8% of these cases; the paper's LeRobot setup sends the
+   file-name (unperturbed) instruction on Task cells and reports ~1-2% baselines (findings 6). On a ~1% baseline
+   almost any instruction rewrite that restores the true task helps; with the true task already given, it cannot.
+2. **Edits the policy was not trained on.** Green overlays, inpainted holes and "highlighted ..." instructions are
+   out of distribution for pi0.5; they cost as many cases as they rescued (4 wins / 5 losses).
+3. **Memory.** The frozen development memory holds one failure; the authors' memory grows online from evaluated
+   LIBERO-Pro failures (environment-labelled), which HarnessStudio does not allow.
+4. **Orchestrator model** (NRP Qwen3.8-Flash-Next vs Qwen3-VL-32B) and the unknown released `MAX_RETRIES`.
+
+Artifacts: `/home/sejain/research/cvpr27/hs2-gpu/roboharness/eval/` (baseline per cell, candidate shards
+`*_s{a,b,c}`, `summary_final.json`; the stopped unsharded attempt is kept as `candidate_unsharded_stopped`).
