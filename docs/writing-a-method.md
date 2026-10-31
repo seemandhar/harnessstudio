@@ -144,6 +144,36 @@ use `fidelity: adapted` and list the substitution.
 Controllers declare `null: shadow` (the controller runs and pays its calls in the null arm while the
 executed actions are native) and must cap `budgets.policy_calls`.
 
+## Development stage (memory, evolved programs)
+
+Methods that build memory or programs from rollouts before evaluation add `prepare=ModuleRef(...)`
+to `config_from_card(...)`. The Preparer:
+
+```python
+class Preparer:
+    collect_arm = "baseline"     # which arm runs on development cases ("candidate" to explore with the method)
+    record = ("state",)          # public observation keys kept per step (the executed action is always kept)
+    def build(self, records, out_dir) -> dict:   # write files into out_dir; return {artifact name: file name}
+        ...
+```
+
+```bash
+hs prepare M --config dev.yaml --case-namespace dev-seed1007 --policy-url ... --contract libero --profile ... --out prep/
+hs eval M --config eval.yaml --case-namespace seed7 --prepared prep/ ...
+```
+
+`prepared.json` pins every artifact by sha256 and lists the development case keys; evaluation refuses
+those cases. Components receive artifacts through `load_artifacts(artifacts)` (name -> path); controllers
+read `ctx.artifacts`. `harnessstudio.components.memory` has `write_trajectories` / `TrajectoryStore`
+(nearest-neighbour retrieval over stored states). Report zero-shot and prepared results separately.
+
+## Skills
+
+`harnessstudio.skills.eef_delta` provides analytic primitives for end-effector-delta benchmarks
+(LIBERO, LIBERO-Pro): `move_to(ctx, xyz)`, `move_by(ctx, dxyz)`, `set_gripper(ctx, "open"|"close")`,
+`release(ctx)` and `vla_act(ctx, instruction, steps=...)` (the frozen policy as a skill). They act through
+`ctx.execute` / `ctx.decide`, so budgets, traces and the shadow null apply.
+
 ## Rules
 
 - Training-free: no fitting of anything. Frozen, hashed artifacts only.

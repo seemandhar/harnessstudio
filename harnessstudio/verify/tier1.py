@@ -40,7 +40,8 @@ class Report:
 
 
 def _run(config: MethodConfig, arm: Arm, profile_name: str, task_order: str = "forward",
-         episodes: int = 2, n_tasks: int = 2, horizon: Optional[int] = None) -> list[dict]:
+         episodes: int = 2, n_tasks: int = 2, horizon: Optional[int] = None, task_prefix: str = "fake_task_",
+         server_kwargs: Optional[dict] = None) -> list[dict]:
     # A paper card may set tier1: {instruction: "...", horizon: N} to exercise multi-step behavior.
     t1 = dict((config.card or {}).get("tier1") or {})
     instruction = str(t1.get("instruction", "reach the goal of {name}"))
@@ -49,10 +50,10 @@ def _run(config: MethodConfig, arm: Arm, profile_name: str, task_order: str = "f
     policy = FakePolicyServer(chunking="harness", seeded=profile.seeded)
     with serve(policy) as ph:
         harness = HarnessServer(config, policy_url=ph.url, contract=load_contract("fake"), arm=arm, profile=profile,
-                                scripted_llm=True)
+                                scripted_llm=True, **(server_kwargs or {}))
         with serve(harness) as hh:
             run_fake(hh.url, n_tasks=n_tasks, episodes=episodes, horizon=horizon, task_order=task_order,
-                     instruction=instruction)
+                     instruction=instruction, task_prefix=task_prefix)
     return harness.records
 
 
@@ -75,7 +76,29 @@ def run(config: MethodConfig, profile: Optional[str] = None, module: Optional[st
         report.add("capabilities", False, f"{profile} lacks {sorted(set(config.required) - set(load_profile(profile).capabilities))}")
         return report
 
-    arms = {arm: _run(config, arm, profile) for arm in Arm}
+    extra: dict = {}
+    if config.prepare is not None:
+        import tempfile
+        from pathlib import Path
+        from ..eval.prepare import build_prepared, load_prepared, preparer_settings
+        collect_arm, keys = preparer_settings(config)
+        dev = _run(config, Arm(collect_arm), profile, task_prefix="fake_dev_task_",
+                   server_kwargs={"development": True, "experience_keys": keys})
+        tmp = Path(tempfile.mkdtemp(prefix="hs-tier1-prepare-"))
+        prepared = build_prepared(config, dev, tmp)
+        artifacts, forbidden, _ = load_prepared(tmp, config)
+        report.add("prepare stage builds pinned artifacts", bool(prepared["artifacts"]),
+                   f"{len(prepared['artifacts'])} artifacts from {prepared['dev_episodes']} development episodes")
+        extra = {"artifacts": artifacts, "forbidden_cases": forbidden}
+        import logging
+        logging.disable(logging.CRITICAL)  # the refusals below are expected errors
+        try:
+            refused = _run(config, Arm.CANDIDATE, profile, task_prefix="fake_dev_task_", server_kwargs=extra)
+        finally:
+            logging.disable(logging.NOTSET)
+        report.add("development cases are refused at evaluation",
+                   len(refused) == 4 and all(not r["valid"] for r in refused), f"{len(refused)} refusal records")
+    arms = {arm: _run(config, arm, profile, server_kwargs=extra) for arm in Arm}
     for arm, recs in arms.items():
         bad = [r["invalid_reason"] for r in recs if not r["valid"]]
         report.add(f"{arm.value} episodes valid", not bad and len(recs) == 4, "; ".join(map(str, bad[:2])))
@@ -93,11 +116,11 @@ def run(config: MethodConfig, profile: Optional[str] = None, module: Optional[st
                f"null {null_cost} vs candidate {cand_cost} samples"
                + (f" (ratio {cand_cost / null_cost:.2f})" if null_cost else ""))
 
-    again = _by_case(_run(config, Arm.CANDIDATE, profile))
+    again = _by_case(_run(config, Arm.CANDIDATE, profile, server_kwargs=extra))
     first = _by_case(arms[Arm.CANDIDATE])
     report.add("candidate is deterministic", all(again[k]["action_sha256"] == r["action_sha256"] for k, r in first.items()))
 
-    reordered = _by_case(_run(config, Arm.CANDIDATE, profile, task_order="reverse"))
+    reordered = _by_case(_run(config, Arm.CANDIDATE, profile, task_order="reverse", server_kwargs=extra))
     report.add("case-order independent", all(reordered[k]["action_sha256"] == r["action_sha256"] for k, r in first.items()))
 
     cap = config.budgets.policy_calls

@@ -45,7 +45,8 @@ def _categories(value: Any) -> tuple:
 
 
 def config_from_card(card_path: str | Path, *, slots: Optional[Mapping[str, ModuleRef]] = None,
-                     controller: Optional[ModuleRef] = None, description: str = "") -> MethodConfig:
+                     controller: Optional[ModuleRef] = None, prepare: Optional[ModuleRef] = None,
+                     description: str = "") -> MethodConfig:
     """Build and validate a MethodConfig: identity and provenance from the card, wiring from code."""
     card = load_card(card_path)
     requires = card.get("requires") or {}
@@ -57,7 +58,7 @@ def config_from_card(card_path: str | Path, *, slots: Optional[Mapping[str, Modu
             substitutions=tuple(card.get("substitutions") or ()),
             categories=_categories(card.get("categories")),
             required=frozenset(requires.get("capabilities") or ["act"]),
-            slots=dict(slots or {}), controller=controller,
+            slots=dict(slots or {}), controller=controller, prepare=prepare,
             null=str(card.get("null", "derived" if controller is None else "shadow")),
             budgets=Budgets(**budgets),
             artifacts=tuple(ArtifactPin(**a) for a in card.get("artifacts") or ()),

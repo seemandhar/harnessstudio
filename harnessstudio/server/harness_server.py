@@ -44,14 +44,36 @@ class _Episode:
     native: bool
     started: bool = False
     t0: float = field(default_factory=time.monotonic)
+    experience: list = field(default_factory=list)
+
+
+def _plain(value: Any) -> Any:
+    """JSON-ready copy of an observation value (arrays become lists)."""
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    if isinstance(value, Mapping):
+        return {str(k): _plain(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_plain(v) for v in value]
+    if isinstance(value, np.generic):
+        return value.item()
+    return value
 
 
 class HarnessServer(ModelServer):
     def __init__(self, method: MethodConfig, *, policy_url: str, contract: Contract, arm: Arm | str,
                  profile: PolicyProfile, out_dir: Optional[str | Path] = None, namespace: str = "hs",
-                 policy_timeout: float = 600.0, scripted_llm: bool = False) -> None:
+                 policy_timeout: float = 600.0, scripted_llm: bool = False, case_namespace: str = "",
+                 development: bool = False, experience_keys: tuple = (),
+                 artifacts: Optional[Mapping[str, str]] = None, forbidden_cases: Optional[set] = None) -> None:
         self.method = validate(method)
         self.scripted_llm = scripted_llm
+        # Case identity = (contract[@namespace], task, episode_idx). Use a namespace per benchmark seed
+        # or split so development and evaluation cases can be told apart (spec 7).
+        self.case_namespace = case_namespace
+        self.development, self.experience_keys = development, tuple(experience_keys)
+        self.artifacts = {k: Path(v) for k, v in (artifacts or {}).items()}
+        self.forbidden_cases = set(forbidden_cases or ())
         missing = set(method.required) - set(profile.capabilities)
         if missing:
             raise RegistrationError(f"Method {method.name} needs capabilities {sorted(missing)} "
@@ -80,7 +102,10 @@ class HarnessServer(ModelServer):
                 "method": self.method.to_json(), "method_fingerprint": self.method.fingerprint(),
                 "contract": asdict(self.contract), "profile": {**asdict(self.profile),
                                                                "capabilities": sorted(self.profile.capabilities)},
-                "policy_url": self.policy_url, "policy_hello": self._probe, "namespace": self.namespace}
+                "policy_url": self.policy_url, "policy_hello": self._probe, "namespace": self.namespace,
+                "case_namespace": self.case_namespace, "development": self.development,
+                "artifacts": {k: str(v) for k, v in self.artifacts.items()},
+                "forbidden_cases": len(self.forbidden_cases)}
 
     def get_action_spec(self) -> dict[str, DimSpec]:
         return {k: DimSpec.from_dict(v) for k, v in (self._probe.get("action_spec") or {}).items()}
@@ -99,7 +124,15 @@ class HarnessServer(ModelServer):
         if leftover is not None:  # the previous episode never got EPISODE_END (spec 16.5)
             await self._finalize(leftover, None, "no_episode_end")
         task = config.get("task") or {}
-        case = CaseKey(self.contract.name, str(task.get("name", "")), int(task.get("episode_idx", 0)))
+        bench = self.contract.name + (f"@{self.case_namespace}" if self.case_namespace else "")
+        case = CaseKey(bench, str(task.get("name", "")), int(task.get("episode_idx", 0)))
+        if (case.benchmark, case.task, case.episode_idx) in self.forbidden_cases:
+            reason = f"case {case.benchmark}/{case.task}/{case.episode_idx} was used to prepare this method's artifacts"
+            self.records.append({"benchmark": case.benchmark, "task": case.task, "episode_idx": case.episode_idx,
+                                 "method": self.method.name, "arm": self.arm.value, "valid": False,
+                                 "invalid_reason": reason, "success": None, "metrics": {},
+                                 "accounting": {}, "action_sha256": [], "obs_sha256": [], "events": []})
+            raise RuntimeError(f"Refusing to evaluate: {reason}")
         policy = PolicyHandle(self.policy_url, self.profile, self.policy_timeout)
         await policy.open(config)
         bridge = Bridge()
@@ -111,8 +144,8 @@ class HarnessServer(ModelServer):
                              gripper_open=self.contract.gripper_open, gripper_close=self.contract.gripper_close)
         ectx = EpisodeContext(case=case, contract=self.contract, horizon=self.contract.horizon(task), arm=self.arm,
                               namespace=self.namespace, policy=policy, budgets=self.method.budgets, bridge=bridge,
-                              decision_loop=DecisionLoop(self.method, embodiment), shadow=shadow,
-                              embodiment=embodiment)
+                              decision_loop=DecisionLoop(self.method, embodiment, self.artifacts), shadow=shadow,
+                              embodiment=embodiment, artifacts=self.artifacts)
         if shadow:
             ectx._shadow_policy = PolicyHandle(self.policy_url, self.profile, self.policy_timeout)
             await ectx._shadow_policy.open(config)
@@ -156,6 +189,10 @@ class HarnessServer(ModelServer):
             await self._finalize(ep, None, f"{type(exc).__name__}: {exc}")
             raise
         action = np.asarray(action)
+        if self.development:
+            pub = ectx._public
+            ep.experience.append({**{k: _plain(pub[k]) for k in self.experience_keys if k in pub},
+                                  "action": _plain(action)})
         ectx._note_sent(action)
         await ctx.send_action({"actions": action})
 
@@ -198,6 +235,8 @@ class HarnessServer(ModelServer):
             "accounting": asdict(acc), "action_sha256": ectx._action_hashes, "obs_sha256": ectx._obs_hashes, "events": ectx._events,
             "wall_seconds": time.monotonic() - ep.t0,
         }
+        if self.development:
+            record["experience"] = ep.experience
         self.records.append(record)
         if self.out_dir:
             write_record(self.out_dir, record)

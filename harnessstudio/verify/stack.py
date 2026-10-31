@@ -12,14 +12,14 @@ FAKE_BENCHMARK = "harnessstudio.verify.fixtures:FakeBenchmark"
 
 def benchmark_config(url: str, *, n_tasks: int = 2, episodes: int = 2, horizon: int = 12,
                      task_order: str = "forward", timeout: float = 60.0,
-                     instruction: str = "reach the goal of {name}") -> dict[str, Any]:
+                     instruction: str = "reach the goal of {name}", task_prefix: str = "fake_task_") -> dict[str, Any]:
     return {
         "server": {"url": url, "timeout": timeout},
         "output_dir": "/tmp/harnessstudio-tier1-unused",
         "benchmarks": [{
             "benchmark": FAKE_BENCHMARK, "mode": "sync", "episodes_per_task": episodes,
             "params": {"n_tasks": n_tasks, "horizon": horizon, "task_order": task_order,
-                       "instruction": instruction},
+                       "instruction": instruction, "task_prefix": task_prefix},
         }],
     }
 

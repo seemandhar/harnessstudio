@@ -115,6 +115,7 @@ class MethodConfig:
     required: frozenset = frozenset({"act"})
     slots: Mapping[str, ModuleRef] = field(default_factory=dict)
     controller: Optional[ModuleRef] = None
+    prepare: Optional[ModuleRef] = None   # development stage (spec 7): builds frozen artifacts
     null: str = "derived"
     budgets: Budgets = Budgets()
     artifacts: tuple = ()
@@ -136,6 +137,7 @@ class MethodConfig:
             "categories": list(self.categories), "required": sorted(self.required),
             "slots": {k: self.slots[k].to_json() for k in sorted(self.slots)},
             "controller": self.controller.to_json() if self.controller else None,
+            "prepare": self.prepare.to_json() if self.prepare else None,
             "null": self.null, "budgets": vars(self.budgets),
             "artifacts": [vars(a) for a in self.artifacts],
             "operators": [vars(o) for o in self.operators],
@@ -166,7 +168,7 @@ def validate(config: MethodConfig) -> MethodConfig:
     if not set(config.slots) <= set(SLOT_NAMES):
         raise RegistrationError(f"Unknown slots {sorted(set(config.slots) - set(SLOT_NAMES))}; "
                                 f"known: {list(SLOT_NAMES)}")
-    for ref in list(config.slots.values()) + ([config.controller] if config.controller else []):
+    for ref in list(config.slots.values()) + [r for r in (config.controller, config.prepare) if r]:
         if not isinstance(ref, ModuleRef):
             raise RegistrationError("Slots and the controller must be ModuleRefs")
     if config.null not in NULL_RULES:

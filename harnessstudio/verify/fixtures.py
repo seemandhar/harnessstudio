@@ -16,13 +16,14 @@ from vla_eval.specs import DimSpec
 
 class FakeBenchmark(StepBenchmark):
     def __init__(self, n_tasks: int = 2, horizon: int = 12, action_dim: int = 7, task_order: str = "forward",
-                 instruction: str = "reach the goal of {name}") -> None:
+                 instruction: str = "reach the goal of {name}", task_prefix: str = "fake_task_") -> None:
         super().__init__()
+        self.task_prefix = task_prefix
         self.n_tasks, self.horizon, self.action_dim = n_tasks, horizon, action_dim
         self.task_order, self.instruction = task_order, instruction
 
     def get_tasks(self) -> list[dict[str, Any]]:
-        tasks = [{"name": f"fake_task_{i}"} for i in range(self.n_tasks)]
+        tasks = [{"name": f"{self.task_prefix}{i}"} for i in range(self.n_tasks)]
         return tasks[::-1] if self.task_order == "reverse" else tasks
 
     def reset(self, task: dict[str, Any]) -> Any:

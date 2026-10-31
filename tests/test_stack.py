@@ -141,3 +141,11 @@ def test_analytic_skills_reach_target_on_fake_stack():
     recs = tier1._run(tm.skill_demo(), Arm.CANDIDATE, "fake-t0")
     moves = [e for r in recs for e in r["events"] if e.get("name") == "move"]
     assert moves and all(m["ok"] and m["error"] <= 0.05 for m in moves), moves
+
+
+def test_prepare_stage_pins_artifacts_and_refuses_dev_cases():
+    from harnessstudio.verify import tier1
+    report = tier1.run(tm.memory_blend())
+    assert report.passed, report.lines()
+    assert report.checks["prepare stage builds pinned artifacts"][0]
+    assert report.checks["development cases are refused at evaluation"][0]

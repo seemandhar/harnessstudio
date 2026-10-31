@@ -49,14 +49,47 @@ def _cmd_verify(args) -> int:
     return 0 if report.passed else 1
 
 
-def _server(args, arm: str):
+def _server(args, arm: str, **extra):
     from .contracts import load_contract
     from .profiles import load_profile
     from .server.harness_server import HarnessServer
+    config = load(args.method)
     out = Path(args.out) / arm if args.out else None
-    return HarnessServer(load(args.method), policy_url=args.policy_url, contract=load_contract(args.contract),
+    kwargs = dict(case_namespace=args.case_namespace, **extra)
+    if getattr(args, "prepared", None):
+        from .eval.prepare import load_prepared
+        artifacts, forbidden, _ = load_prepared(args.prepared, config)
+        kwargs.update(artifacts=artifacts, forbidden_cases=forbidden)
+    return HarnessServer(config, policy_url=args.policy_url, contract=load_contract(args.contract),
                          arm=arm, profile=load_profile(args.profile), out_dir=out, namespace=args.namespace,
-                         policy_timeout=args.policy_timeout)
+                         policy_timeout=args.policy_timeout, **kwargs)
+
+
+def _cmd_prepare(args) -> int:
+    from vla_eval.api import run, serve_background
+    from .eval.prepare import build_prepared, preparer_settings
+    config = load(args.method)
+    if config.prepare is None:
+        print(f"{config.name} has no prepare stage", file=sys.stderr)
+        return 1
+    if not args.case_namespace:
+        print("hs prepare needs --case-namespace (e.g. dev-seed1007) so development cases stay distinguishable",
+              file=sys.stderr)
+        return 1
+    out = Path(args.out)
+    collect_arm, keys = preparer_settings(config)
+    args.prepared = None
+    server = _server(args, collect_arm, development=True, experience_keys=keys)
+    overrides = json.loads(args.benchmark_overrides) if args.benchmark_overrides else None
+    with serve_background(server, host=args.host, port=args.port) as handle:
+        url = f"ws://{args.connect_host}:{handle.port}"
+        print(f"[hs prepare] arm={collect_arm} harness={url} policy={args.policy_url}", flush=True)
+        run(args.config, server_url=url, output_dir=out / "vla_eval", pull=args.pull,
+            benchmark_overrides=overrides, docker=None if not args.no_docker else False)
+    (out / "dev_records.jsonl").write_text("".join(json.dumps(r, default=str) + "\n" for r in server.records))
+    prepared = build_prepared(config, server.records, out)
+    print(json.dumps({k: prepared[k] for k in ("artifacts", "dev_episodes", "dev_valid", "dev_successes")}, indent=2))
+    return 0
 
 
 def _cmd_serve(args) -> int:
@@ -111,6 +144,9 @@ def main(argv=None) -> int:
         p.add_argument("--namespace", default="hs")
         p.add_argument("--host", default="0.0.0.0")
         p.add_argument("--policy-timeout", type=float, default=600.0)
+        p.add_argument("--case-namespace", default="",
+                       help="part of every case key; use one per benchmark seed/split (e.g. seed7)")
+        p.add_argument("--prepared", default=None, help="prepared.json (or its directory) from hs prepare")
 
     p = sub.add_parser("serve", help="run one arm's harness server (blocking)")
     serving(p)
@@ -128,6 +164,16 @@ def main(argv=None) -> int:
     p.add_argument("--pull", action="store_true")
     p.add_argument("--no-docker", action="store_true")
     p.set_defaults(fn=_cmd_eval)
+
+    p = sub.add_parser("prepare", help="development stage: run development cases and pin artifacts")
+    serving(p)
+    p.add_argument("--config", required=True, help="vla-eval benchmark config YAML (development cases)")
+    p.add_argument("--port", type=int, default=0)
+    p.add_argument("--connect-host", default="localhost")
+    p.add_argument("--benchmark-overrides", default=None)
+    p.add_argument("--pull", action="store_true")
+    p.add_argument("--no-docker", action="store_true")
+    p.set_defaults(fn=_cmd_prepare)
 
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")

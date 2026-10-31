@@ -19,7 +19,7 @@ from ..core.method import MethodConfig
 
 
 class DecisionLoop:
-    def __init__(self, config: MethodConfig, embodiment=None) -> None:
+    def __init__(self, config: MethodConfig, embodiment=None, artifacts=None) -> None:
         build = lambda slot: config.slots[slot].build() if slot in config.slots else None  # noqa: E731
         self.observation_op = build("observation_op")
         self.instruction_op = build("instruction_op")
@@ -34,11 +34,14 @@ class DecisionLoop:
         if getattr(self.executor, "sees_proposals", False) and self.num_samples < 2:
             raise ValueError("An executor with sees_proposals needs a proposer with num_samples >= 2")
         self.history: list[dict] = []
-        if embodiment is not None:  # public action-space facts for components that ask (optional bind())
-            for comp in (self.observation_op, self.instruction_op, self.gate, self.proposer, self.selector,
-                         self.action_op, self.executor, self.monitor):
-                if comp is not None and callable(getattr(comp, "bind", None)):
-                    comp.bind(embodiment)
+        for comp in (self.observation_op, self.instruction_op, self.gate, self.proposer, self.selector,
+                     self.action_op, self.executor, self.monitor):
+            if comp is None:
+                continue
+            if embodiment is not None and callable(getattr(comp, "bind", None)):
+                comp.bind(embodiment)  # public action-space facts
+            if artifacts and callable(getattr(comp, "load_artifacts", None)):
+                comp.load_artifacts(dict(artifacts))  # frozen prepared artifacts: name -> path
 
     async def run(self, ctx) -> None:
         while not ctx.ended:

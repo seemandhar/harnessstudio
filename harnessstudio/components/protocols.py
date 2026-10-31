@@ -14,6 +14,7 @@ Category mapping (RoboMetaHarness IDs):
   skill_composition        -> skills (M4)
   world_model_verification -> Selector over predicted futures (T3)
   experience_evolution     -> Preparer (M4, offline)
+Any component may define load_artifacts(artifacts) to receive prepared artifacts (name -> path).
 Any component may define bind(embodiment) to receive public action-space facts
 (Embodiment.action_layout: name -> (start, end), from the policy action_spec, in vector order).
 """

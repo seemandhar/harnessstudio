@@ -129,3 +129,40 @@ def skill_demo() -> MethodConfig:
     return MethodConfig(name="test-skill-demo", version="1", paper="none", fidelity=Fidelity.FAITHFUL,
                         required=frozenset({"act", "chunk"}), controller=ModuleRef(f"{__name__}:SkillDemo"),
                         null="shadow", budgets=Budgets(policy_calls=100))
+
+
+class TrajectoryPreparer:
+    """Keeps successful development trajectories (state, action per step)."""
+    collect_arm = "baseline"
+    record = ("state",)
+
+    def build(self, records, out_dir):
+        from ..components.memory import write_trajectories
+        write_trajectories(records, out_dir / "trajectories.jsonl", only_success=False)
+        return {"trajectories": "trajectories.jsonl"}
+
+
+class NearestBlend:
+    """ActionOp: blends the first action toward the nearest stored development action (RTCF-like toy)."""
+
+    def __init__(self, alpha: float = 0.5) -> None:
+        self.alpha, self.store = alpha, None
+
+    def load_artifacts(self, artifacts) -> None:
+        from ..components.memory import TrajectoryStore
+        self.store = TrajectoryStore.load(artifacts["trajectories"])
+
+    def transform(self, chunk, obs, memory):
+        hit = self.store.nearest(obs["state"], k=1) if self.store is not None else []
+        if not hit:
+            return chunk
+        out = np.array(chunk, dtype=np.float32)
+        out[0] = (1 - self.alpha) * out[0] + self.alpha * np.asarray(hit[0]["action"], dtype=np.float32)
+        return out
+
+
+def memory_blend() -> MethodConfig:
+    return MethodConfig(name="test-memory-blend", version="1", paper="none", fidelity=Fidelity.FAITHFUL,
+                        required=frozenset({"act", "chunk"}),
+                        slots={"action_op": ModuleRef(f"{__name__}:NearestBlend", {"alpha": 0.5})},
+                        prepare=ModuleRef(f"{__name__}:TrajectoryPreparer"))
