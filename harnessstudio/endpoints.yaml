@@ -1,0 +1,187 @@
+# HarnessStudio v2 endpoint registry: every runtime model API and local service a method package may use.
+# Machine-readable source for harnessstudio.endpoints (loader + live check) and docs/ENDPOINTS.md (human guide).
+#
+# NEVER put a credential here. Only environment-variable NAMES (api_key_env). Keys live in the private,
+# Git-ignored .env of the launching project or in the environment, and reach only the harness process.
+#
+# Policy (workspace rules, binding):
+#   - NRP open-weight models are the DEFAULT runtime operator for LLMs/VLMs inside a harness (2026-10-21).
+#   - OpenAI is user-authorized as an explicit, pinned opt-in operator (2026-10-21); record model + cost.
+#   - Claude is listed at the user's request (2026-10-31) for plugins that need it; it is opt-in, pinned and
+#     disclosed exactly like OpenAI, and needs the framework operator noted below before a method can use it.
+#   - Astra models: banned 2026-10-20, revised 2026-10-31 to CONFIRM-BEFORE-USE ("unban astra - but ask before
+#     use confirm"). Ask the user and get an explicit yes for that specific use (model, purpose, run scope, expected
+#     calls/cost) before pinning; pass the confirmation record as `user_confirmation`. The loader refuses an Astra
+#     pin without one. A previous confirmation does not carry over to a new run or purpose.
+#   - No silent fallback between providers or models: a method pins one model per operator role.
+#   - A paper's original model that we cannot or may not use is substituted and disclosed in paper.yaml
+#     (fidelity: adapted, original_model kept in the operator pin).
+schema: harnessstudio-endpoints-v1
+verified: "2026-10-31"     # date of the last live check recorded below (python -m harnessstudio.endpoints check)
+
+providers:
+  nrp:
+    kind: openai_chat              # OpenAI-compatible POST {base_url}/chat/completions
+    base_url: https://ellm.nrp-nautilus.io/v1
+    preset: nrp                    # OperatorPin(base_url="nrp")
+    api_key_env: NRP_API_KEY
+    token_param: max_tokens
+    role: default runtime provider for harness LLMs/VLMs
+    notes:
+      - "Latency observed 2026-10-31: 5-40 s per vision call, occasional 100-280 s; 8-12 concurrent streams OK."
+      - "Thinking models may return empty `content` with only reasoning tokens unless thinking is disabled."
+    models:
+      qwen3-vl:
+        modalities: [text, image]
+        served_as: Qwen/Qwen3.8-Flash-Next-FP8
+        thinking_default: true
+        recommended_extra_body: {chat_template_kwargs: {enable_thinking: false}}
+        verified: {listed: "2026-10-31", image_calls: "2026-10-31", json_plans: "2026-10-31", boxes_0_1000: "2026-10-31"}
+        used_by: [harness-vla, roboharness, llm-subtask-planner]
+        closest_for: ["Qwen3-VL-32B-Instruct", "Qwen2.5-VL", "other Qwen VL planners"]
+      gemma-vl: {modalities: [text, image], verified: {listed: "2026-10-31"}, notes: "vision by name only; probe before use"}
+      qwen3: {modalities: [text], verified: {listed: "2026-10-31"}}
+      qwen3-small: {modalities: [text], verified: {listed: "2026-10-31"}}
+      qwen3-embedding: {modalities: [embedding], verified: {listed: "2026-10-31"}, notes: "POST /embeddings; probe before use"}
+      gpt-oss: {modalities: [text], verified: {listed: "2026-10-31"}}
+      glm-5: {modalities: [text], verified: {listed: "2026-10-31"}}
+      kimi: {modalities: [text], verified: {listed: "2026-10-31"}}
+      minimax: {modalities: [text], verified: {listed: "2026-10-31"}}
+      minimax-m2: {modalities: [text], verified: {listed: "2026-10-31"}}
+      deepseek-v4-flash: {modalities: [text], verified: {listed: "2026-10-31"}}
+      gemma: {modalities: [text], verified: {listed: "2026-10-31"}}
+      gemma-small: {modalities: [text], verified: {listed: "2026-10-31"}}
+      gemma-small-e4b: {modalities: [text], verified: {listed: "2026-10-31"}}
+      gemma4-small: {modalities: [text], verified: {listed: "2026-10-31"}}
+      gemma4-12b: {modalities: [text], verified: {listed: "2026-10-31"}}
+      service: {modalities: [unknown], verified: {listed: "2026-10-31"}, notes: "not a model to pin"}
+
+  openai:
+    kind: openai_chat
+    base_url: https://api.openai.com/v1
+    preset: openai
+    api_key_env: OPENAI_API_KEY
+    token_param: max_completion_tokens   # the LLM tool switches automatically for api.openai.com
+    role: explicit opt-in operator inside harnesses (user-authorized); never the outer agents' auth
+    notes:
+      - "Reasoning models (gpt-6.x, o-series) accept only the default temperature: set `temperature: null` in the pin."
+      - "Record model, call and token budgets in paper.yaml; costs are real money."
+    models:
+      gpt-6.1-sol:
+        modalities: [text, image]
+        reasoning: true
+        pin_overrides: {temperature: null}
+        verified: {listed: "2026-10-31", image_calls: "2026-10-31", json_plans: "2026-10-31"}
+        used_by: [harness-vla-sol, harness-vla-sol-nocue, harness-vla-sol-fewshot, fast-harness]
+        closest_for: ["GPT-6 Astra (banned)", "GPT-6 family planners/reviewers", "Codex planners"]
+      gpt-6.1-terra: {modalities: [text], reasoning: true, pin_overrides: {temperature: null}, verified: {listed: "2026-10-31"}}
+      gpt-6-sol: {modalities: [text], reasoning: true, pin_overrides: {temperature: null}, verified: {listed: "2026-10-31"}}
+      gpt-6-luna: {modalities: [text], reasoning: true, pin_overrides: {temperature: null}, verified: {listed: "2026-10-31"}}
+      gpt-5.5: {modalities: [text, image], verified: {listed: "2026-10-31"}}
+      gpt-5.4: {modalities: [text, image], verified: {listed: "2026-10-31"}}
+      gpt-5.4-mini: {modalities: [text, image], verified: {listed: "2026-10-31"}}
+      gpt-4.1: {modalities: [text, image], verified: {listed: "2026-10-31"}}
+      gpt-4o: {modalities: [text, image], verified: {listed: "2026-10-31"}, closest_for: ["GPT-4o / GPT-4V planners in older papers"]}
+      gpt-4o-mini: {modalities: [text, image], verified: {listed: "2026-10-31"}}
+      o3: {modalities: [text, image], reasoning: true, pin_overrides: {temperature: null}, verified: {listed: "2026-10-31"}}
+      o4-mini: {modalities: [text, image], reasoning: true, pin_overrides: {temperature: null}, verified: {listed: "2026-10-31"}}
+      text-embedding-3-large: {modalities: [embedding], verified: {listed: "2026-10-31"}, notes: "POST /embeddings"}
+      text-embedding-3-small: {modalities: [embedding], verified: {listed: "2026-10-31"}, notes: "POST /embeddings"}
+    confirm_required:              # usable only with an explicit user confirmation for that use
+      gpt-6-astra: {modalities: [text, image], reasoning: true, pin_overrides: {temperature: null},
+                    verified: {listed: "2026-10-31"},
+                    notes: "RPent's leaderboard planner (Codex / GPT-6 Astra). Ask the user before any call."}
+
+  claude:
+    kind: claude_cli               # headless Claude Code: `claude -p --model MODEL --output-format json`, prompt on stdin
+    command: claude                # /home/sejain/.local/bin/claude (Claude Code 2.1.316 on 2026-10-31)
+    api_key_env: null              # subscription login of the CLI; ANTHROPIC_API_KEY is NOT set on this machine
+    role: explicit opt-in operator for plugins that need Claude (user request 2026-10-31); pinned and disclosed
+    status: not_wired              # HarnessStudio's LLM tool speaks only openai_chat today
+    gap: >-
+      A method cannot call Claude through ctx.tools["llm"] yet. Add a `claude_cli` Operator to
+      harnessstudio/tools/llm.py through the gated framework-extension route (worktree + tests + scripts/regress.py),
+      with: pinned --model, no tools (--disallowedTools all), text-only unless image passing is implemented and
+      tested, per-call timeout, usage parsing from the JSON result, and the Astra/forbidden-word check.
+    notes:
+      - "Never change Claude Code's own authentication or route it through NRP/OpenAI (workspace rule)."
+      - "Outer research/coding agents of the pipeline are pinned to claude-opus-5-5; a runtime operator inside a harness is a separate, disclosed choice."
+    models:
+      claude-opus-5-5: {modalities: [text, image], verified: {cli_available: "2026-10-31"}}
+      claude-sonnet-5-5: {modalities: [text, image], verified: {cli_available: "2026-10-31"}}
+      claude-haiku-5-5: {modalities: [text, image], verified: {cli_available: "2026-10-31"}}
+      claude-fable-5-1: {modalities: [text, image], verified: {cli_available: "2026-10-31"}}
+
+  local_gateways:
+    kind: anthropic_messages_proxy   # LiteLLM proxies that let Claude Code itself run on other models
+    role: not a harness runtime provider; listed so nobody mistakes them for one
+    services:
+      litellm-nrp-glm5: {url: "http://127.0.0.1:4141", status_2026_10_31: down, started_by: "`nrp` shell function"}
+      litellm-ollama-qwythos: {url: "http://127.0.0.1:4142", status_2026_10_31: down, started_by: "`claude-q` shell function"}
+
+local_services:
+  # Policy servers (vla-eval WebSocket model servers). HarnessStudio talks to them with --policy-url.
+  policies:
+    pi05-libero-hs:
+      url: ws://127.0.0.1:8106
+      health: http://127.0.0.1:8106/health
+      profile: pi05-libero-hs        # seeded T1 (act, chunk, seeded_sampling, isolated_streams), 10 executed actions/chunk
+      gpu: 6
+      start: >-
+        CUDA_VISIBLE_DEVICES=6 XLA_FLAGS=--xla_gpu_autotune_level=0 OPENPI_DATA_HOME=/bigdata/sejain/hs2-cache/openpi
+        ~/.cache/uv/environments-v2/pi05-openpi-*/bin/python3 harnessstudio/policies/pi05_openpi.py --port=8000
+        --args.config_name=pi05_libero --args.image_key=observation/image --args.wrist_image_key=observation/wrist_image
+        --args.state_key=observation/state --args.state_dim=8 --args.image_resolution=224 --args.chunk_size=10
+        --address 127.0.0.1:8106
+      notes: "Shared bottleneck: ~9 concurrent episode streams saturate it. Keep both arms on the same server for bitwise CRN."
+    pi05-libero-stock:
+      url: ws://127.0.0.1:8101
+      profile: pi05-libero-stock
+      start: /home/sejain/research/cvpr27/hs2-gpu/start_server.sh   # PORT=8101 GPU=4 by default; stock vla-eval pi0 server
+      notes: "openpi RNG advances per call: restart before bitwise comparisons."
+    gr00t-n15-robocasa365:
+      url: ws://127.0.0.1:8105
+      profile: gr00t-n15-robocasa365
+      gpu: 5
+      start: >-
+        /bigdata/sejain/hs2-cache/envs/gr00t-n15-vla/bin/python -m harnessstudio.policies.gr00t_n15_robocasa365
+        --model_path /home/sejain/research/cvpr27/RobotPolicyBench/models/gr00t-n1.5-robocasa-human300
+        --chunk_size null --denoising_steps 4 --seed 0 --port 8105
+    openvla-libero-hs:
+      url: ws://127.0.0.1:8115
+      profile: openvla-libero-hs
+      start: /home/sejain/research/cvpr27/hs2-gpu/start_openvla.sh   # CONFIG=<yaml> PORT=8115 GPU=5
+    robodojo-pi05-hs:
+      profile: robodojo-pi05-hs
+      notes: "Used by fast-harness; see docs/results/fast_harness.md for the launch."
+  tools:
+    sam3-rpent:
+      url: http://127.0.0.1:8117
+      protocol: "POST /call {method: sam3.segment, kwargs: {image_base64, text_prompt | point, min_score}} -> best mask"
+      gpu: 7
+      start: >-
+        CUDA_VISIBLE_DEVICES=7 SAM3_CHECKPOINT_PATH=/bigdata/sejain/frozen-harness-bench/models/rpent-sam3/sam3.pt
+        HF_HUB_OFFLINE=1 /bigdata/sejain/frozen-harness-bench/venvs/rpent-libero-pro-20261020/bin/python
+        -m rpent.robots.components.sam3_server --transport http --host 127.0.0.1 --port 8117
+      used_by: [harness-vla]
+    roboharness-tools:
+      url: http://127.0.0.1:8131
+      protocol: "GET /health; POST /visual_overlay /remove_distractor /replace_texture /replace_background /embed (base64 PNG)"
+      gpu: 4
+      start: /home/sejain/research/cvpr27/hs2-gpu/roboharness/start_tool_server.sh   # GPU=4 PORT=8131
+      provides: [sam3 all-mask text segmentation, mask overlay, Telea inpainting, CLIP ViT-L/14 + MiniLM + hash embedding]
+      used_by: [roboharness]
+  benchmarks:
+    libero: {image: "ghcr.io/allenai/vla-evaluation-harness/libero:latest", python: /opt/conda/envs/libero/bin/python}
+    libero-pro: {image: "ghcr.io/allenai/vla-evaluation-harness/libero-pro:latest", data: /home/sejain/research/cvpr27/hs2-gpu/libero_pro/hf_libero_pro}
+    robocasa365: {mode: in-process (--no-docker), env: /bigdata/sejain/hs2-cache/envs/robocasa365-bench}
+
+assets:
+  sam3_checkpoint: /bigdata/sejain/frozen-harness-bench/models/rpent-sam3/sam3.pt
+  clip_vit_large_patch14: /home/sejain/hf_cache/models--openai--clip-vit-large-patch14/snapshots/32bd64288804d66eefd0ccbe215aa642df71cc41
+  minilm_l6_v2: /home/sejain/hf_cache/models--sentence-transformers--all-MiniLM-L6-v2/snapshots/1110a243fdf4706b3f48f1d95db1a4f5529b4d41
+  hf_cache: /home/sejain/hf_cache          # no refs/main in this cache: load by snapshot dir, not by hub id
+  openpi_data_home: /bigdata/sejain/hs2-cache/openpi
+
+gpus:
+  usable: [4, 5, 6, 7]       # 0-3 belong to other users; never touch foreign GPU processes

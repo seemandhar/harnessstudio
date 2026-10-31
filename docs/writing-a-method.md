@@ -216,3 +216,16 @@ read `ctx.artifacts`. `harnessstudio.components.memory` has `write_trajectories`
 - Deterministic given inputs: no unseeded randomness, no wall-clock dependence.
 - Fresh state per episode: components are built per episode; keep state on `self`.
 - Name every substitution of a trained or unavailable part (`tf_variant`, `adapted`).
+
+## Runtime models, services and framework changes
+
+- Every LLM/VLM provider, model and local service a method may use is in `docs/ENDPOINTS.md`
+  (machine-readable: `harnessstudio/endpoints.yaml`). Generate operator pins with
+  `.venv/bin/python -m harnessstudio.endpoints pin PROVIDER MODEL --name ROLE`; NRP is the default, OpenAI and
+  Claude are pinned opt-ins, Astra needs the user's explicit confirmation for each use.
+- Porting a paper end to end (audit, fidelity, parity checks, development stage, evaluation, retrospective) is
+  described by the self-improving porting skill
+  `/home/sejain/research/cvpr27/RoboMetaHarness-claude/.claude/skills/harnessstudio-v2-porting/`.
+- If a paper needs something the framework cannot express, do not monkeypatch it from the method: propose a
+  framework extension (`docs/extensions/README.md`), build it in a worktree and pass `scripts/regress.py`.
+  `python3 scripts/regress.py --inflight` lists running `hs` processes; never edit files they import.

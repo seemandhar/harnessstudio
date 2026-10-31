@@ -1,0 +1,14 @@
+# Framework extensions (gated)
+
+One file per extension: `EXT_ID.md` with the paper mechanism, why existing slots/ctx/profiles cannot express it,
+the smallest change that would, and the compatibility claim (native/identity bitwise; every installed method's
+tier 0/1 unchanged; parity scripts still pass). Process (porting skill EVOLUTION.md, Loop 2): independent review of
+the proposal -> worktree `git worktree add ../hs2-ext-EXT_ID -b ext2/EXT_ID v2` -> tests -> `python3
+scripts/regress.py --source ../hs2-ext-EXT_ID --out ../hs2-ext-EXT_ID/regress.json` (`"ok": true`) -> GPU check by
+the evaluator -> independent diff review -> merge into `v2` only when `scripts/regress.py --inflight` is empty.
+
+## Open backlog
+- `claude_cli` LLM operator (docs/ENDPOINTS.md "Claude"): lets methods pin Claude models.
+- Astra confirm-before-use in `OperatorPin` / the LLM tool (pending: core files are imported by the running
+  RoboHarness evaluation; apply after it finishes).
+- Items in `docs/core-todo.md`.
