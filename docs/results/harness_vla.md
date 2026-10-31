@@ -282,3 +282,28 @@ Goal-S, 10 tasks x 5 episodes, 300-step horizon, seeded pi05_libero on :8106); n
 cases (leak and compute check); baseline reused from `runs/subset_v2` (the baseline arm never runs the
 controller, so it is identical for both planners). Pairing via `scripts/merge_arms.py`. Budget cap: about $30 of
 OpenAI usage; stop if the running total projects above it.
+
+### Results (`runs/sol/`, finished 2026-10-31 ~06:45 PT)
+
+All runs valid. Candidate on the predeclared 100 cases, paired with the `subset_v1` baseline records
+(`runs/sol/merged_100`), and all three arms on the 20 episode-0 cases (`runs/sol/merged_ep0`).
+
+| Arm | Goal-T | Goal-S | Total | vs baseline (wins / losses, sign test) |
+|---|---|---|---|---|
+| baseline (pi05_libero alone) | 8/50 | 15/50 | 23/100 | |
+| harness-vla, NRP qwen3-vl planner (v2) | 9/50 | 21/50 | 30/100 | +22 / -15, p = 0.32 |
+| **harness-vla-sol, gpt-6.1-sol planner** | **27/50** | **28/50** | **55/100** | **+41 / -9, p = 4.5e-6** |
+| paper, zero-shot (Claude Code, RLinf pi05_libero130) | 79.0% | 31.0% | | |
+
+Episode 0 only (20 cases, all three arms): baseline 5/20, null 5/20 (null vs baseline 17 M / 3 R / 0 X; the 3 R
+are Goal-S simulator branches), candidate 12/20 (+9 / -2, p = 0.065).
+
+LLM usage (candidate, 100 episodes): 3.33M prompt + 0.074M completion tokens (634 calls), vs 6.37M + 0.10M for
+the qwen planner (the stronger planner finishes in fewer turns). Mean wall time per episode ~36 s (candidate)
+vs ~25 s (baseline).
+
+Reading: the planner is the main gap to the paper. With a frontier planner the same zero-shot controller
+more than doubles the frozen policy's success on these LIBERO-Pro Goal cells, exceeds the paper's zero-shot
+Goal-S number and closes much of the Goal-T gap, with a different base checkpoint (openpi pi05_libero instead of
+RLinf pi05_libero130), 256 px images instead of 1024 px, and the official 300-step horizon. Not yet run: the
+other LIBERO-Pro suites (spatial, object, 10), more episodes, and the few-shot (memory) mode.
