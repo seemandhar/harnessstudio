@@ -1,0 +1,69 @@
+name: aac
+version: "1"
+paper:
+  id: "arXiv:2604.04161v2"
+  title: "Adaptive Action Chunking at Inference-time for Vision-Language-Action Models"
+  authors: "Liang et al."
+  venue: "CVPR 2026"
+  # v1 MethodConfig.paper string, kept verbatim for provenance:
+  v1_ref: "arXiv:2604.04161v2 (AAC, CVPR 2026); code Adaptive-Action-Chunking/robocasa@fed3e6b5 action_entropy_v2.select_chunk_size + gr00t-multi-sample@11e926b0 (N=20)"
+# Primary: the entropy of N policy samples decides how long to commit before re-querying the policy
+# (uncertainty-driven inference allocation). Secondary: it is realized as an executor (how much of the
+# chunk runs). It never selects among samples (sample 0 always runs), so not proposal_selection.
+categories: {primary: uncertainty_compute, secondary: [execution_monitoring]}
+fidelity: faithful
+substitutions: []          # faithful: the mechanism maps one-to-one; the named differences are below
+disclosures:
+  - id: D1
+    name: noise
+    text: "Per-sample Protocol-N1 seeded streams (sample 0 = the native stream) instead of one batched torch.randn(N, 16, D); iid Gaussian either way, not bitwise."
+  - id: D2
+    name: compute
+    text: "K sequential full get_action calls (VLM backbone per sample) instead of the author server's shared-backbone batch; cost only."
+    v2_note: "v2 sends one ctx.policy.sample(20) request per decision; whether the policy server shares the backbone across the 20 seeds is up to its sample_chunks. Cost only either way."
+  - id: D3
+    name: normalization
+    text: "The author code reads the model's normalized_action; HarnessStudio flats are unnormalized, so eef pos/rot are re-normalized with the checkpoint's min_max statistics (exact affine inverse of GR00T's Normalizer; float rounding only). For RoboCasa365 multitask checkpoint-120000 both keys have min -1 / max 1, so the map is the identity."
+  - id: D4
+    name: action groups
+    text: "Action groups by KEY from the policy action layout (panda_omron: eef_pos, eef_rot, gripper_close), not by the author's 7-D single_panda_gripper column indices 0:3 / 3:6 / 6:7."
+    v2_note: "v2 resolves the groups by name from Embodiment.action_layout (vla-eval DimSpec names position / rotation / gripper; GR00T's action.end_effector_position / action.end_effector_rotation / action.gripper_close are accepted as aliases) or from an explicit `dims` override."
+  - id: D5
+    name: gripper array shape
+    text: "GR00T panda_omron returns gripper_close as (T, 1) per sample. The author's action_magnitude computes np.diff over the LAST axis of gripper_close[0, :k] (shape (k, 1)), which is empty, so the 0.2 * gripper-toggle term is always 0 for this shape. Ported shape-faithfully (inert), disclosed."
+  - id: D6
+    name: protocol
+    text: "Episodes run under HarnessStudio's seeded RoboCasa365 protocol (official horizons, native base_motion/control_mode, native success), not the author's old-RoboCasa client (max_steps 600, base zeroed, 3-step success hold)."
+    v2_note: "v2: vla-eval's RoboCasa365Benchmark under the robocasa365 contract and the gr00t-n15-robocasa365 profile."
+  - id: D7
+    name: noise bank across decisions
+    text: "The author server (gr00t-multi-sample@11e926b0 gr00t/model/policy.py L198-208, seed_per_step=True in scripts/policy_server_robocasa.py) reseeds random/numpy/torch/cuda to 42 and sets cudnn deterministic on EVERY call, so the same (20, 16, D) initial-noise bank, sample 0 included, is reused at every decision. HarnessStudio's seeding contract (owned by the core, not by methods) draws fresh Protocol-N1 seeds per decision and keeps sample 0 equal to the baseline/null native stream; reproducing a fixed bank would change sample 0 in the candidate only (breaking common random numbers) or the native stream of every arm. Not reproduced; disclosed."
+    v2_note: "v2 seeds come from harnessstudio.core.noise.crn_seed(namespace, benchmark, task, episode, decision, sample)."
+# v1 -> v2 port notes (not paper deviations; identical behaviour on GR00T's 16-step chunks)
+port_notes:
+  - id: P1
+    text: "The author code hardcodes the motion range k = 2..16 and the fallback 16. v2 uses the decision's chunk length T (2..T, fallback T), which equals the author code at T=16. v1 refused T != 16; executor param strict_horizon=true restores that. T < 2 runs the whole chunk."
+  - id: P2
+    text: "Action groups come from bind(embodiment) or `dims`, not from v1's extras['policy']['action_layout']."
+  - id: P3
+    text: "The executor's diagnostics() (k, k_entropy, k_motion, per-step entropies) is not written to the v2 trace: the v2 DecisionLoop has no executor-diagnostics hook (v1 wrote it as executor_info)."
+requires: {capabilities: [act, chunk, seeded_sampling, isolated_streams]}
+budgets: {policy_calls: null, llm_calls: 0, tool_calls: 0, max_tokens: 0}
+null: derived
+artifacts:
+  - name: gr00t-n1.5-rc365-multitask-120000-metadata
+    path: /home/sejain/research/robo-scientist/ckpts/gr00t_n1-5/multitask_learning/checkpoint-120000/experiment_cfg/metadata.json
+    sha256: 8be0fc606c9220356bad497feefc4ae4daaa05670acccc31caecaa7ae5590b69
+    license: Apache-2.0
+operators: []
+original:
+  repo: "Adaptive-Action-Chunking/robocasa"
+  commit: fed3e6b5eb348160dd0570f326f726758fee9056
+  entry: "robocasa/demos/action_optimization/action_entropy_v2.py select_chunk_size(method='gaussian_bernoulli', move_th=3.0), called by inference_client_action_entropy.py with --chunk_id_selector 0 (AAC_evaluation.sh)"
+  files:
+    robocasa/demos/action_optimization/action_entropy_v2.py: 80abe7e1c316c81694b24f9efb9517f89406ec5b2a96a11c49abc0c217d26355
+    robocasa/demos/help_function.py: 056cf3830d1c238693cf053fc8694588915201051da668509f44b18be66b9ffc
+  server: {repo: "Adaptive-Action-Chunking/gr00t-multi-sample", commit: 11e926b0f34cf6acfcb92c0fe6127a1bdc7b856a, n_samples: 20}
+  ported_from: "HarnessStudio v1 branch ext/aac @1422be0, harnessstudio/methods/aac.py"
+  reported: null           # v1 recorded no paper numbers for comparison
+description: "Executes sample 0 of N=20 for k = max(motion floor, entropy elbow). Disclosed differences D1 per-sample seeded noise, D2 sequential K calls, D3 re-normalization from the checkpoint min_max stats (identity for checkpoint-120000), D4 action groups by key, D5 inert gripper toggle for (T,1) gripper arrays, D6 HarnessStudio seeded RoboCasa365 protocol, D7 fresh per-decision seeds instead of the author server's per-call reseed to 42 (identical 20-sample noise bank at every decision)."

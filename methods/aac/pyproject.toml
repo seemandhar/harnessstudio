@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hs-aac"
+version = "1.0.0"
+description = "AAC (arXiv:2604.04161v2): action-entropy adaptive chunk sizing over N=20 seeded samples, executes sample 0."
+requires-python = ">=3.10"
+dependencies = ["harnessstudio", "numpy>=1.24"]
+
+[project.entry-points."harnessstudio.methods"]
+aac = "hs_aac:config"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hs_aac"]

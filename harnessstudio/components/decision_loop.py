@@ -31,6 +31,8 @@ class DecisionLoop:
         self.monitor = build("monitor")
         self.sampler_ref = config.slots["sampler"].to_json() if "sampler" in config.slots else None
         self.num_samples = int(getattr(self.proposer, "num_samples", 1)) if self.proposer else 1
+        if getattr(self.executor, "sees_proposals", False) and self.num_samples < 2:
+            raise ValueError("An executor with sees_proposals needs a proposer with num_samples >= 2")
         self.history: list[dict] = []
         if embodiment is not None:  # public action-space facts for components that ask (optional bind())
             for comp in (self.observation_op, self.instruction_op, self.gate, self.proposer, self.selector,
@@ -45,6 +47,7 @@ class DecisionLoop:
     async def decide(self, ctx, instruction: Optional[str] = None) -> int:
         arm: Arm = ctx._arm
         candidate = arm is Arm.CANDIDATE
+        ctx.accounting.decisions += 1  # counted at the start, so a decision cut by the episode end counts
         obs = ctx.observe()
 
         obs_override = self.observation_op.transform(obs) if self.observation_op else None
@@ -94,10 +97,17 @@ class DecisionLoop:
             planned = int(self.executor.plan(np.array(chunk), extras, obs))
             if candidate:
                 k_exec = max(min(min_k, len(chunk)), min(planned, len(chunk)))
+        if not candidate:
+            # Baseline/null execute the native chunk through the native queue, so if the method ends
+            # mid-chunk the native fallback continues this chunk exactly as the baseline would.
+            ctx._native_queue.clear()
+            ctx._native_queue.extend(np.array(a) for a in chunk[:k_exec])
         executed = 0
         for i in range(k_exec):
             if ctx.ended:
                 break
+            if not candidate:
+                ctx._native_queue.popleft()
             await ctx._emit(chunk[i])
             executed += 1
             after = ctx.observe()
@@ -123,5 +133,4 @@ class DecisionLoop:
                  **({"diagnostics": diagnostics} if diagnostics else {}))
         self.history.append({"decision": len(self.history), "samples": len(proposals), "chosen": chosen,
                              "executed": executed})
-        ctx.accounting.decisions += 1
         return executed
