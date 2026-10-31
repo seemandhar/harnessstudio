@@ -511,7 +511,7 @@ Cases: Goal-T and Goal-S, 10 tasks x episodes 0-1 (40 cases; same scenes as epis
 which ran sequentially from episode 0). Arm: candidate only, compared pair by pair with the cue version and the
 baseline on the same cases. Budget about $8.
 
-### Ablation results (finished ~12:05 PT)
+### Ablation results (finished ~11:30 PT)
 
 All 40 cases valid; first observations match the cue runs in 40/40 cases (same scenes).
 
