@@ -99,6 +99,9 @@ Interfaces are in `harnessstudio/components/protocols.py`:
 Any component can define `bind(embodiment)`. It receives `Embodiment.action_layout`
 (`name -> (start, end)` from the policy's action spec, e.g. `position (0,3)`, `rotation (3,6)`,
 `gripper (6,7)`) and can use `embodiment.dims("position", "rotation")`.
+`embodiment.eef_position(obs)` returns the end-effector position from a public observation (the
+contract says where it lives: LIBERO `states[0:3]`, RoboCasa365 `state["state.end_effector_position_relative"]`,
+fake `state[0:2]`), or `None` if the benchmark does not expose it.
 
 The null arm for slot methods is derived automatically: every component still runs, but the policy
 gets the original observation and instruction, sample 0 executes for its native length, and cuts
