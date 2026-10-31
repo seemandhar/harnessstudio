@@ -192,7 +192,7 @@ class HarnessServer(ModelServer):
             "method": self.method.name, "method_fingerprint": self.method.fingerprint(), "arm": self.arm.value,
             "valid": invalid is None, "invalid_reason": invalid, "metrics": metrics,
             "success": bool(metrics.get("success", False)) if invalid is None else None,
-            "accounting": asdict(acc), "action_sha256": ectx._action_hashes, "events": ectx._events,
+            "accounting": asdict(acc), "action_sha256": ectx._action_hashes, "obs_sha256": ectx._obs_hashes, "events": ectx._events,
             "wall_seconds": time.monotonic() - ep.t0,
         }
         self.records.append(record)

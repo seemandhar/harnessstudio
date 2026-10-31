@@ -120,3 +120,15 @@ def test_llm_controller_tier1_and_shadow_pays_llm():
     assert report.passed, report.lines()
     recs = tier1._run(tm.llm_planner(), Arm.NULL, "fake-t0")
     assert all(r["accounting"]["llm_calls"] == 1 for r in recs)
+
+
+def test_pairing_and_attribution_on_fake_stack():
+    from harnessstudio.eval.pairing import summarize
+    from harnessstudio.verify import tier1
+    recs = {arm.value: tier1._run(tm.pick_last_k4(), arm, "fake-t1") for arm in Arm}
+    summary = summarize(recs)
+    assert summary["paired_cases"] == 4
+    assert summary["null_attribution"]["M"] == 4 and summary["null_attribution"]["X"] == 0
+    # a deliberately wrong "null" (the candidate) is caught as X or R, never M
+    bad = summarize({"baseline": recs["baseline"], "null": recs["candidate"]})
+    assert bad["null_attribution"]["M"] < 4

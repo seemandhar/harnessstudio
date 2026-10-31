@@ -156,6 +156,7 @@ class EpisodeContext:
         self._stop_reason: Optional[str] = None
         self._events: list = []
         self._action_hashes: list = []
+        self._obs_hashes: list = []       # raw observation the action was computed from, per step
         self._method_spend = 0
         self.accounting = Accounting()
         self.memory: dict = {}                       # per-episode scratch
@@ -298,6 +299,7 @@ class EpisodeContext:
         """Called by the server after an action left for the benchmark."""
         self.accounting.steps += 1
         self._action_hashes.append(fingerprint(np.asarray(action)))
+        self._obs_hashes.append(fingerprint(self._raw))
 
     def _shadow_handle(self) -> PolicyHandle:
         if self._shadow_policy is None:

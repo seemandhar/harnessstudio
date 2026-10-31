@@ -19,13 +19,6 @@ def sign_test_p(wins: int, losses: int) -> float:
     return min(1.0, 2 * tail)
 
 
-def first_divergence(a: list, b: list) -> int | None:
-    for i, (x, y) in enumerate(zip(a, b)):
-        if x != y:
-            return i
-    return None if len(a) == len(b) else min(len(a), len(b))
-
-
 def summarize(arms: dict[str, Iterable[dict]]) -> dict:
     by_arm = {arm: {_key(r): r for r in recs} for arm, recs in arms.items()}
     cases = set.intersection(*(set(k for k, r in recs.items() if r["valid"]) for recs in by_arm.values())) \
@@ -50,13 +43,6 @@ def summarize(arms: dict[str, Iterable[dict]]) -> dict:
             losses = sum(1 for k in cases if base[k]["success"] and not by_arm[arm][k]["success"])
             out["arms"][arm]["vs_baseline"] = {"wins": wins, "losses": losses, "p": round(sign_test_p(wins, losses), 4)}
         if "null" in by_arm:
-            matched, diverged = 0, []
-            for k in sorted(cases):
-                d = first_divergence(base[k]["action_sha256"], by_arm["null"][k]["action_sha256"])
-                if d is None:
-                    matched += 1
-                else:
-                    diverged.append({"case": list(k), "first_divergent_step": d})
-            # M = matched. Divergent pairs need first-divergence attribution (R = renderer, X = leak).
-            out["null_parity"] = {"matched": matched, "diverged": diverged}
+            from .attribution import attribute
+            out["null_attribution"] = attribute([base[k] for k in cases], [by_arm["null"][k] for k in cases])
     return out
