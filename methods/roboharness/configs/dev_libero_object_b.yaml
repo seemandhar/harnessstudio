@@ -1,0 +1,29 @@
+# RoboHarness development memory pass (paper: "preliminary inference pass over standard LIBERO-Object and
+# LIBERO-Spatial"; released code logs 10 episodes per task). Shard object_b of 4; hs prepare overrides server.url.
+extends: /home/sejain/research/cvpr27/vla-eval-v0.8.0/configs/benchmarks/libero/object.yaml
+server:
+  url: "ws://localhost:1"
+docker:
+  image: ghcr.io/allenai/vla-evaluation-harness/libero:latest
+  gpus: "4"
+  user: host
+  env:
+    - HOME=/tmp
+    - LIBERO_CONFIG_PATH=/etc/libero
+  volumes:
+    - /home/sejain/research/cvpr27/hs2-gpu/libero_config:/etc/libero:ro
+output_dir: /home/sejain/research/cvpr27/hs2-gpu/roboharness/results/unused
+benchmarks:
+  - benchmark: "vla_eval.benchmarks.libero.benchmark:LIBEROBenchmark"
+    subname: libero_object
+    episodes_per_task: 10
+    tasks:
+      - "pick up the tomato sauce and place it in the basket"
+      - "pick up the butter and place it in the basket"
+      - "pick up the milk and place it in the basket"
+      - "pick up the chocolate pudding and place it in the basket"
+      - "pick up the orange juice and place it in the basket"
+    params:
+      suite: libero_object
+      seed: 7
+      num_steps_wait: 10

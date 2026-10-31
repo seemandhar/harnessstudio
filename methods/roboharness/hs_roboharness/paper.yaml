@@ -1,0 +1,40 @@
+name: roboharness
+version: "1"
+paper: {id: "arXiv:2603.24060v3", title: "RoboHarness: A Memory-Augmented Policy Harness for Vision-Language-Action Model Robustness via In-Context Adaptation (earlier title: SOMA)", venue: "arXiv 2026"}
+categories: {primary: memory_retrieval, secondary: [observation_grounding, language_alignment, execution_monitoring, agentic_orchestration]}
+# Ported from the authors' evaluation code (src/soma_eval.py rollout + soma_agent/perception/vlm/tools/memory/
+# encoder/logger/control_flow, sam3_service.py), not re-derived from the paper text. Where the released code and
+# the paper differ, the code is followed and the difference is listed here.
+fidelity: adapted
+substitutions:
+  - "RELEASED-CODE FIX: soma_perception.py ships MAX_RETRIES = 0, which skips the plan/verify loop so the released eval never edits a frame or the instruction; max_attempts = 3 restores the documented 'blocking retries upon verification failure' (the paper reports up to 8 turns in its turns-to-success ablation; the main-run value is not released)"
+  - "orchestrator Qwen3-VL-32B-Instruct (code default qwen3-vl-32b-instruct, DashScope) -> NRP open-weight qwen3-vl (served Qwen/Qwen3.8-Flash-Next-FP8) with thinking disabled; original temperatures and token caps kept per call type (brain 0.01/1024, detector 0.0/128, verifier 0.1/256)"
+  - "LeRobot pi05 policy (checkpoint not released; n_action_steps assumed 10, so every policy inference falls on a perception step as in the original) -> openpi pi05_libero via the HarnessStudio seeded T1 server (profile pi05-libero-hs, 10 executed actions per chunk); the policy queue, rollback and perception timing are emulated step for step"
+  - "LeRobot LIBERO env -> allenai vla-eval LIBERO-Pro (256x256 agent-view; LeRobot renders its own resolution); only the agent-view image is edited, as the original (wrist image untouched)"
+  - "memory: online logging of every evaluated episode (with the environment's success label) into the bank during evaluation -> frozen memory from a development pass (hs prepare on standard LIBERO-Spatial + LIBERO-Object, perception off as in the released code); evaluation never writes memory and never sees evaluation outcomes"
+  - "memory frames: 5 frames uniformly sampled from the episode video -> nearest of the agent-view keyframes recorded every 5 steps (JPEG q90), at most 2 steps away"
+  - "SAM3 service: the service itself called the VLM to detect a box before choosing among SAM3 masks; here the controller makes that detector call (budgeted, traced) and sends the box; mask choice, overlay (green, alpha 0.4), inpainting (dilate 7x7 x2, Telea r=5) unchanged"
+  - "a frame is sent to the policy as edited only when a visual tool ran and passed verification; otherwise the raw frame goes unchanged (the original round-trips every perceived frame through float/uint8, a sub-LSB change)"
+  - "success signal for subtask advance and key-step retry: the original passes the env's per-step success, which is False inside a running LIBERO episode (success terminates it); this port passes False and reads no evaluator state. Like the original, a timeout rollback is only harmless after success because the benchmark ends the episode"
+  - "not in the released code and therefore not implemented: blank-inference attention validation (attention maps exist only in visualization scripts), offline Stage-2 comparative memory consolidation, texture/background assets in memory (the logger never stores them, so replace_texture / replace_background never run), the hard-coded task chain + timer switching of chain_step_eval.py (only for the LIBERO-RoboHarness chaining task, which is not ported yet)"
+  - "provider errors and spent LLM budget return '{}' (no intervention), as the original _generate does on API errors"
+requires: {capabilities: [act, chunk, seeded_sampling]}
+# Perception every 10 steps (<= 52 per 520-step episode); visual tools only in the first 5 perception calls unless
+# Encore resets the quota; each visual tool adds one detector call per target and one verifier call per attempt.
+budgets: {policy_calls: 2000, llm_calls: 400, tool_calls: 400, max_tokens: 1024}
+null: shadow
+artifacts: []
+operators:
+  # Pinned 2026-10-31 after GET /models on NRP: the only Qwen VL served is qwen3-vl (Qwen/Qwen3.8-Flash-Next-FP8).
+  - {name: brain, model: qwen3-vl, base_url: nrp, api_key_env: NRP_API_KEY, original_model: "Qwen3-VL-32B-Instruct (qwen3-vl-32b-instruct)",
+     temperature: 0.01, extra_body: {chat_template_kwargs: {enable_thinking: false}}}
+  - {name: detector, model: qwen3-vl, base_url: nrp, api_key_env: NRP_API_KEY, original_model: "Qwen3-VL-32B-Instruct (qwen3-vl-32b-instruct)",
+     temperature: 0.0, extra_body: {chat_template_kwargs: {enable_thinking: false}}}
+  - {name: verifier, model: qwen3-vl, base_url: nrp, api_key_env: NRP_API_KEY, original_model: "Qwen3-VL-32B-Instruct (qwen3-vl-32b-instruct)",
+     temperature: 0.1, extra_body: {chat_template_kwargs: {enable_thinking: false}}}
+original: {repo: "https://github.com/LZY-1021/RoboHarness (MIT), local /home/sejain/research/cvpr27/RoboHarness", commit: "716defc",
+           reported: "LIBERO-PRO with pi0.5 (Table III, 199 rollouts/task): Pos 2.33% -> 57.2% (6 tasks), Task 0.86% -> 55.2% (14 tasks); LIBERO-RoboHarness (Fig. 8): pi05 Visual Focus 1.7 -> 76.9, Clutter Removal 31.8 -> 74.4, Noisy Prompt 17.1 -> 93.9"}
+description: "Memory-augmented policy harness: success/failure memory retrieval, a VLM orchestrator that edits the frame and instruction with SAM3 tools, and rollback/retry/decomposition control flow around a frozen VLA."
+tier1: {instruction: "pick up the block and place it in the bowl", horizon: 40, chunk_len: 10}
+changelog:
+  - "v1 (2026-10-31): first port from the released code (commit 716defc) and arXiv v3"

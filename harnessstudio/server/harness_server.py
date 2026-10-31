@@ -174,7 +174,7 @@ class HarnessServer(ModelServer):
         ectx = EpisodeContext(case=ep.case, contract=self.contract, horizon=self.contract.horizon(task), arm=self.arm,
                               namespace=self.namespace, policy=policy, budgets=self.method.budgets, bridge=bridge,
                               decision_loop=DecisionLoop(self.method, embodiment, self.artifacts), shadow=shadow,
-                              embodiment=embodiment, artifacts=self.artifacts)
+                              embodiment=embodiment, artifacts=self.artifacts, development=self.development)
         ep.ctx, ep.bridge = ectx, bridge
         await policy.open(config)
         if shadow:

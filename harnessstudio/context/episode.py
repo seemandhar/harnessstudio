@@ -147,8 +147,10 @@ class EpisodeContext:
     def __init__(self, *, case: CaseKey, contract: Contract, horizon: int, arm: Arm, namespace: str,
                  policy: PolicyHandle, budgets: Budgets, bridge: Bridge, decision_loop: Any = None,
                  shadow: bool = False, artifacts: Optional[Mapping[str, Any]] = None,
-                 tools: Optional[Mapping[str, Any]] = None, embodiment: Optional[Embodiment] = None) -> None:
+                 tools: Optional[Mapping[str, Any]] = None, embodiment: Optional[Embodiment] = None,
+                 development: bool = False) -> None:
         self._case, self._contract, self._horizon, self._arm = case, contract, horizon, arm
+        self._development = bool(development)
         self._namespace, self._policy, self._budgets, self._bridge = namespace, policy, budgets, bridge
         self._profile = policy.profile
         self._loop = decision_loop
@@ -182,6 +184,11 @@ class EpisodeContext:
         if not isinstance(text, str):
             raise ContractError("The instruction must be a string")
         return text
+
+    @property
+    def development(self) -> bool:
+        """True while `hs prepare` runs development cases (spec 7); False in every evaluation arm."""
+        return self._development
 
     @property
     def steps(self) -> int:

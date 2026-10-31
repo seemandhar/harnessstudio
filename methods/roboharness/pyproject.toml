@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hs-roboharness"
+version = "1.0.0"
+description = "RoboHarness (arXiv:2603.24060) memory-augmented policy harness for HarnessStudio v2"
+requires-python = ">=3.10"
+dependencies = ["harnessstudio", "pillow"]
+
+[project.entry-points."harnessstudio.methods"]
+roboharness = "hs_roboharness:config"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hs_roboharness"]
