@@ -3,7 +3,7 @@
 # usage: run_stage_c.sh STEP [STEP ...]   steps: C_prepare | C_cold | C_warm | C_base | C_null (stack_bowls)
 # The OpenAI key is loaded from the private env file into THIS process tree only (never printed or logged).
 set -o pipefail
-ROOT=/home/sejain/research/cvpr27/harnessstudio-v2
+ROOT=/home/sejain/research/cvpr27/RoboMetaHarness-claude/harnessstudio
 CFG=$ROOT/methods/fast_harness/configs
 RUNS=${FH_RUNS:-/bigdata/sejain/hs2-cache/robodojo/runs}
 POLICY=ws://127.0.0.1:8311

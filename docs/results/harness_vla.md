@@ -65,7 +65,7 @@ env budget): zero-shot Goal-T 79.0%, Goal-S 31.0% (Table 5).
 | Budgets / episode | policy 400 samples, LLM 45 calls, 800 tokens/call, SAM3 + back-projection 60 calls |
 | Frozen code for the scored run | v2: method fingerprint `90318ab47e08ad601c2569df3f209016d6c9523cb7ba10362c805fb365850515`, file hashes and a copy of `hs_harness_vla/`, `bench_ext/`, `configs/` in `hs2-gpu/harness_vla/runs/subset_v2/code_{sha256.txt,snapshot/}` (v1 `25a3b6ee...` in `runs/subset_v1/`, stopped) |
 
-Commands (all from `/home/sejain/research/cvpr27/harnessstudio-v2`; run dir `R=/home/sejain/research/cvpr27/hs2-gpu/harness_vla`):
+Commands (all from `/home/sejain/research/cvpr27/RoboMetaHarness-claude/harnessstudio`; run dir `R=/home/sejain/research/cvpr27/hs2-gpu/harness_vla`):
 
 ```bash
 # SAM3 server (RPent's), GPU 7

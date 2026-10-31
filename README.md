@@ -179,3 +179,8 @@ reached (LIBERO ends episodes on success, an oracle a real robot lacks); the no-
 
 v2.0.0.dev0. See [docs/superpowers/specs/2026-10-31-harnessstudio-v2-design.md](docs/superpowers/specs/2026-10-31-harnessstudio-v2-design.md)
 for the design and roadmap, and `docs/results/` for gate results.
+
+Since 2026-10-31 v2 is `main`. HarnessStudio v1 (the `rh` CLI, RoboCasa365 GR00T/Pi0.5 slots and the
+RoboMetaHarness Campaign integration) is preserved unchanged at tag `v1-final` and branch `v1` (local checkout:
+`RoboMetaHarness-claude/harnessstudio_v1_old`). Runtime model APIs and local services: `docs/ENDPOINTS.md`;
+framework changes go through `docs/extensions/` and `scripts/regress.py`.

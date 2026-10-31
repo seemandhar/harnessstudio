@@ -22,7 +22,7 @@ import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-CANONICAL = Path("/home/sejain/research/cvpr27/harnessstudio-v2")   # the checkout that owns the shared venv
+CANONICAL = Path("/home/sejain/research/cvpr27/RoboMetaHarness-claude/harnessstudio")   # the checkout that owns the shared venv
 
 
 def default_python() -> Path:

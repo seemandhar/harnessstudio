@@ -17,7 +17,7 @@ docker:
     - /home/sejain/research/cvpr27/hs2-gpu/libero_pro/libero_config:/etc/libero:ro
     - /home/sejain/research/cvpr27/hs2-gpu/libero_pro/hf_libero_pro/bddl_files/libero_spatial_task:/app/libero-pro/libero/libero/bddl_files/libero_spatial_task:ro
     - /home/sejain/research/cvpr27/hs2-gpu/libero_pro/hf_libero_pro/init_files/libero_spatial_task:/app/libero-pro/libero/libero/init_files/libero_spatial_task:ro
-    - /home/sejain/research/cvpr27/harnessstudio-v2:/hs:ro
+    - /home/sejain/research/cvpr27/RoboMetaHarness-claude/harnessstudio:/hs:ro
 output_dir: /home/sejain/research/cvpr27/hs2-gpu/harness_vla/results/unused
 benchmarks:
   - benchmark: "hs_harness_vla_bench:LIBEROProRGBDInstruction"

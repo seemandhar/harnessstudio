@@ -15,7 +15,7 @@ docker:
     - PYTHONPATH=/hs:/hs/methods/harness_vla/bench_ext
   volumes:
     - /home/sejain/research/cvpr27/hs2-gpu/libero_pro/libero_config:/etc/libero:ro
-    - /home/sejain/research/cvpr27/harnessstudio-v2:/hs:ro
+    - /home/sejain/research/cvpr27/RoboMetaHarness-claude/harnessstudio:/hs:ro
 output_dir: /home/sejain/research/cvpr27/hs2-gpu/harness_vla/results/unused
 benchmarks:
   - benchmark: "hs_harness_vla_bench:LIBEROProRGBDInstruction"
