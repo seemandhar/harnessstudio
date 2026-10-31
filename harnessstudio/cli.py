@@ -30,6 +30,8 @@ def _cmd_list(args) -> int:
 
 
 def _cmd_verify(args) -> int:
+    if args.tier == 2:
+        return _tier2(args)
     config = load(args.method)
     if args.tier == 0:
         from .verify import tier0
@@ -100,6 +102,12 @@ def _cmd_serve(args) -> int:
 
 
 def _cmd_eval(args) -> int:
+    summary = _run_arms(args)
+    print(json.dumps(summary, indent=2))
+    return 0
+
+
+def _run_arms(args) -> dict:
     from vla_eval.api import run, serve_background
     from .eval.pairing import summarize
     out = Path(args.out)
@@ -119,7 +127,52 @@ def _cmd_eval(args) -> int:
         (out / arm / "records.jsonl").write_text("".join(json.dumps(r, default=str) + "\n" for r in server.records))
     summary = summarize(records)
     (out / "summary.json").write_text(json.dumps(summary, indent=2))
-    print(json.dumps(summary, indent=2))
+    return summary
+
+
+def _tier2(args) -> int:
+    """Tier 2: all three arms on a small real case list; gate on validity and null attribution."""
+    for name in ("config", "policy_url", "contract", "profile", "out"):
+        if not getattr(args, name, None):
+            print(f"tier 2 needs --{name.replace('_', '-')}", file=sys.stderr)
+            return 2
+    args.arms = "baseline,null,candidate"
+    args.prepared = getattr(args, "prepared", None)
+    summary = _run_arms(args)
+    attr = summary.get("null_attribution", {})
+    invalid = {arm: v for arm, v in summary["invalid"].items() if v}
+    checks = [("all episodes valid", not invalid, json.dumps(invalid)[:200] if invalid else ""),
+              ("null vs baseline has no X", attr.get("X", 1) == 0,
+               f"M {attr.get('M')} / R {attr.get('R')} / X {attr.get('X')}"),
+              ("at least one paired case", summary["paired_cases"] > 0, f"{summary['paired_cases']} paired")]
+    ok = all(c for _, c, _ in checks)
+    print(f"tier 2: {args.method}: {'PASS' if ok else 'FAIL'}")
+    for name, c, detail in checks:
+        print(f"  [{'ok' if c else 'FAIL'}] {name}" + (f": {detail}" if detail else ""))
+    for arm, v in summary["arms"].items():
+        print(f"  {arm}: {v['successes']}/{v['episodes']} success, {v['policy_samples']} policy samples, "
+              f"{v['wall_seconds']} s")
+    return 0 if ok else 1
+
+
+def _cmd_report(args) -> int:
+    path = Path(args.dir) / "summary.json"
+    summary = json.loads(path.read_text())
+    print(f"{args.dir}: {summary['paired_cases']} paired cases")
+    for arm, v in summary["arms"].items():
+        vs = v.get("vs_baseline")
+        extra = f"  vs baseline: +{vs['wins']} / -{vs['losses']} (p={vs['p']})" if vs else ""
+        print(f"  {arm:9s} {v['successes']:4d}/{v['episodes']:<4d} success  {v['policy_samples']:7d} samples  "
+              f"{v['llm_calls']:5d} LLM calls  {v['wall_seconds']:8.1f} s{extra}")
+    attr = summary.get("null_attribution")
+    if attr:
+        print(f"  null vs baseline: M {attr['M']} / R {attr['R']} / X {attr['X']}")
+        for case, c in attr["per_case"].items():
+            if c["class"] != "M":
+                print(f"    {c['class']} at step {c['step']}: {case} ({c['reason']})")
+    bad = {arm: v for arm, v in summary.get("invalid", {}).items() if v}
+    if bad:
+        print(f"  invalid episodes: {json.dumps(bad)[:300]}")
     return 0
 
 
@@ -140,11 +193,29 @@ def main(argv=None) -> int:
     p.add_argument("--category", choices=sorted(CATEGORIES))
     p.set_defaults(fn=_cmd_list)
 
-    p = sub.add_parser("verify", help="tier 0 (static) or tier 1 (fake stack) checks")
+    p = sub.add_parser("verify", help="tier 0 (static), tier 1 (fake stack) or tier 2 (real benchmark) checks")
     p.add_argument("method")
-    p.add_argument("--tier", type=int, choices=(0, 1), default=1)
-    p.add_argument("--profile", default=None, help="fake-t0 or fake-t1 (default: from the method's needs)")
+    p.add_argument("--tier", type=int, choices=(0, 1, 2), default=1)
+    p.add_argument("--profile", default=None, help="tier 1: fake-t0/t1/t2 (default from needs); tier 2: real profile")
+    p.add_argument("--config", default=None, help="tier 2: vla-eval benchmark config (keep it to a few cases)")
+    p.add_argument("--policy-url", default=None)
+    p.add_argument("--contract", default=None)
+    p.add_argument("--out", default=None)
+    p.add_argument("--benchmark-overrides", default=None)
+    p.add_argument("--namespace", default="hs")
+    p.add_argument("--case-namespace", default="")
+    p.add_argument("--prepared", default=None)
+    p.add_argument("--host", default="0.0.0.0")
+    p.add_argument("--port", type=int, default=0)
+    p.add_argument("--connect-host", default="localhost")
+    p.add_argument("--policy-timeout", type=float, default=600.0)
+    p.add_argument("--pull", action="store_true")
+    p.add_argument("--no-docker", action="store_true")
     p.set_defaults(fn=_cmd_verify)
+
+    p = sub.add_parser("report", help="print the paired summary of an hs eval directory")
+    p.add_argument("dir")
+    p.set_defaults(fn=_cmd_report)
 
     def serving(p):
         p.add_argument("method")
