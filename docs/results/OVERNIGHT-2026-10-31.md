@@ -23,6 +23,7 @@ method packages (`hs new`, `hs verify` tiers 0/1/2, `hs eval`, `hs prepare`, `hs
 | Harness VLA (zero-shot) | `harness-vla` (NRP qwen3-vl planner) | adapted | LIBERO-Pro Goal-T + Goal-S, 100 cases | 30/100 vs baseline 23/100 (p = 0.32) |
 | Harness VLA (zero-shot) | `harness-vla-sol` (gpt-6.1-sol planner) | adapted | same 100 cases | **55/100 vs 23/100 (+41 / -9, p = 5.6e-6)**; Goal-T 27/50, Goal-S 28/50 (paper zero-shot: 79.0 / 31.0) |
 | Harness VLA (zero-shot) | `harness-vla-sol` | adapted | all 8 LIBERO-Pro cells, 10 tasks x 2 eps (160) | **84/160 (52.5%) vs 39/160 (24.4%), +61 / -16, p = 2.4e-7**; better in every cell |
+| Harness VLA (few-shot) | `harness-vla-sol-fewshot` (prepare-stage task memory) | adapted | Goal-T + Goal-S held-out episodes, 60 exactly matched cases | 38/60 vs zero-shot 33/60 (+11 / -6, p = 0.33) vs baseline 15/60 (+27 / -4) |
 | SCALE (OpenVLA decoding) | `scale` | see results doc | LIBERO-10, 10 tasks x 3 episodes | 20/30 vs greedy 16/30 (p = 0.45); paper greedy 52.7 -> SCALE 63.3 |
 | FastHarness | `fast-harness` (gpt-6.1-sol reviewer) | adapted | RoboDojo build_tower | in progress |
 
@@ -34,6 +35,11 @@ Details: `harness_vla.md`, `scale.md`, `fast_harness.md` in this folder.
   attempt could not unload the driver; it recovered on its own after all GPU holders were killed, so no reboot
   was needed. GPU 0 still reports "Recovery Action: Reset" (clears at the next reboot). GSP firmware was already
   off: if this recurs, suspect GPU 0 hardware/power.
+
+## Lesson
+
+LIBERO scenes depend on run history (one env per task, fixtures re-placed every reset): paired arms are exact
+only for identical case lists in identical order. `hs eval` satisfies this; the guide now says so.
 
 ## Open
 
