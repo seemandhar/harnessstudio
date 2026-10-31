@@ -24,7 +24,7 @@ from vla_eval.specs import DimSpec
 from .. import __version__
 from ..components.decision_loop import DecisionLoop
 from ..context.bridge import Bridge
-from ..context.episode import CaseKey, EpisodeContext
+from ..context.episode import CaseKey, Embodiment, EpisodeContext
 from ..context.policy import PolicyHandle, PolicyProfile
 from ..context.trace import write_record
 from ..contracts import Contract
@@ -103,9 +103,12 @@ class HarnessServer(ModelServer):
         await policy.open(config)
         bridge = Bridge()
         shadow = self.arm is Arm.NULL and self.method.controller is not None and self.method.null == "shadow"
+        embodiment = Embodiment.from_action_spec(self._probe.get("action_spec") or {}, self.contract.control_mode,
+                                                 self.contract.action_dim)
         ectx = EpisodeContext(case=case, contract=self.contract, horizon=self.contract.horizon(task), arm=self.arm,
                               namespace=self.namespace, policy=policy, budgets=self.method.budgets, bridge=bridge,
-                              decision_loop=DecisionLoop(self.method), shadow=shadow)
+                              decision_loop=DecisionLoop(self.method, embodiment), shadow=shadow,
+                              embodiment=embodiment)
         if shadow:
             ectx._shadow_policy = PolicyHandle(self.policy_url, self.profile, self.policy_timeout)
             await ectx._shadow_policy.open(config)

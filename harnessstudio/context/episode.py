@@ -32,6 +32,31 @@ class CaseKey:
     episode_idx: int
 
 
+@dataclass(frozen=True)
+class Embodiment:
+    """Public facts about the action space, from the policy's HELLO action_spec (in vector order)."""
+    action_layout: Mapping[str, tuple] = field(default_factory=dict)   # name -> (start, end)
+    action_dim: Optional[int] = None
+    control_mode: str = "unknown"
+
+    @classmethod
+    def from_action_spec(cls, spec: Mapping[str, Mapping[str, Any]], control_mode: str = "unknown",
+                         fallback_dim: Optional[int] = None) -> "Embodiment":
+        layout, offset = {}, 0
+        for name, dim in (spec or {}).items():
+            n = int(dim.get("dims", 0))
+            if n > 0:
+                layout[name] = (offset, offset + n)
+                offset += n
+        return cls(dict(layout), offset or fallback_dim, control_mode)
+
+    def dims(self, *names: str) -> list:
+        missing = [n for n in names if n not in self.action_layout]
+        if missing:
+            raise KeyError(f"Action layout lacks {missing}; has {sorted(self.action_layout)}")
+        return [d for n in names for d in range(*self.action_layout[n])]
+
+
 @dataclass
 class Accounting:
     steps: int = 0
@@ -98,7 +123,7 @@ class EpisodeContext:
     def __init__(self, *, case: CaseKey, contract: Contract, horizon: int, arm: Arm, namespace: str,
                  policy: PolicyHandle, budgets: Budgets, bridge: Bridge, decision_loop: Any = None,
                  shadow: bool = False, artifacts: Optional[Mapping[str, Any]] = None,
-                 tools: Optional[Mapping[str, Any]] = None) -> None:
+                 tools: Optional[Mapping[str, Any]] = None, embodiment: Optional[Embodiment] = None) -> None:
         self._case, self._contract, self._horizon, self._arm = case, contract, horizon, arm
         self._namespace, self._policy, self._budgets, self._bridge = namespace, policy, budgets, bridge
         self._profile = policy.profile
@@ -120,6 +145,7 @@ class EpisodeContext:
         self.artifacts = dict(artifacts or {})       # frozen method artifacts (read-only by convention)
         self.tools = dict(tools or {})
         self.policy = _PolicyProxy(self)
+        self.embodiment = embodiment or Embodiment(action_dim=contract.action_dim, control_mode=contract.control_mode)
 
     # -- public, read-only state ------------------------------------------------
     def observe(self) -> dict:

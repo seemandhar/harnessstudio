@@ -19,7 +19,7 @@ from ..core.method import MethodConfig
 
 
 class DecisionLoop:
-    def __init__(self, config: MethodConfig) -> None:
+    def __init__(self, config: MethodConfig, embodiment=None) -> None:
         build = lambda slot: config.slots[slot].build() if slot in config.slots else None  # noqa: E731
         self.observation_op = build("observation_op")
         self.instruction_op = build("instruction_op")
@@ -32,6 +32,11 @@ class DecisionLoop:
         self.sampler_ref = config.slots["sampler"].to_json() if "sampler" in config.slots else None
         self.num_samples = int(getattr(self.proposer, "num_samples", 1)) if self.proposer else 1
         self.history: list[dict] = []
+        if embodiment is not None:  # public action-space facts for components that ask (optional bind())
+            for comp in (self.observation_op, self.instruction_op, self.gate, self.proposer, self.selector,
+                         self.action_op, self.executor, self.monitor):
+                if comp is not None and callable(getattr(comp, "bind", None)):
+                    comp.bind(embodiment)
 
     async def run(self, ctx) -> None:
         while not ctx.ended:

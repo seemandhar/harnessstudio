@@ -9,10 +9,13 @@ Category mapping (RoboMetaHarness IDs):
   execution_monitoring     -> Executor, Monitor
   contact_feedback         -> Monitor
   memory_retrieval         -> ActionOp (+ ExperienceStore, M4)
+
   agentic_orchestration    -> Controller
   skill_composition        -> skills (M4)
   world_model_verification -> Selector over predicted futures (T3)
   experience_evolution     -> Preparer (M4, offline)
+Any component may define bind(embodiment) to receive public action-space facts
+(Embodiment.action_layout: name -> (start, end), from the policy action_spec, in vector order).
 """
 from __future__ import annotations
 
