@@ -1,0 +1,30 @@
+# LIBERO-Pro libero_goal perturbation=task (Goal-T) for harness-vla, with RGB-D + camera calibration and the
+# BDDL instruction fix (bench_ext/hs_harness_vla_bench.py). Official horizon (libero_goal: 300). hs eval overrides
+# server.url with its harness port. Long server.timeout: the planner's LLM turns run while the benchmark waits.
+extends: /home/sejain/research/cvpr27/vla-eval-v0.8.0/configs/benchmarks/libero_pro/eval.yaml
+server:
+  url: "ws://localhost:1"
+  timeout: 900
+docker:
+  image: ghcr.io/allenai/vla-evaluation-harness/libero-pro:latest
+  gpus: "7"
+  user: host
+  env:
+    - HOME=/tmp
+    - LIBERO_CONFIG_PATH=/etc/libero
+    - PYTHONPATH=/hs:/hs/methods/harness_vla/bench_ext
+  volumes:
+    - /home/sejain/research/cvpr27/hs2-gpu/libero_pro/libero_config:/etc/libero:ro
+    - /home/sejain/research/cvpr27/hs2-gpu/libero_pro/hf_libero_pro/bddl_files/libero_object_swap:/app/libero-pro/libero/libero/bddl_files/libero_object_swap:ro
+    - /home/sejain/research/cvpr27/hs2-gpu/libero_pro/hf_libero_pro/init_files/libero_object_swap:/app/libero-pro/libero/libero/init_files/libero_object_swap:ro
+    - /home/sejain/research/cvpr27/harnessstudio-v2:/hs:ro
+output_dir: /home/sejain/research/cvpr27/hs2-gpu/harness_vla/results/unused
+benchmarks:
+  - benchmark: "hs_harness_vla_bench:LIBEROProRGBDInstruction"
+    episodes_per_task: 1
+    params:
+      suite: libero_object
+      perturbation: swap
+      seed: 7
+      num_steps_wait: 10
+      depth_cameras: [agentview, robot0_eye_in_hand]

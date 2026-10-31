@@ -307,3 +307,12 @@ more than doubles the frozen policy's success on these LIBERO-Pro Goal cells, ex
 Goal-S number and closes much of the Goal-T gap, with a different base checkpoint (openpi pi05_libero instead of
 RLinf pi05_libero130), 256 px images instead of 1024 px, and the official 300-step horizon. Not yet run: the
 other LIBERO-Pro suites (spatial, object, 10), more episodes, and the few-shot (memory) mode.
+
+### Extension to the other LIBERO-Pro cells (predeclared 2026-10-31 ~06:55 PT, before any run)
+
+The complete Goal subset improved over baseline (above), so the gpt-6.1-sol variant is extended to the six
+remaining cells of the paper's LIBERO-Pro table: libero_spatial / libero_object / libero_10 x task / swap
+perturbations, 10 tasks x 2 episodes (episodes 0-1) each = 120 cases, official horizons (220 / 280 / 520),
+baseline and candidate arms, same servers and settings (`configs/libero_pro_{spatial,object,10}_{task,swap}.yaml`).
+Budget: about $25 more OpenAI usage. Results are reported per cell together with Goal (episodes 0-1 of the
+100-case runs) for an 8-cell table.
