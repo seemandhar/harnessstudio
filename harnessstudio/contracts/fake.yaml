@@ -3,6 +3,6 @@ name: fake
 public_keys: [images, state, task_description]
 instruction_key: task_description
 state_key: state
-action_dim: 4
+action_dim: 7
 control_mode: fake
 default_horizon: 12

@@ -1,0 +1,3 @@
+# harnessstudio.policy_ext.fake.FakePolicyServer(seeded=False, chunking="harness")
+capabilities: [act, chunk]
+chunking: harness

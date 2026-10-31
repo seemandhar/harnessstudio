@@ -1,0 +1,5 @@
+# vla-eval openpi pi0.5 LIBERO server launched with chunk_size: null (raw chunks); natively it
+# executes 10 actions per chunk (configs/model_servers/pi0/libero.yaml).
+capabilities: [act, chunk]
+chunking: harness
+execute_horizon: 10

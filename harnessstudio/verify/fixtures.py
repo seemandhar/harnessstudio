@@ -15,7 +15,7 @@ from vla_eval.specs import DimSpec
 
 
 class FakeBenchmark(StepBenchmark):
-    def __init__(self, n_tasks: int = 2, horizon: int = 12, action_dim: int = 4, task_order: str = "forward") -> None:
+    def __init__(self, n_tasks: int = 2, horizon: int = 12, action_dim: int = 7, task_order: str = "forward") -> None:
         super().__init__()
         self.n_tasks, self.horizon, self.action_dim = n_tasks, horizon, action_dim
         self.task_order = task_order
@@ -56,7 +56,8 @@ class FakeBenchmark(StepBenchmark):
         return {"max_steps": self.horizon}
 
     def get_action_spec(self) -> dict[str, DimSpec]:
-        return {"actions": DimSpec("actions", self.action_dim, "fake")}
+        from ..policy_ext.fake import fake_action_spec
+        return fake_action_spec(self.action_dim)
 
     def get_observation_spec(self) -> dict[str, DimSpec]:
         return {}

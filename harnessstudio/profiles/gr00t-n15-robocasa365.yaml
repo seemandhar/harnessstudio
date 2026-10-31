@@ -1,0 +1,5 @@
+# harnessstudio.policies.gr00t_n15_robocasa365 (HarnessPolicyMixin over vla-eval's GR00T N1.5 server):
+# seeded, isolated 16-step chunks; executes the whole chunk natively.
+capabilities: [act, chunk, seeded_sampling, isolated_streams]
+chunking: harness
+execute_horizon: 16

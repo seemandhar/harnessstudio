@@ -52,7 +52,8 @@ class ActionOp(Protocol):
 
 class Executor(Protocol):
     """How much of the chosen chunk runs (v1 interface).
-    plan() returns k >= min_k; with per_step=True, continue_after() is asked after each step."""
+    plan() returns k >= min_k; with per_step=True, continue_after() is asked after each step.
+    Set sees_proposals = True to get extras['proposals'] (every sample of the decision, seed order)."""
     min_k: int
     per_step: bool
 

@@ -40,7 +40,7 @@ class CutAfter:
 class ZeroThenDecide:
     """Controller: checks it only sees public keys, runs two zero actions, then lets the policy act."""
 
-    def __init__(self, action_dim: int = 4) -> None:
+    def __init__(self, action_dim: int = 7) -> None:
         self.action_dim = action_dim
 
     async def run(self, ctx) -> None:

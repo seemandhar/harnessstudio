@@ -22,12 +22,20 @@ from ..context.trace import fingerprint
 from .mixin import HarnessPolicyMixin
 
 
+def fake_action_spec(action_dim: int) -> dict[str, DimSpec]:
+    """LIBERO-like layout when 7-D (position 3, rotation 3, gripper 1); one block otherwise."""
+    if action_dim == 7:
+        return {"position": DimSpec("position", 3, "delta_xyz"), "rotation": DimSpec("rotation", 3, "axis_angle"),
+                "gripper": DimSpec("gripper", 1, "binary_close_positive")}
+    return {"actions": DimSpec("actions", action_dim, "fake")}
+
+
 def _digest32(obs: Mapping[str, Any]) -> int:
     return int(fingerprint(obs)[:8], 16)
 
 
 class _FakeNative(ModelServer):
-    def __init__(self, action_dim: int = 4, chunk_len: int = 6, chunking: str = "harness") -> None:
+    def __init__(self, action_dim: int = 7, chunk_len: int = 6, chunking: str = "harness") -> None:
         if chunking not in ("server", "harness"):
             raise ValueError("chunking must be 'server' or 'harness'")
         self.action_dim, self.chunk_len, self.chunking = action_dim, chunk_len, chunking
@@ -62,7 +70,7 @@ class _FakeNative(ModelServer):
         await ctx.send_action({"actions": buf.popleft()})
 
     def get_action_spec(self) -> dict[str, DimSpec]:
-        return {"actions": DimSpec("actions", self.action_dim, "fake")}
+        return fake_action_spec(self.action_dim)
 
     def get_observation_spec(self) -> dict[str, DimSpec]:
         return {}

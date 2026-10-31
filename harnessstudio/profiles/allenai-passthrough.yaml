@@ -1,0 +1,4 @@
+# Any unchanged vla-eval policy server with its own chunk buffer (one action per observation).
+# Only for transparency checks and methods that act every step without changing inputs (spec 16.1).
+capabilities: [act]
+chunking: server

@@ -86,7 +86,10 @@ class DecisionLoop:
         native_k = ctx._profile.native_length(native)
         k_exec = native_k
         if self.executor:
-            planned = int(self.executor.plan(np.array(chunk), dict(proposals[index].extras), obs))
+            extras = dict(proposals[index].extras)
+            if getattr(self.executor, "sees_proposals", False):
+                extras["proposals"] = [p.actions for p in proposals]  # read-only, seed order (0 = native)
+            planned = int(self.executor.plan(np.array(chunk), extras, obs))
             if candidate:
                 k_exec = max(1, min(planned, len(chunk)))
         executed = 0
