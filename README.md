@@ -165,8 +165,8 @@ chunktrust-ahs: 100% over ~17.8k decisions).
 |---|---|---|---|---|
 | Harness VLA zero-shot, gpt-6.1-sol planner, no success cue (fair) | LIBERO-Pro, all 8 cells, 160 cases | 39/160 (24%) | **75/160 (47%)**, p = 1.4e-5 | Goal-T 79.0, Goal-S 31.0 (Claude Code) |
 | same, planner told "goal not reached" (oracle cue) | LIBERO-Pro, all 8 cells, 160 cases | 39/160 (24%) | 84/160 (52.5%), p = 2.4e-7 | |
-| Harness VLA zero-shot, gpt-6.1-sol planner | LIBERO-Pro Goal-T / Goal-S, 50 + 50 | 8/50, 15/50 | **27/50, 28/50** | 79.0, 31.0 |
-| Harness VLA few-shot | LIBERO-Pro Goal held-out, 60 exact cases | 15/60 | 38/60 (zero-shot 33/60) | 87.0 / 87.0 |
+| same, with the cue | LIBERO-Pro Goal-T / Goal-S, 50 + 50 | 8/50, 15/50 | 27/50, 28/50 | 79.0, 31.0 |
+| Harness VLA few-shot, with the cue | LIBERO-Pro Goal held-out, 60 exact cases | 15/60 | 38/60 (zero-shot 33/60) | 87.0 / 87.0 |
 | SCALE | LIBERO-10, 60 cases (OpenVLA) | 29/60 (48%) | **38/60 (63%)**, p = 0.093 | 52.7 -> 63.3 |
 | FastHarness | RoboDojo build_tower / stack_bowls | - | token savings not reproduced on held-out layouts | -57% reviewer tokens |
 

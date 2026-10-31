@@ -1,6 +1,6 @@
 # Overnight summary, 2026-10-31 (HarnessStudio v2)
 
-Status: draft, updated as runs finish.
+Status: final for the night (2026-10-31 ~12:30 PT).
 
 ## Framework
 
@@ -21,9 +21,9 @@ method packages (`hs new`, `hs verify` tiers 0/1/2, `hs eval`, `hs prepare`, `hs
 | Paper | Package | Fidelity | Predeclared subset | Result |
 |---|---|---|---|---|
 | Harness VLA (zero-shot) | `harness-vla` (NRP qwen3-vl planner) | adapted | LIBERO-Pro Goal-T + Goal-S, 100 cases | 30/100 vs baseline 23/100 (p = 0.32) |
-| Harness VLA (zero-shot) | `harness-vla-sol` (gpt-6.1-sol planner) | adapted | same 100 cases | **55/100 vs 23/100 (+41 / -9, p = 5.6e-6)**; Goal-T 27/50, Goal-S 28/50 (paper zero-shot: 79.0 / 31.0) |
-| Harness VLA (zero-shot) | `harness-vla-sol` | adapted | all 8 LIBERO-Pro cells, 10 tasks x 2 eps (160) | **84/160 (52.5%) vs 39/160 (24.4%), +61 / -16, p = 2.4e-7**; better in every cell |
-| Harness VLA (few-shot) | `harness-vla-sol-fewshot` (prepare-stage task memory) | adapted | Goal-T + Goal-S held-out episodes, 60 exactly matched cases | 38/60 vs zero-shot 33/60 (+11 / -6, p = 0.33) vs baseline 15/60 (+27 / -4) |
+| Harness VLA (zero-shot, with success cue) | `harness-vla-sol` (gpt-6.1-sol planner) | adapted | same 100 cases | **55/100 vs 23/100 (+41 / -9, p = 5.6e-6)**; Goal-T 27/50, Goal-S 28/50 (paper zero-shot: 79.0 / 31.0) |
+| Harness VLA (zero-shot, with success cue) | `harness-vla-sol` | adapted | all 8 LIBERO-Pro cells, 10 tasks x 2 eps (160) | **84/160 (52.5%) vs 39/160 (24.4%), +61 / -16, p = 2.4e-7**; better in every cell |
+| Harness VLA (few-shot, with success cue) | `harness-vla-sol-fewshot` (prepare-stage task memory) | adapted | Goal-T + Goal-S held-out episodes, 60 exactly matched cases | 38/60 vs zero-shot 33/60 (+11 / -6, p = 0.33) vs baseline 15/60 (+27 / -4) |
 | Harness VLA, **no success cue** (fair version) | `harness-vla-sol-nocue` | adapted | all 8 LIBERO-Pro cells, episodes 0-1 (160, same scenes) | **75/160 (46.9%) vs baseline 39/160 (24.4%), +52 / -16, p = 1.4e-5**; with the cue 84/160. The cue accounts for about a fifth of the gain overall (most of it on the Goal cells: 17/40 vs 24/40 there) |
 | SCALE (OpenVLA decoding) | `scale` | see results doc | LIBERO-10, 10 tasks x 6 episodes (60) | **38/60 (63%) vs greedy 29/60 (48%), +16 / -7, p = 0.093**; paper 52.7 -> 63.3; null vs baseline 60 M / 0 X |
 | SCALE (OpenVLA decoding) | `scale` | see results doc | LIBERO-Goal, 10 tasks x 3 episodes (30) | 24/30 vs 23/30 (p = 1.0); paper 77.7 -> 82.3 |
