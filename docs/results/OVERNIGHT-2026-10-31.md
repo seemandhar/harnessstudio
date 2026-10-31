@@ -30,6 +30,18 @@ method packages (`hs new`, `hs verify` tiers 0/1/2, `hs eval`, `hs prepare`, `hs
 
 Details: `harness_vla.md`, `scale.md`, `fast_harness.md` in this folder.
 
+## Audit of the new packages
+
+A read-only compliance audit (10:50 PT) found no critical violations in Harness VLA, SCALE or FastHarness: no
+simulator state or evaluator labels in method code, sensor-only benchmark additions, nothing trained, memory
+built only from development data, null arms reproducing baselines, and headline tables that recompute from the
+records. Required disclosures are now in the paper cards and results docs. The most important one: **Harness
+VLA's planner is told every turn that the goal is not yet reached**, which relies on LIBERO ending episodes on
+success (an implicit verifier the baseline and a real robot lack), so part of its advantage may come from that.
+SCALE's "episodes 3-5" share fixture placements with episodes 0-2 (valid pairing inside the run, different
+scenes from sequential episodes 3-5). Framework gaps it found are in `docs/core-todo.md` (source fingerprints and
+pairing checks, charged external tools, namespace-aware dev-case refusal).
+
 ## Incidents
 
 - 01:02 PT: GPU 0 (another user's job) hit Xid 62 -> 154; the NVIDIA driver deadlocked machine-wide. A reset
