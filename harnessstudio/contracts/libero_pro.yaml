@@ -8,3 +8,4 @@ action_dim: 7
 control_mode: eef_delta   # 3 position + 3 axis-angle rotation + 1 gripper
 suite_horizons: {libero_spatial: 220, libero_object: 280, libero_goal: 300, libero_10: 520, libero_90: 400}
 default_horizon: 520
+eef_position: {path: [states], slice: [0, 3]}   # states = [eef pos3, eef axis-angle3, gripper qpos2]

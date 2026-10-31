@@ -38,17 +38,34 @@ class Embodiment:
     action_layout: Mapping[str, tuple] = field(default_factory=dict)   # name -> (start, end)
     action_dim: Optional[int] = None
     control_mode: str = "unknown"
+    eef_path: tuple = ()               # keys into the public observation, e.g. ("states",)
+    eef_slice: Optional[tuple] = None  # e.g. (0, 3)
 
     @classmethod
     def from_action_spec(cls, spec: Mapping[str, Mapping[str, Any]], control_mode: str = "unknown",
-                         fallback_dim: Optional[int] = None) -> "Embodiment":
+                         fallback_dim: Optional[int] = None, eef: Optional[Mapping[str, Any]] = None) -> "Embodiment":
         layout, offset = {}, 0
         for name, dim in (spec or {}).items():
             n = int(dim.get("dims", 0))
             if n > 0:
                 layout[name] = (offset, offset + n)
                 offset += n
-        return cls(dict(layout), offset or fallback_dim, control_mode)
+        eef = dict(eef or {})
+        sl = eef.get("slice")
+        return cls(dict(layout), offset or fallback_dim, control_mode, tuple(eef.get("path") or ()),
+                   tuple(sl) if sl else None)
+
+    def eef_position(self, obs: Mapping[str, Any]) -> Optional[np.ndarray]:
+        """End-effector position from a public observation, or None if this benchmark does not expose it."""
+        if not self.eef_path:
+            return None
+        value: Any = obs
+        for key in self.eef_path:
+            if not isinstance(value, Mapping) or key not in value:
+                return None
+            value = value[key]
+        arr = np.asarray(value, dtype=np.float64).reshape(-1)
+        return arr[self.eef_slice[0]:self.eef_slice[1]] if self.eef_slice else arr
 
     def dims(self, *names: str) -> list:
         missing = [n for n in names if n not in self.action_layout]

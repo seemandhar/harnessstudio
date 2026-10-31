@@ -7,3 +7,4 @@ instruction_key: task_description
 state_key: state
 control_mode: panda_omron
 default_horizon: 3000
+eef_position: {path: [state, state.end_effector_position_relative], slice: null}   # base frame

@@ -31,6 +31,8 @@ class Contract:
     horizons: Mapping[str, int] = field(default_factory=dict)          # by task name
     suite_horizons: Mapping[str, int] = field(default_factory=dict)    # by task["suite"]
     default_horizon: int = 1000
+    # Where the end-effector position lives in the public observation: {path: [key, ...], slice: [a, b] | null}
+    eef_position: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         if not self.public_keys:

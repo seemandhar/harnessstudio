@@ -1,0 +1,8 @@
+name: first-sample
+version: "1"
+paper: none
+categories: {primary: proposal_selection}
+fidelity: faithful
+requires: {capabilities: [act, chunk, seeded_sampling, isolated_streams]}
+null: derived
+description: "Example: two seeded samples per decision, always execute sample 0."
