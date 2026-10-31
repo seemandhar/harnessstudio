@@ -9,7 +9,7 @@ from harnessstudio.core.method import OperatorPin
 
 def test_registry_loads_and_has_core_providers():
     data = E.load()
-    assert {"nrp", "openai", "claude"} <= set(data["providers"])
+    assert {"nrp", "openai", "anthropic"} <= set(data["providers"])
     assert "qwen3-vl" in data["providers"]["nrp"]["models"]
     assert "gpt-6.1-sol" in data["providers"]["openai"]["models"]
 
@@ -52,5 +52,12 @@ def test_unknown_and_unwired_refused():
         E.operator_entry("nrp", "not-a-model", "x")
     with pytest.raises(KeyError):
         E.operator_entry("nope", "qwen3-vl", "x")
-    with pytest.raises(ValueError):   # Claude is listed but needs the claude_cli operator first
-        E.operator_entry("claude", "claude-opus-5-5", "x")
+    with pytest.raises(ValueError):   # local gateways are listed but are not harness providers
+        E.operator_entry("local_gateways", "anything", "x")
+
+
+def test_claude_pins_build_operator_pins():
+    entry = E.operator_entry("anthropic", "claude-sonnet-5-5", "planner", original_model="claude-opus-4-8")
+    assert entry["base_url"] == "anthropic" and entry["temperature"] is None
+    assert entry["api_key_env"] == "HS_ANTHROPIC_API_KEY"     # never ANTHROPIC_API_KEY (Claude Code's own auth)
+    OperatorPin(**entry)

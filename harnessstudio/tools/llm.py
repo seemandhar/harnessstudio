@@ -25,7 +25,9 @@ import numpy as np
 
 from ..core.errors import BudgetExceeded, RegistrationError
 
-PRESETS = {"nrp": "https://ellm.nrp-nautilus.io/v1", "openai": "https://api.openai.com/v1"}
+PRESETS = {"nrp": "https://ellm.nrp-nautilus.io/v1", "openai": "https://api.openai.com/v1",
+           "anthropic": "https://api.anthropic.com/v1"}   # Claude via Anthropic's OpenAI-compatible endpoint
+ANTHROPIC_VERSION = "2023-06-01"   # api.anthropic.com requires this header on /models
 FORBIDDEN_MODEL_WORDS = ("astra",)
 
 
@@ -108,13 +110,19 @@ class OpenAICompatibleOperator(Operator):
         self.token_param = token_param or ("max_completion_tokens" if "api.openai.com" in self.base_url
                                            else "max_tokens")
 
+    def _headers(self, key: str) -> dict:
+        headers = {"Authorization": "Bearer " + key, "Content-Type": "application/json"}
+        if "api.anthropic.com" in self.base_url:
+            headers["anthropic-version"] = ANTHROPIC_VERSION
+        return headers
+
     def _request(self, path: str, payload: Optional[dict] = None) -> dict:
         key = os.environ.get(self.api_key_env, "")
         if not key:
             raise RuntimeError(f"Environment variable {self.api_key_env} is not set")
         data = None if payload is None else json.dumps(payload).encode()
         req = urllib.request.Request(self.base_url + path, data=data, method="GET" if data is None else "POST",
-                                     headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"})
+                                     headers=self._headers(key))
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 return json.loads(resp.read().decode())

@@ -12,8 +12,9 @@ machine-readable source is `harnessstudio/endpoints.yaml`; this page explains it
 From Python: `harnessstudio.endpoints.operator_entry(provider, model, name, ...)`.
 
 ## Rules (binding)
-- **NRP is the default** for any LLM/VLM inside a harness. OpenAI and Claude are explicit opt-ins: pin the model,
-  record call/token budgets in `paper.yaml`, disclose the substitution. No silent fallback between models.
+- **NRP is the default** for any LLM/VLM inside a harness. OpenAI and Claude (Anthropic API) are explicit opt-ins
+  authorized by the user: pin the model, record call/token budgets in `paper.yaml`, disclose the substitution,
+  and remember they cost money. No silent fallback between models.
 - **Astra (`gpt-6-astra`)**: confirm-before-use (user rule 2026-10-31, was banned 2026-10-20). Ask the user and get
   an explicit yes for that specific use (model, purpose, run scope, expected calls/cost); pass the record as
   `user_confirmation` when pinning. The registry refuses an Astra pin without it.
@@ -28,7 +29,7 @@ From Python: `harnessstudio.endpoints.operator_entry(provider, model, name, ...)
 |---|---|---|---|
 | NRP (open-weight) | `https://ellm.nrp-nautilus.io/v1`, preset `nrp` | `NRP_API_KEY` | default; 17 models listed |
 | OpenAI | `https://api.openai.com/v1`, preset `openai` | `OPENAI_API_KEY` | opt-in; gpt-6.x, gpt-5.x, gpt-4.x, o3/o4, embeddings |
-| Claude (Anthropic) | `claude -p` CLI (Claude Code 2.1.316) | CLI login; no `ANTHROPIC_API_KEY` set | opt-in; **not wired yet** (see below) |
+| Claude (Anthropic API) | `https://api.anthropic.com/v1`, preset `anthropic` | `HS_ANTHROPIC_API_KEY` | opt-in; 14 models listed; text, JSON and images verified |
 | LiteLLM gateways :4141 / :4142 | Anthropic-format proxies for Claude Code itself | - | not harness providers; down |
 
 **NRP models** (all OpenAI-compatible `/chat/completions`):
@@ -46,11 +47,16 @@ From Python: `harnessstudio.endpoints.operator_entry(provider, model, name, ...)
 temperature (`temperature: null`, the registry sets it) and `max_completion_tokens` (the LLM tool switches
 automatically). `gpt-6-astra` is listed under `confirm_required`.
 
-**Claude**: `claude-opus-5-5`, `claude-sonnet-5-5`, `claude-haiku-5-5`, `claude-fable-5-1` via the headless CLI.
-HarnessStudio's LLM tool speaks only the OpenAI chat format today, so a method cannot call Claude through
-`ctx.tools["llm"]` yet. Adding a `claude_cli` operator (pinned `--model`, no tools, timeout, usage parsing,
-forbidden/confirm checks, then images) is a framework extension: follow the gated route in the porting skill's
-EVOLUTION.md. Never change Claude Code's own authentication.
+**Claude (Anthropic API)**: `claude-opus-5-5`, `claude-sonnet-5-5`, `claude-haiku-5-5`, `claude-fable-5-1`,
+`claude-opus-5`, `claude-sonnet-5`, `claude-fable-5`, `claude-opus-4-8` (RPent's Claude Code planner model),
+`claude-opus-4-7`, `claude-opus-4-6`, `claude-sonnet-4-6` and three dated 4.5 models. Called through Anthropic's
+OpenAI-compatible `/chat/completions` by the same LLM tool as NRP/OpenAI (the tool adds the `anthropic-version`
+header). Claude 5.x rejects `temperature`: pins carry `temperature: null` (the registry sets it). Some models spend
+hidden reasoning tokens (Haiku 5.5 returned empty content at `max_tokens: 60` for an image question): give headroom
+and treat an empty reply as a failure. ~1-2 s per call.
+The key is stored as `HS_ANTHROPIC_API_KEY` in the private `.env` files, **never** as `ANTHROPIC_API_KEY`: Claude
+Code reads that variable and would switch its own login to the key. The `claude -p` CLI (subscription login)
+remains an alternative that is not wired as an operator.
 
 ## Local services
 

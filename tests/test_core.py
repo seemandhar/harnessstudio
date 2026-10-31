@@ -104,3 +104,13 @@ def test_attribution_classes():
     assert classify(base, branch)["class"] == "R"
     leak = {"action_sha256": list("aabaa"), "obs_sha256": list("ooooo")}       # action differs, same obs
     assert classify(base, leak)["class"] == "X"
+
+
+def test_anthropic_preset_and_version_header():
+    from harnessstudio.tools.llm import OpenAICompatibleOperator
+    op = OpenAICompatibleOperator("claude-sonnet-5-5", "anthropic", "HS_ANTHROPIC_API_KEY", temperature=None)
+    assert op.base_url == "https://api.anthropic.com/v1" and op.token_param == "max_tokens"
+    h = op._headers("k")
+    assert h["anthropic-version"] == "2023-06-01" and h["Authorization"] == "Bearer k"
+    assert "anthropic-version" not in OpenAICompatibleOperator("qwen3-vl", "nrp", "NRP_API_KEY")._headers("k")
+

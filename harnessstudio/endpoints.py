@@ -75,6 +75,9 @@ def _get(url: str, key_env: Optional[str], timeout: float = 20.0) -> tuple[bool,
         if not key:
             return False, f"{key_env} not set"
         headers["Authorization"] = "Bearer " + key
+    if "api.anthropic.com" in url:
+        from .tools.llm import ANTHROPIC_VERSION
+        headers["anthropic-version"] = ANTHROPIC_VERSION
     try:
         with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=timeout) as r:
             body = r.read().decode(errors="replace")

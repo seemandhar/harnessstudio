@@ -7,8 +7,8 @@
 # Policy (workspace rules, binding):
 #   - NRP open-weight models are the DEFAULT runtime operator for LLMs/VLMs inside a harness (2026-10-21).
 #   - OpenAI is user-authorized as an explicit, pinned opt-in operator (2026-10-21); record model + cost.
-#   - Claude is listed at the user's request (2026-10-31) for plugins that need it; it is opt-in, pinned and
-#     disclosed exactly like OpenAI, and needs the framework operator noted below before a method can use it.
+#   - Claude (Anthropic API) is user-authorized (2026-10-31) as an explicit, pinned opt-in operator like OpenAI.
+#     Its key lives in HS_ANTHROPIC_API_KEY, never ANTHROPIC_API_KEY (that would switch Claude Code's own login).
 #   - Astra models: banned 2026-10-20, revised 2026-10-31 to CONFIRM-BEFORE-USE ("unban astra - but ask before
 #     use confirm"). Ask the user and get an explicit yes for that specific use (model, purpose, run scope, expected
 #     calls/cost) before pinning; pass the confirmation record as `user_confirmation`. The loader refuses an Astra
@@ -92,25 +92,39 @@ providers:
                     verified: {listed: "2026-10-31"},
                     notes: "RPent's leaderboard planner (Codex / GPT-6 Astra). Ask the user before any call."}
 
-  claude:
-    kind: claude_cli               # headless Claude Code: `claude -p --model MODEL --output-format json`, prompt on stdin
-    command: claude                # /home/sejain/.local/bin/claude (Claude Code 2.1.316 on 2026-10-31)
-    api_key_env: null              # subscription login of the CLI; ANTHROPIC_API_KEY is NOT set on this machine
-    role: explicit opt-in operator for plugins that need Claude (user request 2026-10-31); pinned and disclosed
-    status: not_wired              # HarnessStudio's LLM tool speaks only openai_chat today
-    gap: >-
-      A method cannot call Claude through ctx.tools["llm"] yet. Add a `claude_cli` Operator to
-      harnessstudio/tools/llm.py through the gated framework-extension route (worktree + tests + scripts/regress.py),
-      with: pinned --model, no tools (--disallowedTools all), text-only unless image passing is implemented and
-      tested, per-call timeout, usage parsing from the JSON result, and the Astra/forbidden-word check.
+  anthropic:
+    kind: openai_chat              # Anthropic's OpenAI-compatible POST /v1/chat/completions (API key as auth token)
+    base_url: https://api.anthropic.com/v1
+    preset: anthropic              # OperatorPin(base_url="anthropic"); the LLM tool adds the anthropic-version header
+    api_key_env: HS_ANTHROPIC_API_KEY   # harness-only name: NEVER ANTHROPIC_API_KEY (that switches Claude Code's own auth)
+    token_param: max_tokens
+    role: explicit opt-in operator inside harnesses (user-authorized 2026-10-31); pinned, disclosed, cost recorded
     notes:
-      - "Never change Claude Code's own authentication or route it through NRP/OpenAI (workspace rule)."
-      - "Outer research/coding agents of the pipeline are pinned to claude-opus-5-5; a runtime operator inside a harness is a separate, disclosed choice."
+      - "Claude 5.x rejects `temperature` ('deprecated for this model'): pin `temperature: null` (the registry sets it)."
+      - "Some models spend hidden reasoning tokens (claude-haiku-5-5: ~245 completion tokens for a one-line image
+         answer, empty content at max_tokens=60); give max_tokens headroom and check for empty replies."
+      - "Images: OpenAI-style image_url data URLs work (verified with a 256x256 LIBERO frame)."
+      - "Verified 2026-10-31 through harnessstudio.tools.llm (GET /models + chat): ~1-2 s per call."
+      - "Alternative without the API key: the `claude -p` CLI (subscription login) - not wired as an operator."
     models:
-      claude-opus-5-5: {modalities: [text, image], verified: {cli_available: "2026-10-31"}}
-      claude-sonnet-5-5: {modalities: [text, image], verified: {cli_available: "2026-10-31"}}
-      claude-haiku-5-5: {modalities: [text, image], verified: {cli_available: "2026-10-31"}}
-      claude-fable-5-1: {modalities: [text, image], verified: {cli_available: "2026-10-31"}}
+      claude-opus-5-5: {modalities: [text, image], pin_overrides: {temperature: null}, verified: {listed: "2026-10-31"}}
+      claude-sonnet-5-5: {modalities: [text, image], pin_overrides: {temperature: null},
+                          verified: {listed: "2026-10-31", text_calls: "2026-10-31", image_calls: "2026-10-31", json: "2026-10-31"}}
+      claude-haiku-5-5: {modalities: [text, image], pin_overrides: {temperature: null},
+                         verified: {listed: "2026-10-31", text_calls: "2026-10-31", image_calls: "2026-10-31", json: "2026-10-31"},
+                         notes: "uses hidden reasoning tokens; budget max_tokens >= 400 for image answers"}
+      claude-fable-5-1: {modalities: [text, image], pin_overrides: {temperature: null}, verified: {listed: "2026-10-31"}}
+      claude-opus-5: {modalities: [text, image], pin_overrides: {temperature: null}, verified: {listed: "2026-10-31"}}
+      claude-sonnet-5: {modalities: [text, image], pin_overrides: {temperature: null}, verified: {listed: "2026-10-31"}}
+      claude-fable-5: {modalities: [text, image], pin_overrides: {temperature: null}, verified: {listed: "2026-10-31"}}
+      claude-opus-4-8: {modalities: [text, image], verified: {listed: "2026-10-31"},
+                        closest_for: ["RPent / Harness VLA Claude Code planner (claude-opus-4-8)"]}
+      claude-opus-4-7: {modalities: [text, image], verified: {listed: "2026-10-31"}}
+      claude-opus-4-6: {modalities: [text, image], verified: {listed: "2026-10-31"}}
+      claude-sonnet-4-6: {modalities: [text, image], verified: {listed: "2026-10-31"}}
+      claude-opus-4-5-20251101: {modalities: [text, image], verified: {listed: "2026-10-31"}}
+      claude-sonnet-4-5-20250929: {modalities: [text, image], verified: {listed: "2026-10-31"}}
+      claude-haiku-4-5-20251001: {modalities: [text, image], verified: {listed: "2026-10-31"}}
 
   local_gateways:
     kind: anthropic_messages_proxy   # LiteLLM proxies that let Claude Code itself run on other models
