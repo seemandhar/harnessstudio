@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
+
+import anyio
 from types import MappingProxyType
 from typing import Any, Mapping, Optional, Sequence
 
@@ -56,6 +58,8 @@ class PolicyHandle:
         self.url, self.profile, self.timeout = url, profile, timeout
         self._conn: Optional[Connection] = None
         self._ws: Any = None
+        self._lock = anyio.Lock()      # one request in flight per connection
+        self._broken: Optional[str] = None
         self.calls = 0          # requests
         self.samples = 0        # chunks returned
         self.seconds = 0.0
@@ -68,21 +72,25 @@ class PolicyHandle:
 
     def _check(self) -> Connection:
         conn = self._conn
+        if self._broken is not None:
+            raise PolicyError(f"Policy connection unusable after an earlier error: {self._broken}")
         if conn is None or not conn.is_connected or conn._ws is not self._ws:
             raise PolicyError("Policy connection is not open (dropped or reconnected mid-episode)")
         return conn
 
     async def _request(self, payload: Mapping[str, Any]) -> Mapping[str, Any]:
-        conn = self._check()
-        started = time.monotonic()
-        try:
-            reply = await conn.act(dict(payload))
-        except RuntimeError as exc:
-            raise PolicyError(str(exc)) from exc
-        self._check()
-        self.seconds += time.monotonic() - started
-        self.calls += 1
-        return reply
+        async with self._lock:
+            conn = self._check()
+            started = time.monotonic()
+            try:
+                reply = await conn.act(dict(payload))
+            except Exception as exc:  # any transport error poisons the connection (a late reply may follow)
+                self._broken = f"{type(exc).__name__}: {exc}"
+                raise PolicyError(f"Policy request failed: {self._broken}") from exc
+            self._check()
+            self.seconds += time.monotonic() - started
+            self.calls += 1
+            return reply
 
     async def act(self, raw_obs: Mapping[str, Any]) -> np.ndarray:
         reply = await self._request(raw_obs)
@@ -97,7 +105,10 @@ class PolicyHandle:
         if not self.profile.seeded:
             raise PolicyError("This policy does not advertise seeded_sampling")
         reply = await self._request(protocol.make_request(raw_obs, seeds, sampler, readouts))
-        out = [Proposal.make(a, e) for a, e in protocol.parse_response(reply, len(seeds))]
+        # Only the requested readouts reach methods: server extras such as the seed would reveal the case.
+        keep = set(readouts) | ({"timesteps"} if "velocity" in readouts else set())
+        out = [Proposal.make(a, {k: v for k, v in e.items() if k in keep})
+               for a, e in protocol.parse_response(reply, len(seeds))]
         self.samples += len(out)
         return out
 

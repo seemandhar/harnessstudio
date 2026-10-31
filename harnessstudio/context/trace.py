@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import re
 from pathlib import Path
 from typing import Any, Mapping
@@ -33,16 +34,21 @@ def _canon(value: Any) -> Any:
 
 
 def jsonable(value: Any) -> Any:
-    """Make event fields portable; arrays become fingerprints."""
+    """Make event fields portable and strict-JSON safe: arrays become fingerprints, NaN/inf become None,
+    unknown objects become strings."""
     if isinstance(value, np.ndarray):
-        return {"array": _canon(value)}
+        return {"array": _canon(value)} if not value.dtype.hasobject else str(value)
     if isinstance(value, Mapping):
         return {str(k): jsonable(v) for k, v in value.items()}
-    if isinstance(value, (list, tuple)):
+    if isinstance(value, (list, tuple, set, frozenset)):
         return [jsonable(v) for v in value]
     if isinstance(value, np.generic):
-        return value.item()
-    return value
+        value = value.item()
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if value is None or isinstance(value, (str, int, bool)):
+        return value
+    return str(value)
 
 
 def case_filename(benchmark: str, task: str, episode_idx: int) -> str:

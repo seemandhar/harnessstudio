@@ -26,8 +26,12 @@ def benchmark_config(url: str, *, n_tasks: int = 2, episodes: int = 2, horizon: 
 
 def run_fake(url: str, **kwargs) -> list[dict[str, Any]]:
     """Run the fake benchmark against a server URL; returns vla-eval's per-benchmark results."""
-    with contextlib.redirect_stdout(io.StringIO()):  # vla-eval prints a summary table per run
-        return run(benchmark_config(url, **kwargs), docker=False, no_save=True)
+    import tempfile
+    cfg = benchmark_config(url, **kwargs)
+    # Recording on (vla-eval's default): its session ids are what real runs see.
+    with tempfile.TemporaryDirectory(prefix="hs-tier1-") as tmp, contextlib.redirect_stdout(io.StringIO()):
+        cfg["output_dir"] = tmp
+        return run(cfg, docker=False, no_save=False)
 
 
 def episodes(results: list[dict[str, Any]]) -> list[dict[str, Any]]:

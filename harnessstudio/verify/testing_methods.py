@@ -166,3 +166,61 @@ def memory_blend() -> MethodConfig:
                         required=frozenset({"act", "chunk"}),
                         slots={"action_op": ModuleRef(f"{__name__}:NearestBlend", {"alpha": 0.5})},
                         prepare=ModuleRef(f"{__name__}:TrajectoryPreparer"))
+
+
+class ActProbe:
+    """Controller that makes paid native-style policy calls (ctx.policy.act) before every decision."""
+
+    async def run(self, ctx) -> None:
+        while not ctx.ended:
+            await ctx.policy.act()
+            await ctx.decide()
+
+
+def act_probe() -> MethodConfig:
+    return MethodConfig(name="test-act-probe", version="1", paper="none", fidelity=Fidelity.FAITHFUL,
+                        required=frozenset({"act"}), controller=ModuleRef(f"{__name__}:ActProbe"), null="shadow",
+                        budgets=Budgets(policy_calls=200))
+
+
+_SLOW = {"episodes": 0}
+
+
+class SlowSecond:
+    """Controller whose second episode blocks longer than the benchmark's act timeout (like a slow LLM call)."""
+
+    async def run(self, ctx) -> None:
+        import time as _time
+        import anyio
+        _SLOW["episodes"] += 1
+        if _SLOW["episodes"] == 2:
+            await anyio.to_thread.run_sync(_time.sleep, 3.0)
+        while not ctx.ended:
+            await ctx.decide()
+
+
+def slow_second() -> MethodConfig:
+    return MethodConfig(name="test-slow-second", version="1", paper="none", fidelity=Fidelity.FAITHFUL,
+                        required=frozenset({"act"}), controller=ModuleRef(f"{__name__}:SlowSecond"), null="shadow",
+                        budgets=Budgets(policy_calls=200))
+
+
+class ExtrasProbe:
+    """Selector that reports which extras keys it was given (they must never include the seed)."""
+
+    def __init__(self) -> None:
+        self.seen: set = set()
+
+    def select(self, chunks, extras, obs) -> int:
+        for e in extras:
+            self.seen |= set(e)
+        return 0
+
+    def diagnostics(self) -> dict:
+        return {"extras_keys": sorted(self.seen)}
+
+
+def extras_probe() -> MethodConfig:
+    return MethodConfig(name="test-extras-probe", version="1", paper="none", fidelity=Fidelity.FAITHFUL,
+                        required=_T1, slots={"proposer": ModuleRef(f"{__name__}:Pool", {"num_samples": 2}),
+                                             "selector": ModuleRef(f"{__name__}:ExtrasProbe")})

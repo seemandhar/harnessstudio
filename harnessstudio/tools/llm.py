@@ -154,10 +154,10 @@ class LLMTool:
         if name not in self._ops:
             raise KeyError(f"Undeclared operator {name!r}; declared: {sorted(self._ops)}")
         limit = self.max_tokens if max_tokens is None else min(int(max_tokens), self.max_tokens)
+        acc.llm_calls += 1  # reserved before the call: concurrent and failed calls are charged
         started = time.monotonic()
         text, usage = await anyio.to_thread.run_sync(self._ops[name].complete, list(messages), limit)
         elapsed = time.monotonic() - started
-        acc.llm_calls += 1
         acc.llm_tokens += int(usage.get("prompt_tokens", 0)) + int(usage.get("completion_tokens", 0))
         request = json.dumps(text_only(messages), sort_keys=True, ensure_ascii=False)
         self._ctx._log("llm", operator=name, request_sha256=_sha(request), response=text,

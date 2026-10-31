@@ -87,7 +87,10 @@ class DecisionLoop:
         native = proposals[index].actions
         chunk = native
         if self.action_op:
-            transformed = np.asarray(self.action_op.transform(np.array(native), obs, ctx.memory))
+            from ..policy_ext.protocol import as_chunk
+            transformed = as_chunk(self.action_op.transform(np.array(native), obs, ctx.memory))
+            if transformed.shape[1] != native.shape[1]:
+                raise ValueError(f"action_op changed the action dimension {native.shape[1]} -> {transformed.shape[1]}")
             if candidate:
                 chunk = transformed
 
@@ -102,6 +105,7 @@ class DecisionLoop:
             planned = int(self.executor.plan(np.array(chunk), extras, obs))
             if candidate:
                 k_exec = max(min(min_k, len(chunk)), min(planned, len(chunk)))
+        k_exec = min(k_exec, len(chunk))
         if not candidate:
             # Baseline/null execute the native chunk through the native queue, so if the method ends
             # mid-chunk the native fallback continues this chunk exactly as the baseline would.

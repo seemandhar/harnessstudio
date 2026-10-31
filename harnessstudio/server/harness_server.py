@@ -26,7 +26,7 @@ from ..components.decision_loop import DecisionLoop
 from ..context.bridge import Bridge
 from ..context.episode import CaseKey, Embodiment, EpisodeContext
 from ..context.policy import PolicyHandle, PolicyProfile
-from ..context.trace import write_record
+from ..context.trace import jsonable, write_record
 from ..contracts import Contract
 from ..core.arms import Arm
 from ..core.errors import ContractError, RegistrationError
@@ -38,11 +38,14 @@ log = logging.getLogger(__name__)
 @dataclass
 class _Episode:
     case: CaseKey
-    ctx: EpisodeContext
-    bridge: Bridge
-    controller: Any
-    native: bool
+    episode_id: str
+    ctx: Optional[EpisodeContext] = None
+    bridge: Optional[Bridge] = None
+    controller: Any = None
+    native: bool = False
+    broken: Optional[str] = None      # set when the episode could not start; reported at its first observation
     started: bool = False
+    finalized: bool = False
     t0: float = field(default_factory=time.monotonic)
     experience: list = field(default_factory=list)
 
@@ -118,29 +121,46 @@ class HarnessServer(ModelServer):
         return dict(self._probe.get("observation_params") or {})
 
     # -- episodes ------------------------------------------------------------------
-    async def on_episode_start(self, config: dict[str, Any], ctx: SessionContext) -> None:
-        if config.get("mode") == "live":
-            raise RuntimeError("HarnessStudio v2.0 supports sync mode only")
-        leftover = self._episodes.get(ctx.session_id)
-        if leftover is not None:  # the previous episode never got EPISODE_END (spec 16.5)
-            self._finalizing += 1
-            del self._episodes[ctx.session_id]
-            try:
-                await self._finalize(leftover, None, "no_episode_end")
-            finally:
-                self._finalizing -= 1
+    # Episodes are keyed by the benchmark *connection* (the per-connection send function), not by
+    # ctx.session_id: with recording on, the session id is the shard's recording sid and survives
+    # reconnects, so a stale handler could otherwise finalize a later episode.
+    @staticmethod
+    def _key(ctx: SessionContext) -> Any:
+        return ctx._send_action_fn
+
+    def _case(self, config: Mapping[str, Any]) -> CaseKey:
         task = config.get("task") or {}
         bench = self.contract.name + (f"@{self.case_namespace}" if self.case_namespace else "")
-        case = CaseKey(bench, str(task.get("name", "")), int(task.get("episode_idx", 0)))
-        if (case.benchmark, case.task, case.episode_idx) in self.forbidden_cases:
-            reason = f"case {case.benchmark}/{case.task}/{case.episode_idx} was used to prepare this method's artifacts"
-            self.records.append({"benchmark": case.benchmark, "task": case.task, "episode_idx": case.episode_idx,
-                                 "method": self.method.name, "arm": self.arm.value, "valid": False,
-                                 "invalid_reason": reason, "success": None, "metrics": {},
-                                 "accounting": {}, "action_sha256": [], "obs_sha256": [], "events": []})
-            raise RuntimeError(f"Refusing to evaluate: {reason}")
+        name = str(task.get("name", ""))
+        if task.get("suite") is not None:  # suites can share instructions (LIBERO-Pro perturbations)
+            name = f"{task['suite']}/{name}"
+        return CaseKey(bench, name, int(task.get("episode_idx", 0)))
+
+    async def on_episode_start(self, config: dict[str, Any], ctx: SessionContext) -> None:
+        """Never raises: vla-eval does not wait for a reply here, so an ERROR would answer the next
+        observation and shift every later reply by one. Failures are reported at the first observation."""
+        key = self._key(ctx)
+        leftover = self._episodes.pop(key, None)
+        if leftover is not None:  # the previous episode never got EPISODE_END (spec 16.5)
+            await self._finalize(leftover, None, "no_episode_end")
+        case = self._case(config)
+        ep = _Episode(case=case, episode_id=ctx.episode_id, native=self.arm is Arm.BASELINE)
+        self._episodes[key] = ep
+        if config.get("mode") == "live":
+            ep.broken = "HarnessStudio v2.0 supports sync mode only"
+        elif (case.benchmark, case.task, case.episode_idx) in self.forbidden_cases:
+            ep.broken = (f"case {case.benchmark}/{case.task}/{case.episode_idx} was used to prepare this "
+                         "method's artifacts; refusing to evaluate it")
+        else:
+            try:
+                await self._build(ep, config)
+            except Exception as exc:  # noqa: BLE001
+                ep.broken = f"episode setup failed: {type(exc).__name__}: {exc}"
+                await self._close_policies(ep, None)
+
+    async def _build(self, ep: _Episode, config: Mapping[str, Any]) -> None:
+        task = config.get("task") or {}
         policy = PolicyHandle(self.policy_url, self.profile, self.policy_timeout)
-        await policy.open(config)
         bridge = Bridge()
         shadow = self.arm is Arm.NULL and self.method.controller is not None and self.method.null == "shadow"
         embodiment = Embodiment.from_action_spec(self._probe.get("action_spec") or {}, self.contract.control_mode,
@@ -148,31 +168,36 @@ class HarnessServer(ModelServer):
                                                  self.contract.action_layout)
         embodiment = replace(embodiment, eef_delta_scale=self.contract.eef_delta_scale,
                              gripper_open=self.contract.gripper_open, gripper_close=self.contract.gripper_close)
-        ectx = EpisodeContext(case=case, contract=self.contract, horizon=self.contract.horizon(task), arm=self.arm,
+        ectx = EpisodeContext(case=ep.case, contract=self.contract, horizon=self.contract.horizon(task), arm=self.arm,
                               namespace=self.namespace, policy=policy, budgets=self.method.budgets, bridge=bridge,
                               decision_loop=DecisionLoop(self.method, embodiment, self.artifacts), shadow=shadow,
                               embodiment=embodiment, artifacts=self.artifacts)
+        ep.ctx, ep.bridge = ectx, bridge
+        await policy.open(config)
         if shadow:
+            # Own session (no recording sid), so the controller's paid calls cannot touch the native stream.
             ectx._shadow_policy = PolicyHandle(self.policy_url, self.profile, self.policy_timeout)
-            await ectx._shadow_policy.open(config)
-        controller = self.method.controller.build() if self.method.controller else None
+            await ectx._shadow_policy.open({k: v for k, v in config.items() if k != "recording"})
+        ep.controller = self.method.controller.build() if self.method.controller else None
         if self.method.operators:
             from ..tools.llm import LLMTool, build_operators
             scripted = None
             if self.scripted_llm:
-                scripted = getattr(controller, "TIER1_LLM_RESPONSES", None)
+                scripted = getattr(ep.controller, "TIER1_LLM_RESPONSES", None)
                 if not scripted:
                     raise RegistrationError("Methods with operators must define TIER1_LLM_RESPONSES for tier 1")
             ectx.tools["llm"] = LLMTool(ectx, build_operators(self.method.operators, scripted),
                                         self.method.budgets.llm_calls, self.method.budgets.max_tokens)
-        self._episodes[ctx.session_id] = _Episode(case, ectx, bridge, controller, native=self.arm is Arm.BASELINE)
 
     async def on_observation(self, obs: dict[str, Any], ctx: SessionContext) -> None:
-        ep = self._episodes.get(ctx.session_id)
-        if ep is None:
-            raise RuntimeError("Observation before EPISODE_START")
-        ectx = ep.ctx
+        key = self._key(ctx)
+        ep = self._episodes.get(key)
+        if ep is None or ep.episode_id != ctx.episode_id:
+            raise RuntimeError("Observation without a matching EPISODE_START")
         try:
+            if ep.broken is not None:
+                raise RuntimeError(ep.broken)
+            ectx, bridge = ep.ctx, ep.bridge
             ectx._set_observation(obs)
             if ep.native:
                 action = await ectx._native_action()
@@ -180,41 +205,35 @@ class HarnessServer(ModelServer):
                 if not ep.started:
                     ep.started = True
                     assert self._tg is not None, "on_serve_start did not run"
-                    ep.bridge.start(self._tg, lambda: self._run_method(ep))
-                    action = await ep.bridge.first()
+                    bridge.start(self._tg, lambda: self._run_method(ep))
+                    action = await bridge.first()
                 else:
-                    action = await ep.bridge.next()
+                    action = await bridge.next()
                 if action is None:
-                    if ep.bridge.error is not None:
-                        raise ep.bridge.error
+                    if bridge.error is not None:
+                        raise bridge.error
                     ep.native = True  # method finished, stopped or ran out of budget: finish natively
-                    ectx.accounting.termination = ep.bridge.termination or "method_returned"
+                    ectx.accounting.termination = bridge.termination or "method_returned"
                     action = await ectx._native_action()
+            action = np.asarray(action)
+            if self.development:
+                pub = ectx._public
+                ep.experience.append({**{k: _plain(pub[k]) for k in self.experience_keys if k in pub},
+                                      "action": _plain(action)})
+            ectx._note_sent(action)
         except Exception as exc:
-            self._finalizing += 1
-            self._episodes.pop(ctx.session_id, None)
-            try:
-                await self._finalize(ep, None, f"{type(exc).__name__}: {exc}")
-            finally:
-                self._finalizing -= 1
+            if self._episodes.get(key) is ep:
+                del self._episodes[key]
+            await self._finalize(ep, None, ep.broken or f"{type(exc).__name__}: {exc}")
             raise
-        action = np.asarray(action)
-        if self.development:
-            pub = ectx._public
-            ep.experience.append({**{k: _plain(pub[k]) for k in self.experience_keys if k in pub},
-                                  "action": _plain(action)})
-        ectx._note_sent(action)
         await ctx.send_action({"actions": action})
 
     async def on_episode_end(self, result: dict[str, Any], ctx: SessionContext) -> None:
-        ep = self._episodes.get(ctx.session_id)
-        if ep is not None:
-            self._finalizing += 1
-            del self._episodes[ctx.session_id]
-            try:
-                await self._finalize(ep, result or None, None if result else "empty_result")
-            finally:
-                self._finalizing -= 1
+        key = self._key(ctx)
+        ep = self._episodes.get(key)
+        if ep is not None and ep.episode_id == ctx.episode_id:
+            del self._episodes[key]
+            await self._finalize(ep, result or None, None if result else "empty_result")
 
     async def _run_method(self, ep: _Episode) -> None:
         ectx = ep.ctx
@@ -243,36 +262,64 @@ class HarnessServer(ModelServer):
             time.sleep(0.02)
         return True
 
+    async def _close_policies(self, ep: _Episode, result: Optional[Mapping[str, Any]]) -> None:
+        if ep.ctx is None:
+            return
+        for handle in (ep.ctx._policy, ep.ctx._shadow_policy):
+            if handle is not None:
+                try:
+                    await handle.close(result)
+                except Exception:  # noqa: BLE001
+                    log.exception("closing a policy connection failed")
+
     async def _finalize(self, ep: _Episode, result: Optional[Mapping[str, Any]], invalid: Optional[str]) -> None:
+        """Idempotent; never raises (a failed trace write must not break the benchmark connection)."""
+        if ep.finalized:
+            return
+        ep.finalized = True
         self._finalizing += 1
         try:
-            await self._finalize_inner(ep, result, invalid)
+            record = await self._record(ep, result, invalid)
+            self.records.append(record)
+            if self.out_dir:
+                try:
+                    write_record(self.out_dir, record)
+                except Exception:  # noqa: BLE001
+                    log.exception("writing the trace for %s failed", ep.case)
+        except Exception:  # noqa: BLE001
+            log.exception("finalizing %s failed", ep.case)
+            self.records.append(self._stub(ep, "finalize_failed"))
         finally:
             self._finalizing -= 1
 
-    async def _finalize_inner(self, ep: _Episode, result: Optional[Mapping[str, Any]], invalid: Optional[str]) -> None:
-        ep.bridge.cancel()
+    def _stub(self, ep: _Episode, reason: str) -> dict:
+        return {"benchmark": ep.case.benchmark, "task": ep.case.task, "episode_idx": ep.case.episode_idx,
+                "method": self.method.name, "method_fingerprint": self.method.fingerprint(), "arm": self.arm.value,
+                "valid": False, "invalid_reason": reason, "success": None, "metrics": {}, "accounting": {},
+                "action_sha256": [], "obs_sha256": [], "events": [], "wall_seconds": time.monotonic() - ep.t0}
+
+    async def _record(self, ep: _Episode, result: Optional[Mapping[str, Any]], invalid: Optional[str]) -> dict:
+        if ep.bridge is not None:
+            ep.bridge.cancel()
         ectx = ep.ctx
+        if ectx is None:
+            return self._stub(ep, invalid or ep.broken or "not_started")
         if ep.bridge.error is not None and invalid is None:
             invalid = f"method_error: {type(ep.bridge.error).__name__}: {ep.bridge.error}"
         acc = ectx.accounting
         if acc.termination == "running":
             acc.termination = "native" if self.arm is Arm.BASELINE else (ep.bridge.termination or "environment")
         acc.policy_seconds = ectx._policy.seconds + (ectx._shadow_policy.seconds if ectx._shadow_policy else 0.0)
-        await ectx._policy.close(result)
-        if ectx._shadow_policy is not None:
-            await ectx._shadow_policy.close(result)
+        await self._close_policies(ep, result)
         metrics = dict((result or {}).get("metrics") or {})
         record = {
             "benchmark": ep.case.benchmark, "task": ep.case.task, "episode_idx": ep.case.episode_idx,
             "method": self.method.name, "method_fingerprint": self.method.fingerprint(), "arm": self.arm.value,
-            "valid": invalid is None, "invalid_reason": invalid, "metrics": metrics,
+            "valid": invalid is None, "invalid_reason": invalid, "metrics": jsonable(metrics),
             "success": bool(metrics.get("success", False)) if invalid is None else None,
-            "accounting": asdict(acc), "action_sha256": ectx._action_hashes, "obs_sha256": ectx._obs_hashes, "events": ectx._events,
-            "wall_seconds": time.monotonic() - ep.t0,
+            "accounting": asdict(acc), "action_sha256": ectx._action_hashes, "obs_sha256": ectx._obs_hashes,
+            "events": ectx._events, "wall_seconds": time.monotonic() - ep.t0,
         }
         if self.development:
             record["experience"] = ep.experience
-        self.records.append(record)
-        if self.out_dir:
-            write_record(self.out_dir, record)
+        return record

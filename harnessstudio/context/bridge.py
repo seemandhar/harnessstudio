@@ -22,6 +22,7 @@ class Bridge:
         self._obs_send, self._obs_recv = anyio.create_memory_object_stream(1)
         self._scope: Optional[anyio.CancelScope] = None
         self._started = False
+        self._cancelled = False
         self.done = False
         self.error: Optional[BaseException] = None
         self.termination: Optional[str] = None
@@ -42,8 +43,17 @@ class Bridge:
             except BudgetExceeded:
                 self.termination = "budget_exhausted"
             except anyio.get_cancelled_exc_class():
-                self.termination = self.termination or "cancelled"
-                raise
+                if self._cancelled:
+                    self.termination = self.termination or "cancelled"
+                    raise
+                self.error = RuntimeError("the method was cancelled by something other than the framework")
+                self.termination = "method_error"
+            except BaseExceptionGroup as group:  # noqa: F821 - Python 3.11+
+                _, rest = group.split(BudgetExceeded)
+                if rest is None:
+                    self.termination = "budget_exhausted"
+                else:
+                    self.error, self.termination = rest, "method_error"
             except Exception as exc:  # noqa: BLE001 - recorded, episode becomes invalid
                 self.error = exc
                 self.termination = "method_error"
@@ -69,6 +79,7 @@ class Bridge:
         return None if item is _DONE else item
 
     def cancel(self) -> None:
+        self._cancelled = True
         if self._scope is not None:
             self._scope.cancel()
 

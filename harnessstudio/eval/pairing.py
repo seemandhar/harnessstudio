@@ -20,7 +20,13 @@ def sign_test_p(wins: int, losses: int) -> float:
 
 
 def summarize(arms: dict[str, Iterable[dict]]) -> dict:
-    by_arm = {arm: {_key(r): r for r in recs} for arm, recs in arms.items()}
+    by_arm = {}
+    for arm, recs in arms.items():
+        recs = list(recs)
+        keyed = {_key(r): r for r in recs}
+        if len(keyed) != len(recs):
+            raise ValueError(f"arm {arm}: duplicate case keys; use --case-namespace per benchmark seed/split")
+        by_arm[arm] = keyed
     cases = set.intersection(*(set(k for k, r in recs.items() if r["valid"]) for recs in by_arm.values())) \
         if by_arm else set()
     invalid = {arm: sorted(str(k) for k, r in recs.items() if not r["valid"]) for arm, recs in by_arm.items()}
