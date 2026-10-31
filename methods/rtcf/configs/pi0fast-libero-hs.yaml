@@ -1,0 +1,7 @@
+# openpi pi0_fast_libero served by harnessstudio/policies/pi05_openpi.py (HarnessPolicyMixin over vla-eval
+# Pi0ModelServer, generic openpi loader) with the args of vla-eval configs/model_servers/pi0/libero_fast.yaml
+# (chunk_size 10). Natively 10 actions run per chunk. pi0-FAST decodes greedily (temperature 0.0), so seeded
+# samples do not depend on the seed. Same content as runs/rtcf-20261031/eval/configs/pi0fast-libero-hs.profile.yaml.
+capabilities: [act, chunk, seeded_sampling, isolated_streams]
+chunking: harness
+execute_horizon: 10

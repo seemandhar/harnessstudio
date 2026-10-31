@@ -1,0 +1,18 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hs-rtcf"
+version = "0.1.0"
+description = "RTCF (Retrieve in Time, Correct in Frequency, arXiv:2608.04527v2, withdrawn v3) as a HarnessStudio v2 method"
+requires-python = ">=3.10"
+dependencies = ["harnessstudio", "numpy", "pillow"]
+
+[project.entry-points."harnessstudio.methods"]
+rtcf = "hs_rtcf:config"
+rtcf-framenn = "hs_rtcf:config_framenn"
+rtcf-timedomain = "hs_rtcf:config_timedomain"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hs_rtcf"]

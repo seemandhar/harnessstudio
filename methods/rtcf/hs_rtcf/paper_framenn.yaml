@@ -1,0 +1,38 @@
+name: rtcf-framenn
+version: "0.1"
+paper: {id: "arXiv:2608.04527v2", title: "Retrieve in Time, Correct in Frequency (RTCF); WITHDRAWN by the authors in v3 (2026-10-28: 'experimental evidence is not yet sufficient')", venue: "arXiv 2026 (withdrawn)"}
+categories: {primary: memory_retrieval, secondary: []}
+# No code was released: this port implements v2 Eq. 5-11 and Alg. 1 (identical in v1; v3 is a withdrawal notice).
+# Every constant the paper does not report is frozen a priori, before any evaluation, and listed below.
+fidelity: tf_variant   # ablation of rtcf (component study)
+substitutions:
+  - "FITTED PART: SigLIP features projected on a fitted low-dimensional PCA subspace, then l2-normalized -> PCA omitted: raw l2-normalized SigLIP pooled features (1152-d); cosine retrieval as in Eq. 5 (the paper motivates PCA only by retrieval cost/storage). No centering (a data mean would be a fit)"
+  - "SigLIP checkpoint/pooling/camera not reported -> google/siglip-so400m-patch14-224 @ d04cf29fca7b6374f74d8bea1969314492266b5e (Apache-2.0; the PaliGemma-224/pi0 SigLIP variant), pooler_output (MAP head), agentview image only, HF processor defaults, run as a local HTTP service (scripts/siglip_service.py)"
+  - "memory: 'successful trajectories collected with memory seed 7' (initial states and count not reported; possibly overlapping the evaluation states) -> hs prepare on DEVELOPMENT initial states 10-49 (bench_ext episode_offset 10), seed 7, native pi0-FAST (collection mode), successes only, frozen and sha256-pinned; evaluation uses initial states 0-9 x seeds 101-105 (disjoint, checked by scripts/check_split.py)"
+  - "F_c not reported -> 3 (frequency bands f = 1, 2 of H = 10)"
+  - "delta_max not reported (value and units) -> 1.0 in normalized DCT-coefficient units (= 10 FAST token units), scalar, coefficient-wise"
+  - "v_max and gamma not reported -> v_max = 2, gamma = 0.05"
+  - "Read offset ambiguous (Eq. reads b*, text says 'aligned future chunk') -> read at b* (the chunk the memory policy planned from the aligned observation); configurable read_offset"
+  - "'final action magnitude limit' not reported -> clip corrected motion entries to [-1, 1] (LIBERO bounds), only where the residual changed them"
+  - "I_motion not listed -> dims 0-5 (position + axis-angle rotation); gripper dim 6 unchanged (paper: gripper excluded)"
+  - "action records: FAST BPE token strings -> integer coefficients round(10 * s_d * DCT(A)) of the full proposed chunk (BPE is lossless, so f > 0 rows equal the tokens' coefficients; DC is in executable-action coordinates and is masked); openpi's zero chunk after a failed FAST decode is flagged and retrieving it skips correction, as the paper says"
+  - "N (normalization) not specified -> openpi pi0_fast_libero quantile normalization s_d = 2 / (q99 - q01 + 1e-6) (assets/pi0_fast_libero_norm_stats.json); the state-relative delta transform and all per-dim offsets fall into the masked DC term"
+  - "policy stack: 'frozen PI-FAST' (checkpoint not named, replan cadence not reported) -> openpi pi0_fast_libero (gs://openpi-assets/checkpoints/pi0_fast_libero) served by HarnessStudio's seeded T1 wrapper over vla-eval's Pi0ModelServer (args of vla-eval configs/model_servers/pi0/libero_fast.yaml), vla-eval LIBERO with quat_no_antipodal: true (openpi/robosuite axis-angle), 10 executed actions per invocation (profile configs/pi0fast-libero-hs.yaml; openpi's client default is 5)"
+  - "Frame-NN and Time-Domain ablation rules are not given -> inferred (rtcf-framenn: argmin over all stored frames of Eq. 5; rtcf-timedomain: same clip/scale on normalized time-domain motion actions)"
+requires: {capabilities: [act, chunk]}
+# One encoder HTTP call per policy invocation (counted in diagnostics, not a framework tool call); no extra
+# policy calls and no LLM.
+budgets: {policy_calls: null, llm_calls: 0, tool_calls: 0, max_tokens: 0}
+null: derived
+artifacts:
+  - {name: pi0_fast_libero_norm_stats, path: /bigdata/sejain/hs2-cache/openpi/openpi-assets/checkpoints/pi0_fast_libero/assets/physical-intelligence/libero/norm_stats.json,
+     sha256: 4ece6c43f425c3769b85819a7a4bb025d214dc263a13a6dbeb02cd36dc2cee5e, license: "Apache-2.0 (openpi assets); copy in hs_rtcf/assets"}
+operators: []
+original:
+  repo: "none released (searched 2026-10-31: paper, abs page, GitHub, HF Papers); equations only"
+  commit: ""
+  reported: "WITHDRAWN v2 claims, Table 1 matched block (500 episodes per suite cell: 10 tasks x 10 initial states x seeds 101-105): PI-FAST baseline Long 61.6 / Spatial 96.4 / Object 97.4 / Goal 90.0 / All 86.4; RTCF 68.6 / 97.4 / 97.8 / 89.8 / 88.4; Frame-NN 63.6 / 95.8 / 96.8 / 88.6 / 86.2; Time-Domain 50.0 / 96.2 / 97.2 / 87.0 / 82.6"
+description: "RTCF ablation Frame-NN (w/o history alignment): retrieve the single most similar stored frame, same spectral correction."
+tier1: {instruction: "pick up the block and place it in the bowl", horizon: 40, chunk_len: 10}
+changelog:
+  - "v0.1 (2026-10-31): first port from arXiv v2 equations (no code); constants frozen a priori per runs/rtcf-20261031/port/conversion-plan.md"
