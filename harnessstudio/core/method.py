@@ -43,19 +43,25 @@ class ArtifactPin:
 
 @dataclass(frozen=True)
 class OperatorPin:
-    """One runtime LLM/VLM: a single model on an OpenAI-compatible endpoint, no fallback."""
+    """One runtime LLM/VLM: a single exact model on an OpenAI-compatible endpoint, no fallback.
+    base_url is an https URL, a local server, or a preset name ("nrp")."""
     name: str
     model: str
-    base_url_env: str
+    base_url: str
     api_key_env: str
-    original_model: str = ""
+    original_model: str = ""     # the paper's model, kept for provenance when substituted
+    temperature: float = 0.0
+    seed: Optional[int] = None
+    extra_body: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         if "astra" in self.model.lower():
             raise RegistrationError("Astra models are not allowed in this workspace")
-        for value in (self.name, self.model, self.base_url_env, self.api_key_env):
+        for value in (self.name, self.model, self.base_url, self.api_key_env):
             if not str(value).strip():
-                raise RegistrationError("Operators need a name, model, base_url_env and api_key_env")
+                raise RegistrationError("Operators need a name, model, base_url and api_key_env")
+        if not str(self.api_key_env).isidentifier():
+            raise RegistrationError("api_key_env must name an environment variable")
 
 
 @dataclass(frozen=True)
@@ -188,6 +194,6 @@ def validate(config: MethodConfig) -> MethodConfig:
     for o in config.operators:
         if not isinstance(o, OperatorPin):
             raise RegistrationError("Operators must be OperatorPins")
-    if config.operators and config.budgets.llm_calls == 0:
-        raise RegistrationError("A method with operators needs an llm_calls budget")
+    if config.operators and (config.budgets.llm_calls == 0 or config.budgets.max_tokens == 0):
+        raise RegistrationError("A method with operators needs llm_calls and max_tokens budgets")
     return config

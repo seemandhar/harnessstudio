@@ -44,7 +44,8 @@ def _run(config: MethodConfig, arm: Arm, profile_name: str, task_order: str = "f
     profile = load_profile(profile_name)
     policy = FakePolicyServer(chunking="harness", seeded=profile.seeded)
     with serve(policy) as ph:
-        harness = HarnessServer(config, policy_url=ph.url, contract=load_contract("fake"), arm=arm, profile=profile)
+        harness = HarnessServer(config, policy_url=ph.url, contract=load_contract("fake"), arm=arm, profile=profile,
+                                scripted_llm=True)
         with serve(harness) as hh:
             run_fake(hh.url, n_tasks=n_tasks, episodes=episodes, horizon=horizon, task_order=task_order)
     return harness.records

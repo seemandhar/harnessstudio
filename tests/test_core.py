@@ -46,7 +46,7 @@ def test_valid_controller_and_adapted():
 
 def test_astra_operator_refused():
     with pytest.raises(RegistrationError):
-        OperatorPin(name="planner", model="gpt-6-astra", base_url_env="U", api_key_env="K")
+        OperatorPin(name="planner", model="gpt-6-astra", base_url="nrp", api_key_env="K")
 
 
 def test_crn_seed_is_stable_and_distinct():

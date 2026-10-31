@@ -88,3 +88,26 @@ def budget_3() -> MethodConfig:
                         required=_T1, slots={"proposer": ModuleRef(f"{__name__}:Pool", {"num_samples": 3}),
                                              "selector": ModuleRef(f"{__name__}:PickLast")},
                         budgets=Budgets(policy_calls=3))
+
+
+class LLMPlanner:
+    """Controller: asks the LLM for subtasks, drives the policy with each, then finishes natively."""
+    TIER1_LLM_RESPONSES = ['["move left", "move right"]']
+
+    async def run(self, ctx) -> None:
+        import json
+        plan = await ctx.tools["llm"]([{"role": "user", "content": f"Split into subtasks: {ctx.instruction}"}])
+        for subtask in json.loads(plan):
+            executed = 0
+            while executed < 3 and not ctx.ended:
+                executed += await ctx.decide(instruction=subtask)
+        while not ctx.ended:
+            await ctx.decide()
+
+
+def llm_planner() -> MethodConfig:
+    from ..core.method import OperatorPin
+    return MethodConfig(name="test-llm-planner", version="1", paper="none", fidelity=Fidelity.FAITHFUL,
+                        required=frozenset({"act", "chunk"}), controller=ModuleRef(f"{__name__}:LLMPlanner"),
+                        null="shadow", budgets=Budgets(policy_calls=1000, llm_calls=2, max_tokens=64),
+                        operators=(OperatorPin("planner", "test-model", "nrp", "NRP_API_KEY"),))

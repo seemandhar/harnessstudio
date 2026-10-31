@@ -49,8 +49,9 @@ class _Episode:
 class HarnessServer(ModelServer):
     def __init__(self, method: MethodConfig, *, policy_url: str, contract: Contract, arm: Arm | str,
                  profile: PolicyProfile, out_dir: Optional[str | Path] = None, namespace: str = "hs",
-                 policy_timeout: float = 600.0) -> None:
+                 policy_timeout: float = 600.0, scripted_llm: bool = False) -> None:
         self.method = validate(method)
+        self.scripted_llm = scripted_llm
         missing = set(method.required) - set(profile.capabilities)
         if missing:
             raise RegistrationError(f"Method {method.name} needs capabilities {sorted(missing)} "
@@ -113,6 +114,15 @@ class HarnessServer(ModelServer):
             ectx._shadow_policy = PolicyHandle(self.policy_url, self.profile, self.policy_timeout)
             await ectx._shadow_policy.open(config)
         controller = self.method.controller.build() if self.method.controller else None
+        if self.method.operators:
+            from ..tools.llm import LLMTool, build_operators
+            scripted = None
+            if self.scripted_llm:
+                scripted = getattr(controller, "TIER1_LLM_RESPONSES", None)
+                if not scripted:
+                    raise RegistrationError("Methods with operators must define TIER1_LLM_RESPONSES for tier 1")
+            ectx.tools["llm"] = LLMTool(ectx, build_operators(self.method.operators, scripted),
+                                        self.method.budgets.llm_calls, self.method.budgets.max_tokens)
         self._episodes[ctx.session_id] = _Episode(case, ectx, bridge, controller, native=self.arm is Arm.BASELINE)
 
     async def on_observation(self, obs: dict[str, Any], ctx: SessionContext) -> None:

@@ -112,3 +112,11 @@ def test_capability_mismatch_is_refused():
     with pytest.raises(RegistrationError):
         HarnessServer(tm.pick_last_k4(), policy_url="ws://unused", contract=load_contract("fake"),
                       arm=Arm.CANDIDATE, profile=T0_HARNESS)
+
+
+def test_llm_controller_tier1_and_shadow_pays_llm():
+    from harnessstudio.verify import tier1
+    report = tier1.run(tm.llm_planner())
+    assert report.passed, report.lines()
+    recs = tier1._run(tm.llm_planner(), Arm.NULL, "fake-t0")
+    assert all(r["accounting"]["llm_calls"] == 1 for r in recs)
