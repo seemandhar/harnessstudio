@@ -470,3 +470,16 @@ These override earlier sections where they conflict.
     benchmark already has; LIBERO, LIBERO-Pro and RoboCasa365 expose no depth or calibration. M4 adds
     them through HarnessStudio-owned subclasses of the allenai benchmark classes, referenced by import
     string in the eval config, with the package mounted in the benchmark container.
+
+## 17. Implementation status (2026-10-31, end of the first build session)
+
+| Milestone | Status |
+|---|---|
+| M0 | done: `v2` branch, package on `vla-eval==0.8.0`, prototype preserved on `prototype/runner-hook` |
+| M1 | done: harness server, coroutine bridge, T0 client, EpisodeContext, traces; gate passed on real LIBERO (5/5 bitwise identical) |
+| M2 | seeded servers done and verified (pi0.5 `policies/pi05_openpi.py`, GR00T N1.5 `policies/gr00t_n15_robocasa365.py`, Human300 ckpt loads); RoboCasa365 benchmark run: see docs/results when available |
+| M3 | done: components + DecisionLoop with derived/shadow nulls, paper cards, entry-point registry, tiers 0-1, `hs eval` with pairing and M/R/X (5 M / 0 R / 0 X on real LIBERO); ported: medoid-bon, chunk-interrupt, aac, subtask-sequencer, llm-subtask-planner. Not yet: chunktrust-ahs (needs T2 velocity in the DecisionLoop), tier 2 command |
+| M4 | partly: pinned LLM tool, eef_delta skills, `hs prepare` with pinned artifacts and dev-case refusal, TrajectoryStore, LIBERO-Pro contract. Not yet: perception tool servers, benchmark subclasses with depth/camera parameters (16.11), Monitor-driven recovery examples |
+
+Deviations from the plan: tier 2 is covered by `hs eval` on a small case list rather than a separate
+command; `rtc` left the port list (live mode).
