@@ -43,13 +43,17 @@ class Embodiment:
 
     @classmethod
     def from_action_spec(cls, spec: Mapping[str, Mapping[str, Any]], control_mode: str = "unknown",
-                         fallback_dim: Optional[int] = None, eef: Optional[Mapping[str, Any]] = None) -> "Embodiment":
+                         fallback_dim: Optional[int] = None, eef: Optional[Mapping[str, Any]] = None,
+                         fallback_layout: Optional[Mapping[str, Any]] = None) -> "Embodiment":
         layout, offset = {}, 0
         for name, dim in (spec or {}).items():
             n = int(dim.get("dims", 0))
             if n > 0:
                 layout[name] = (offset, offset + n)
                 offset += n
+        if len(layout) <= 1 and fallback_layout:  # policy declares one raw block: use the contract's names
+            layout = {k: (int(v[0]), int(v[1])) for k, v in fallback_layout.items()}
+            offset = max(e for _, e in layout.values())
         eef = dict(eef or {})
         sl = eef.get("slice")
         return cls(dict(layout), offset or fallback_dim, control_mode, tuple(eef.get("path") or ()),

@@ -1,0 +1,30 @@
+name: chunk-interrupt
+version: "3"
+changelog:
+  - "v3: ported to HarnessStudio v2"
+  - "v2 (2026-10-28): action slice and proprio location come from extras['policy'] (GR00T: 5:8 and state.end_effector_position_relative; Pi0.5: 0:3 and observation/state[0:3]); GR00T behaviour unchanged"
+  - "v1: HarnessStudio v1 built-in (harnessstudio.methods.chunk_interrupt)"
+paper:
+  id: "arXiv:2607.01804v1"
+  title: "VLA-Corrector: Lightweight Detect-and-Correct Inference for Adaptive Action Horizon"
+  venue: "arXiv preprint (v1 2026-07-02)"
+  url: "https://arxiv.org/abs/2607.01804"
+# Primary: watches execution and truncates the current chunk when the arm stops following its commands
+# (execution monitoring and recovery). The recovery is only "re-query the frozen policy".
+categories: {primary: execution_monitoring, secondary: []}
+fidelity: tf_variant
+substitutions:
+  - "VLA-Corrector trained latent-dynamics corrector -> public commanded-vs-achieved end-effector displacement check; truncation only, no gradient recovery"
+# Needs the full raw chunk (harness-side chunking) to cut it step by step. No seeded sampling: one policy
+# request per decision, as natively (a seeded profile still serves it through sample 0).
+requires: {capabilities: [act, chunk]}
+# One sample per decision; cuts only make decisions shorter, so calls are bounded by the horizon.
+budgets: {policy_calls: null, llm_calls: 0, tool_calls: 0, max_tokens: 0}
+null: derived
+artifacts: []
+operators: []
+original:
+  repo: "not used"
+  commit: ""
+  reported: "No improvement is claimed: the ChunkTrust H1 stall detector did not predict failure (P(fail|fired) 0.55 vs base 0.53; runs/chunktrust-beat-20261026/reports/final_report.md)."
+description: "Cut a chunk and re-query when the arm stops following its commands."

@@ -105,7 +105,8 @@ class HarnessServer(ModelServer):
         bridge = Bridge()
         shadow = self.arm is Arm.NULL and self.method.controller is not None and self.method.null == "shadow"
         embodiment = Embodiment.from_action_spec(self._probe.get("action_spec") or {}, self.contract.control_mode,
-                                                 self.contract.action_dim, self.contract.eef_position)
+                                                 self.contract.action_dim, self.contract.eef_position,
+                                                 self.contract.action_layout)
         ectx = EpisodeContext(case=case, contract=self.contract, horizon=self.contract.horizon(task), arm=self.arm,
                               namespace=self.namespace, policy=policy, budgets=self.method.budgets, bridge=bridge,
                               decision_loop=DecisionLoop(self.method, embodiment), shadow=shadow,

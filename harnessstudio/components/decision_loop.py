@@ -85,13 +85,15 @@ class DecisionLoop:
 
         native_k = ctx._profile.native_length(native)
         k_exec = native_k
+        min_k = max(1, int(getattr(self.executor, "min_k", 1) or 1)) if self.executor else 1
         if self.executor:
             extras = dict(proposals[index].extras)
+            extras["native_length"] = native_k  # how many actions the native policy would execute
             if getattr(self.executor, "sees_proposals", False):
                 extras["proposals"] = [p.actions for p in proposals]  # read-only, seed order (0 = native)
             planned = int(self.executor.plan(np.array(chunk), extras, obs))
             if candidate:
-                k_exec = max(1, min(planned, len(chunk)))
+                k_exec = max(min(min_k, len(chunk)), min(planned, len(chunk)))
         executed = 0
         for i in range(k_exec):
             if ctx.ended:
@@ -104,10 +106,20 @@ class DecisionLoop:
                 wants = bool(self.executor.continue_after(executed, after))
             if self.monitor and self.monitor.check(after, self.history) == "interrupt":
                 wants = False
+            if executed < min_k:
+                wants = True  # no cut before min_k
             if not arms.honor_cut(arm, wants):
                 break
         if self.executor:
             self.executor.record_executed(np.array(chunk[:executed]))
+        diagnostics = {}
+        for slot, comp in (("selector", self.selector), ("executor", self.executor), ("monitor", self.monitor),
+                           ("gate", self.gate), ("action_op", self.action_op)):
+            fn = getattr(comp, "diagnostics", None)
+            if comp is not None and callable(fn):
+                diagnostics[slot] = fn()  # recorded in every arm (shadow evidence in the null)
+        ctx._log("decision", chosen=chosen, samples=len(proposals), planned=k_exec, executed=executed,
+                 **({"diagnostics": diagnostics} if diagnostics else {}))
         self.history.append({"decision": len(self.history), "samples": len(proposals), "chosen": chosen,
                              "executed": executed})
         ctx.accounting.decisions += 1

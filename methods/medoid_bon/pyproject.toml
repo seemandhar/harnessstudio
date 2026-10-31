@@ -1,0 +1,17 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hs-medoid-bon"
+version = "3.0.0"
+description = "CycleVLA MBR consensus selection over K seeded samples (component port, training-free)."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["harnessstudio"]
+
+[project.entry-points."harnessstudio.methods"]
+medoid-bon = "hs_medoid_bon:config"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hs_medoid_bon"]

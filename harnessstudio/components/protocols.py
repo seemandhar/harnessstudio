@@ -53,7 +53,10 @@ class ActionOp(Protocol):
 class Executor(Protocol):
     """How much of the chosen chunk runs (v1 interface).
     plan() returns k >= min_k; with per_step=True, continue_after() is asked after each step.
-    Set sees_proposals = True to get extras['proposals'] (every sample of the decision, seed order)."""
+    Set sees_proposals = True to get extras['proposals'] (every sample of the decision, seed order).
+    extras['native_length'] is how many actions the native policy executes from this chunk.
+    The loop never cuts before min_k. Any component may define diagnostics() -> dict (JSON), written
+    to the trace after every decision in every arm."""
     min_k: int
     per_step: bool
 

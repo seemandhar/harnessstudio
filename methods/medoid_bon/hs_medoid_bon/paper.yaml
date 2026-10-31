@@ -1,0 +1,29 @@
+name: medoid-bon
+version: "3"
+changelog:
+  - "v3: ported to HarnessStudio v2"
+  - "v2 (2026-10-28): semantic keys instead of fixed GR00T dims; selection on GR00T is unchanged"
+  - "v1: HarnessStudio v1 built-in (harnessstudio.methods.medoid_bon)"
+paper:
+  id: "arXiv:2601.02295v2"
+  title: "CycleVLA: Proactive Self-Correcting Vision-Language-Action Models via Subtask Backtracking and Minimum Bayes Risk Decoding"
+  venue: "arXiv preprint (v1 2026-01-05, v2 2026-07-28)"
+  url: "https://arxiv.org/abs/2601.02295"
+# Source provenance (read 2026-10-27 from the v2 HTML): hs_medoid_bon/CYCLEVLA_SOURCE.json.
+# Not a reviewed RoboMetaHarness knowledge card.
+categories: {primary: proposal_selection, secondary: []}
+# Only the MBR selection step is ported. CycleVLA's progress-aware VLA (fine-tuned), VLM failure
+# predictor and planner, and subtask backtracking are not part of this method.
+fidelity: component
+substitutions: []
+requires: {capabilities: [act, chunk, seeded_sampling, isolated_streams]}
+# K = 8 samples per decision, decisions bounded by the horizon; no LLM or tools.
+budgets: {policy_calls: null, llm_calls: 0, tool_calls: 0, max_tokens: 0}
+null: derived
+artifacts: []
+operators: []
+original:
+  repo: "not used: the rule is taken from the paper text (Sec. IV-B, V-A, Table V)"
+  commit: ""
+  reported: "Table V metric ablation: L2 best vs L1, Linf, cosine, correlation; N = 8. No number transfers to this component-only port."
+description: "CycleVLA MBR consensus selection (component): execute the sample with the lowest mean L2 distance between accumulated end-effector trajectories."

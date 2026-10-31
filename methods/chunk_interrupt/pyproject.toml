@@ -1,0 +1,17 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hs-chunk-interrupt"
+version = "3.0.0"
+description = "Per-step stall cut of action chunks (training-free variant of VLA-Corrector truncation)."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["harnessstudio", "numpy>=1.24"]
+
+[project.entry-points."harnessstudio.methods"]
+chunk-interrupt = "hs_chunk_interrupt:config"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hs_chunk_interrupt"]
