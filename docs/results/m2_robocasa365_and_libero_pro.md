@@ -15,8 +15,12 @@ the host's NVIDIA driver wedged machine-wide (every CUDA/EGL/nvidia-smi client b
   null paid 8x the samples and never changed an action. Old attribution said 1 M / 1 R / 0 X; the R pair
   had all 450 actions identical and only 3 non-decision frames differing (EGL renderer noise), which the
   revised attribution now counts as M with a noise note.
+- Re-scored with the revised attribution the GR00T gate is 2 M / 0 R / 0 X.
 - vla-eval's CPU render backend is bitwise deterministic across processes; with it the gate is 2 M on a CPU
-  stand-in policy. GR00T + CPU rendering and the `hs eval medoid-bon` screen are scripted but not run (driver).
+  stand-in policy. GR00T + CPU rendering and the `hs eval medoid-bon` screen are scripted but not run (driver):
+  `hs2-gpu/robocasa365/run_gr00t_cpu_render.sh`.
+- Found and fixed: RoboCasa365 resets depend on what the process ran before, so `hs eval --no-docker` now runs
+  each arm's benchmark in its own child process (Docker runs already get one container per arm).
 
 ## LIBERO-Pro + stock pi0.5
 

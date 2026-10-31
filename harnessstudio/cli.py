@@ -68,7 +68,7 @@ def _server(args, arm: str, **extra):
 
 
 def _cmd_prepare(args) -> int:
-    from vla_eval.api import run, serve_background
+    from vla_eval.api import serve_background
     from .eval.prepare import build_prepared, preparer_settings
     config = load(args.method)
     if config.prepare is None:
@@ -86,8 +86,7 @@ def _cmd_prepare(args) -> int:
     with serve_background(server, host=args.host, port=args.port) as handle:
         url = f"ws://{args.connect_host}:{handle.port}"
         print(f"[hs prepare] arm={collect_arm} harness={url} policy={args.policy_url}", flush=True)
-        run(args.config, server_url=url, output_dir=out / "vla_eval", pull=args.pull,
-            benchmark_overrides=overrides, docker=None if not args.no_docker else False)
+        _run_benchmark(args.config, url, out / "vla_eval", overrides, args.pull, args.no_docker)
         server.wait_idle()
     (out / "dev_records.jsonl").write_text("".join(json.dumps(r, default=str) + "\n" for r in server.records))
     prepared = build_prepared(config, server.records, out)
@@ -107,6 +106,24 @@ def _cmd_eval(args) -> int:
     return 0
 
 
+def _run_benchmark(config, url: str, output_dir: Path, overrides, pull: bool, no_docker: bool) -> None:
+    """One benchmark run per arm, always in a fresh process: Docker runs get their own container, and
+    in-process (--no-docker) runs get a child interpreter, because some simulators' resets depend on what
+    the process ran before (RoboCasa365 renders different first frames after earlier episodes)."""
+    import subprocess
+    if not no_docker:
+        from vla_eval.api import run
+        run(config, server_url=url, output_dir=output_dir, pull=pull, benchmark_overrides=overrides, docker=None)
+        return
+    code = ("import json, sys; from vla_eval.api import run; a = json.loads(sys.argv[1]); "
+            "run(a['config'], server_url=a['url'], output_dir=a['out'], benchmark_overrides=a['overrides'], "
+            "docker=False)")
+    payload = json.dumps({"config": str(config), "url": url, "out": str(output_dir), "overrides": overrides})
+    proc = subprocess.run([sys.executable, "-c", code, payload])
+    if proc.returncode != 0:
+        raise RuntimeError(f"benchmark run failed with exit code {proc.returncode}")
+
+
 def _run_arms(args) -> dict:
     from vla_eval.api import run, serve_background
     from .eval.pairing import summarize
@@ -120,8 +137,7 @@ def _run_arms(args) -> dict:
         with serve_background(server, host=args.host, port=args.port) as handle:
             url = f"ws://{args.connect_host}:{handle.port}"
             print(f"[hs eval] arm={arm} harness={url} policy={args.policy_url}", flush=True)
-            run(args.config, server_url=url, output_dir=out / arm / "vla_eval", pull=args.pull,
-                benchmark_overrides=overrides, docker=None if not args.no_docker else False)
+            _run_benchmark(args.config, url, out / arm / "vla_eval", overrides, args.pull, args.no_docker)
             server.wait_idle()
         records[arm] = server.records
         (out / arm / "records.jsonl").write_text("".join(json.dumps(r, default=str) + "\n" for r in server.records))
