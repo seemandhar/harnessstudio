@@ -187,6 +187,12 @@ def validate(config: MethodConfig) -> MethodConfig:
         raise RegistrationError("A selector needs a proposer with num_samples >= 2")
     if (k > 1 or "sampler" in config.slots) and not {"seeded_sampling", "chunk"} <= set(config.required):
         raise RegistrationError("Multiple samples or a sampler need 'chunk' and 'seeded_sampling'")
+    readouts = (proposer.params.get("readouts") or ()) if proposer else ()
+    needs = {"velocity": "velocity_readout", "attention": "attention_readout", "logits": "logits_readout",
+             "futures": "predicted_futures"}
+    for r in readouts:
+        if r in needs and needs[r] not in config.required:
+            raise RegistrationError(f"Readout {r!r} needs capability {needs[r]!r}")
     if "sampler" in config.slots and "denoise_hooks" not in config.required \
             and "differentiable_denoiser" not in config.required:
         raise RegistrationError("A sampler needs 'denoise_hooks' or 'differentiable_denoiser'")

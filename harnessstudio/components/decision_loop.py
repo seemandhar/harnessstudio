@@ -31,6 +31,8 @@ class DecisionLoop:
         self.monitor = build("monitor")
         self.sampler_ref = config.slots["sampler"].to_json() if "sampler" in config.slots else None
         self.num_samples = int(getattr(self.proposer, "num_samples", 1)) if self.proposer else 1
+        # Policy-side readouts (T2/T3, e.g. "velocity") requested with every sample; they arrive in extras.
+        self.readouts = tuple(getattr(self.proposer, "readouts", ()) or ())
         if getattr(self.executor, "sees_proposals", False) and self.num_samples < 2:
             raise ValueError("An executor with sees_proposals needs a proposer with num_samples >= 2")
         self.history: list[dict] = []
@@ -69,7 +71,7 @@ class DecisionLoop:
         if ctx._profile.seeded:
             proposals = await ctx.policy.sample(
                 k, obs=policy_obs, instruction=policy_text,
-                sampler=self.sampler_ref if arms.sampler_effective(arm) else None)
+                sampler=self.sampler_ref if arms.sampler_effective(arm) else None, readouts=self.readouts)
         else:
             if k > 1:
                 raise RuntimeError("Multiple samples need a seeded policy")

@@ -1,0 +1,3 @@
+# harnessstudio.policy_ext.fake.FakePolicyServer(seeded=True): seeded chunks + a synthetic velocity readout
+capabilities: [act, chunk, seeded_sampling, isolated_streams, velocity_readout]
+chunking: harness

@@ -62,7 +62,10 @@ def _by_case(records: list[dict]) -> dict:
 
 
 def default_profile(config: MethodConfig) -> str:
-    return "fake-t0" if set(config.required) <= set(load_profile("fake-t0").capabilities) else "fake-t1"
+    for name in ("fake-t0", "fake-t1", "fake-t2"):
+        if set(config.required) <= set(load_profile(name).capabilities):
+            return name
+    return "fake-t2"
 
 
 def run(config: MethodConfig, profile: Optional[str] = None, module: Optional[str] = None) -> Report:

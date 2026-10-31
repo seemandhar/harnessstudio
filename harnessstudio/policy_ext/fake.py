@@ -80,8 +80,8 @@ class FakePolicyServer(HarnessPolicyMixin, _FakeNative):
     def __init__(self, *args, seeded: bool = True, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.seeded = seeded
-        self.harness_capabilities = (frozenset({"act", "chunk", "seeded_sampling", "isolated_streams"})
-                                     if seeded else frozenset({"act", "chunk"}))
+        self.harness_capabilities = (frozenset({"act", "chunk", "seeded_sampling", "isolated_streams",
+                                                "velocity_readout"}) if seeded else frozenset({"act", "chunk"}))
 
     async def on_observation(self, obs, ctx) -> None:  # type: ignore[override]
         if "harnessstudio" in obs:
@@ -92,4 +92,13 @@ class FakePolicyServer(HarnessPolicyMixin, _FakeNative):
         await super().on_observation(obs, ctx)
 
     def sample_chunks(self, obs, seeds: Sequence[int], sampler: Optional[Mapping], readouts, ctx):
-        return [(self.chunk(obs, seed), {"seed": seed}) for seed in seeds]
+        out = []
+        for seed in seeds:
+            chunk = self.chunk(obs, seed)
+            extras = {"seed": seed}
+            if "velocity" in readouts:  # [denoise steps, H, A], deterministic in (obs, seed), like GR00T's readout
+                rng = np.random.default_rng([seed, _digest32(obs), 1])
+                extras["velocity"] = rng.normal(0.0, 1.0, (4, self.chunk_len, self.action_dim)).astype(np.float32)
+                extras["timesteps"] = [0.0, 0.25, 0.5, 0.75]
+            out.append((chunk, extras))
+        return out
