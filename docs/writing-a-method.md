@@ -4,6 +4,16 @@ A method is a pip package under `methods/<slug>/` that registers a `harnessstudi
 The framework owns the episode loop, the policy connection, seeds, budgets, arms and traces. A method
 only decides what to do with observations, policy samples and actions.
 
+## Start from a scaffold
+
+```bash
+hs new rtcf --category memory_retrieval --kind slot --paper arXiv:2608.04527 --title "RTCF"
+hs new harness_vla --category agentic_orchestration --kind controller --llm --paper arXiv:2607.08448
+uv pip install --python .venv/bin/python -e methods/rtcf && hs verify rtcf
+```
+
+The scaffold installs and passes tier 1 before any paper logic is written; replace the TODOs.
+
 ## Layout
 
 ```

@@ -123,6 +123,15 @@ def _cmd_eval(args) -> int:
     return 0
 
 
+def _cmd_new(args) -> int:
+    from .scaffold import create
+    base = create(args.slug, name=args.name or args.slug.replace("_", "-"), category=args.category, kind=args.kind,
+                  paper=args.paper, title=args.title or args.slug, llm=args.llm, root=Path(args.root))
+    print(f"created {base}\nnext:\n  uv pip install --python .venv/bin/python -e {base}\n"
+          f"  hs verify {args.name or args.slug.replace('_', '-')}")
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="hs", description=__doc__)
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -166,6 +175,17 @@ def main(argv=None) -> int:
     p.add_argument("--pull", action="store_true")
     p.add_argument("--no-docker", action="store_true")
     p.set_defaults(fn=_cmd_eval)
+
+    p = sub.add_parser("new", help="scaffold a method package under methods/")
+    p.add_argument("slug", help="package folder name, [a-z0-9_]+")
+    p.add_argument("--name", default=None, help="method (entry point) name; default: slug with dashes")
+    p.add_argument("--category", required=True, choices=sorted(CATEGORIES))
+    p.add_argument("--kind", default="slot", choices=("slot", "controller"))
+    p.add_argument("--paper", default="none", help="e.g. arXiv:2607.08448")
+    p.add_argument("--title", default=None)
+    p.add_argument("--llm", action="store_true", help="controller with a pinned runtime LLM operator")
+    p.add_argument("--root", default="methods")
+    p.set_defaults(fn=_cmd_new)
 
     p = sub.add_parser("prepare", help="development stage: run development cases and pin artifacts")
     serving(p)

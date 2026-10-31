@@ -54,6 +54,7 @@ methods/<slug>/
   hs_<slug>/__init__.py   # components + config()
 ```
 
+`hs new <slug> --category <id> [--kind controller --llm]` scaffolds one that already passes tier 1;
 `pip install -e methods/<slug>` and it shows up in `hs list`. Full guide: [docs/writing-a-method.md](docs/writing-a-method.md).
 
 **Slot methods** fill the default decision loop:
