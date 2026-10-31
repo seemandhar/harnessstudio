@@ -25,7 +25,7 @@ import numpy as np
 
 from ..core.errors import BudgetExceeded, RegistrationError
 
-PRESETS = {"nrp": "https://ellm.nrp-nautilus.io/v1"}
+PRESETS = {"nrp": "https://ellm.nrp-nautilus.io/v1", "openai": "https://api.openai.com/v1"}
 FORBIDDEN_MODEL_WORDS = ("astra",)
 
 
