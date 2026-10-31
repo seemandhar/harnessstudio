@@ -528,3 +528,10 @@ the task is done, or stops retrying after a silent failure. The headline `harnes
 be read as "with an oracle not-done signal"; the no-cue numbers are the fair comparison with the frozen policy.
 Whether the paper's RPent setup provides a similar signal (its env server also ends episodes on success) was not
 determined.
+
+### No-cue extension to all eight cells (predeclared 2026-10-31 ~11:45 PT, before any run)
+
+Because the no-cue variant is the fair comparison with the frozen policy, `harness-vla-sol-nocue` is run on the
+six remaining LIBERO-Pro cells (spatial / object / libero_10 x task / swap), 10 tasks x episodes 0-1, candidate
+arm only, same configs and servers; paired with the existing baseline and cue-version records on the same scenes
+(first-observation hashes checked). Budget about $25.
