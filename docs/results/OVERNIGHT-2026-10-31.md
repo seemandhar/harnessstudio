@@ -22,6 +22,7 @@ method packages (`hs new`, `hs verify` tiers 0/1/2, `hs eval`, `hs prepare`, `hs
 |---|---|---|---|---|
 | Harness VLA (zero-shot) | `harness-vla` (NRP qwen3-vl planner) | adapted | LIBERO-Pro Goal-T + Goal-S, 100 cases | 30/100 vs baseline 23/100 (p = 0.32) |
 | Harness VLA (zero-shot) | `harness-vla-sol` (gpt-6.1-sol planner) | adapted | same 100 cases | **55/100 vs 23/100 (+41 / -9, p = 5.6e-6)**; Goal-T 27/50, Goal-S 28/50 (paper zero-shot: 79.0 / 31.0) |
+| Harness VLA (zero-shot) | `harness-vla-sol` | adapted | all 8 LIBERO-Pro cells, 10 tasks x 2 eps (160) | **84/160 (52.5%) vs 39/160 (24.4%), +61 / -16, p = 2.4e-7**; better in every cell |
 | SCALE (OpenVLA decoding) | `scale` | see results doc | LIBERO-10, 10 tasks x 3 episodes | 20/30 vs greedy 16/30 (p = 0.45); paper greedy 52.7 -> SCALE 63.3 |
 | FastHarness | `fast-harness` (gpt-6.1-sol reviewer) | adapted | RoboDojo build_tower | in progress |
 

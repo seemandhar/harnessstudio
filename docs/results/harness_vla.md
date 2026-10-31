@@ -316,3 +316,28 @@ perturbations, 10 tasks x 2 episodes (episodes 0-1) each = 120 cases, official h
 baseline and candidate arms, same servers and settings (`configs/libero_pro_{spatial,object,10}_{task,swap}.yaml`).
 Budget: about $25 more OpenAI usage. Results are reported per cell together with Goal (episodes 0-1 of the
 100-case runs) for an 8-cell table.
+
+### Results: all eight LIBERO-Pro cells (episodes 0-1; finished 2026-10-31 ~07:30 PT)
+
+`harness-vla-sol` (gpt-6.1-sol planner) vs the frozen pi05_libero baseline, 10 tasks x 2 episodes per cell,
+official horizons, all 320 episodes valid. Goal cells use episodes 0-1 of the 100-case runs above. Pairing per
+cell by case (duplicate instructions in goal_task and spatial_task disambiguated by occurrence order,
+`scripts/merge_arms.py`). Table: `runs/sol/eight_cells.json`.
+
+| Cell | n | Baseline | Harness | wins / losses | sign-test p |
+|---|---|---|---|---|---|
+| Goal-T | 20 | 3 | 11 | +8 / -0 | 0.008 |
+| Goal-S | 20 | 6 | 13 | +10 / -3 | 0.092 |
+| Spatial-T | 20 | 8 | 9 | +7 / -6 | 1.0 |
+| Spatial-S | 20 | 7 | 12 | +6 / -1 | 0.13 |
+| Object-T | 20 | 2 | 14 | +14 / -2 | 0.004 |
+| Object-S | 20 | 7 | 15 | +10 / -2 | 0.039 |
+| LIBERO-10-T | 20 | 4 | 5 | +2 / -1 | 1.0 |
+| LIBERO-10-S | 20 | 2 | 5 | +4 / -1 | 0.38 |
+| **All** | **160** | **39 (24.4%)** | **84 (52.5%)** | **+61 / -16** | **2.4e-7** |
+
+For reference the paper reports zero-shot only for Goal (T 79.0, S 31.0) and an overall LIBERO-PRO 82.4% for
+the few-shot (memory) mode with Claude Code; RPent's leaderboard (Astra + memory) is 92.6%. This run is
+zero-shot, open-loop-free of any task memory, with a different base checkpoint and 256 px images, so it is a
+lower bound for the method rather than a replication of those numbers. LIBERO-10 gains are small: long tasks
+hit the 520-step horizon (RPent used a 10,000-step budget).

@@ -4,14 +4,11 @@ Status: **in progress** (started 2026-10-31 02:40 PT). This file is updated as r
 
 ## Core requests
 
-1. `harnessstudio/profiles/fake-t2.yaml` should list `decoding_hooks`. The fake policy ignores samplers, but
-   without the capability `hs verify scale` (tier 1, default profile) fails with "fake-t2 lacks decoding_hooks".
-   Workaround used here: `hs verify scale --profile methods/scale/profiles/fake-t2-decoding.yaml` (a copy of
-   fake-t2 plus `decoding_hooks`, inside the method folder).
-2. (Nice to have) `hs eval` cannot start at an episode offset or split one arm across two policy servers, so
-   the subset below runs some arms as separate `hs eval --arms ...` invocations and pairs them with
-   `harnessstudio.eval.pairing.summarize` (script `hs2-gpu/scale/pair_runs.py`). A `--cases`/episode-offset
-   option and an `hs pair DIR...` command would make this a single command.
+Both were implemented by the coordinator in `e68c01b` (2026-10-31): `fake-t2.yaml` now lists `decoding_hooks`
+(plain `hs verify scale` passes; the method-local profile copy was removed) and `hs pair --arm ARM=DIR ...`
+pairs separately run arms. Still open (minor): `hs pair` keeps only the last `--arm` per arm name, so an arm
+split across two servers must be concatenated into one `records.jsonl` first (done here); vla-eval cannot start
+at an episode offset (worked around below with a benchmark subclass, `hs2-gpu/scale/bench/libero_offset.py`).
 
 ## What was built
 
@@ -19,7 +16,7 @@ Status: **in progress** (started 2026-10-31 02:40 PT). This file is updated as r
 |---|---|
 | `harnessstudio/policies/openvla_hs.py` (new core file) | `HarnessOpenVLAServer` = vla-eval 0.8.0 `OpenVLAModelServer` + `HarnessPolicyMixin`. Native requests: vla-eval's greedy `predict_action` unchanged. Seeded requests: `sampler=None` -> the same native greedy prediction (baseline, null); `sampler={factory, params}` -> imports the factory (module prefix `hs_`) and runs the official SCALE KV-cached token loop with the decoder's hooks, one `torch.Generator(cuda).manual_seed(seed)` per seed, vision-attention temperature on both ViTs with the stock attention restored afterwards, per-(session, episode, sampler) decoder state reset at EPISODE_START. Capabilities `act, chunk, seeded_sampling, isolated_streams, decoding_hooks`. |
 | `harnessstudio/profiles/openvla-libero-hs.yaml` (new core file) | those capabilities, `chunking: harness`, `execute_horizon: 1` (OpenVLA returns one action per step). |
-| `methods/scale/` (`hs-scale`, entry point `scale`) | `hs_scale.decoder:ScaleDecoder` (the algorithm: Eq. 2-8, official arithmetic op for op), `hs_scale:SingleSample` proposer (K = 1), `paper.yaml` (fidelity `faithful`, requires `decoding_hooks`), tier-1 profile copy. |
+| `methods/scale/` (`hs-scale`, entry point `scale`) | `hs_scale.decoder:ScaleDecoder` (the algorithm: Eq. 2-8, official arithmetic op for op), `hs_scale:SingleSample` proposer (K = 1), `paper.yaml` (fidelity `faithful`, requires `decoding_hooks`). |
 | `hs2-gpu/configs/openvla_libero10_hs.yaml`, `hs2-gpu/configs/libero10_scale.yaml`, `hs2-gpu/start_openvla.sh` | server launch config (same args as vla-eval's `openvla/libero_10.yaml`), LIBERO-10 benchmark overlay (Docker, GPU 5), launcher. |
 | `hs2-gpu/scale/{obs_recorder.py, check_server.py, agree_official.py}` | observation recorder relay, wire-level server checks, token-level agreement with the official code. |
 
@@ -44,9 +41,9 @@ SCALE hyperparameters (official `configs/scale.yaml`, "tuned on LIBERO-Long and 
 
 ## Verification
 
-**Tiers 0/1** (CPU): `hs verify scale --tier 0` PASS; `hs verify scale --profile methods/scale/profiles/fake-t2-decoding.yaml`
-PASS (all three arms valid, derived null reproduces baseline actions, candidate deterministic, case-order
-independent, clean-interpreter import). Without `--profile` tier 1 fails only on the missing capability (Core request 1).
+**Tiers 0/1** (CPU): `hs verify scale --tier 0` PASS; `hs verify scale` (fake-t2) PASS: all three arms valid,
+derived null reproduces baseline actions, candidate deterministic, case-order independent, clean-interpreter
+import. (Before `e68c01b` this needed a profile copy with `decoding_hooks`.)
 
 **Server = stock vla-eval, natively.** One LIBERO-10 episode (task 0, episode 0; 520 steps, a failure) run directly
 (no harness) against vla-eval's stock `openvla.py` server and against `openvla_hs.py`: every recorded action and
@@ -109,7 +106,65 @@ Subset runs (started 03:05 PT): candidate on server 8116; baseline then null (ta
 (tasks 3-9) on 8116 after the candidate. Both servers are the same file, config and checkpoint on GPU 5, so the
 null-vs-baseline attribution also checks cross-process determinism for tasks 3-9.
 
-(pending)
+### Predeclared subset: libero_10, 10 tasks x episodes 0-2 (complete)
+
+| Arm | Successes | vs baseline (wins / losses, sign-test p) | Policy samples | Arm wall time |
+|---|---|---|---|---|
+| baseline (greedy) | **16/30** | - | 11,837 | 6,090 s |
+| null (derived, greedy) | **16/30** | +0 / -0 (p = 1.0) | 11,837 | 1,922 s + 4,203 s (two servers, in parallel with other arms) |
+| candidate (SCALE) | **20/30** | **+10 / -6 (p = 0.45)** | 10,958 | 5,846 s |
+
+- Candidate vs null: +10 / -6 (p = 0.45). All 90 episodes valid.
+- Null vs baseline: **30 M / 0 R / 0 X** (every observation and action hash equal at every step). For tasks 3-9 the
+  null ran on the second server process (8116) and the baseline on 8115, so this is also a cross-process bitwise
+  determinism check of the greedy path.
+- Baseline 16/30 = 53%, in line with vla-eval's reproduction (52.8%) and the SCALE paper's greedy (52.7%).
+  Candidate 20/30 = 67% (paper: 63.3%). With n = 30 and 16 discordant pairs the difference is **not significant**.
+- Per task (baseline -> candidate, of 3): alphabet soup + tomato sauce 1 -> 3; cream cheese + butter 3 -> 3;
+  stove + moka pot 1 -> 3; black bowl in drawer 2 -> 2; white mug left plate + yellow-white mug right plate
+  3 -> **0**; book in caddy 3 -> 2; white mug on plate + pudding 0 -> 2; alphabet soup + cream cheese 0 -> 3;
+  both moka pots 1 -> 1; yellow-white mug in microwave 2 -> 1. The gain is concentrated in four tasks and one
+  task regresses completely.
+- Steps executed: baseline 11,837, candidate 10,958 (SCALE costs the same one forward pass per step; it is not
+  slower per step, 0.30 vs 0.31 s on the check above).
+- Decision rule (candidate > baseline and > null on the complete subset): **met**, so the extension runs.
+
+Commands (from `/home/sejain/research/cvpr27/vla-eval-v0.8.0`; `hs2-gpu/scale/run_arm.sh` wraps them):
+
+```bash
+hs eval scale --config /home/sejain/research/cvpr27/hs2-gpu/configs/libero10_scale.yaml --policy-url ws://127.0.0.1:8116 \
+  --contract libero --profile openvla-libero-hs --arms candidate --benchmark-overrides '{"episodes_per_task": 3}' \
+  --out /home/sejain/research/cvpr27/hs2-gpu/results/scale/subset_l10_cand
+hs eval scale ... --policy-url ws://127.0.0.1:8115 --arms baseline --out .../subset_l10_base
+hs eval scale ... --policy-url ws://127.0.0.1:8115 --arms null \
+  --benchmark-overrides '{"episodes_per_task": 3, "tasks": [<tasks 0-2>]}' --out .../subset_l10_null_a
+hs eval scale ... --policy-url ws://127.0.0.1:8116 --arms null \
+  --benchmark-overrides '{"episodes_per_task": 3, "tasks": [<tasks 3-9>]}' --out .../subset_l10_null_b
+cat .../subset_l10_null_{a,b}/null/records.jsonl > .../subset_l10_null/null/records.jsonl
+hs pair --arm baseline=.../subset_l10_base/baseline --arm null=.../subset_l10_null/null \
+  --arm candidate=.../subset_l10_cand/candidate --out .../subset_l10_paired
+```
+
+(Task lists: `hs2-gpu/scale/ovr_null_{a,b}.json`. Per-task and per-case table: `results/scale/subset_l10_paired/extra.json`
+from `hs2-gpu/scale/pair_runs.py`.)
+
+### Extension: libero_10 episodes 3-5 (running)
+
+Same setup, LIBERO initial states 3, 4, 5 for every task (30 new cases). vla-eval always runs episodes
+0..N-1, so the benchmark is `hs2-gpu/scale/bench/libero_offset.py:LIBEROEpisodeOffset` (vla-eval's
+LIBEROBenchmark; `episode_offset = 3` is added to the task's `episode_idx` in place before the runner builds the
+EPISODE_START payload, so case keys and seeds carry the true episode index), mounted into the container
+(`hs2-gpu/configs/libero10_scale_offset.yaml`). Arms: baseline + null (tasks 0-6) on 8115, candidate + null
+(tasks 7-9) on 8116. The extension baseline started at 05:35 PT, before the subset's second null part finished
+(05:53); the rule was met, so it counts. It would have been reported but not counted otherwise.
+
+### Second suite (predeclared 05:54 PT, before any libero_goal arm ran): libero_goal
+
+- **libero_goal**, 10 tasks x episodes 0-2 = 30 cases, seed 7, `num_steps_wait = 10`, official horizon 300,
+  checkpoint `openvla/openvla-7b-finetuned-libero-goal` (`unnorm_key: libero_goal`; vla-eval reproduction 79.0%,
+  SCALE paper greedy 77.7 -> SCALE 82.3), same server file and SCALE defaults (tuned on Long, applied unchanged).
+- Arms and statistics as for libero_10. Runs after the libero_10 extension: candidate + null (tasks 4-9) on 8116,
+  baseline + null (tasks 0-3) on 8115, each server restarted with the goal checkpoint.
 
 ## Deviations and disclosures
 

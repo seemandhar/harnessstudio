@@ -4,6 +4,12 @@ Status: **in progress** (overnight run, 2026-10-31). This document is updated as
 
 ## Core requests (for the HarnessStudio core)
 
+Status 03:50 PDT: requests 1-4 were implemented in the core by the coordinator (commit `e68c01b`: `token_param` /
+automatic `max_completion_tokens` for the `openai` preset, chained `hs prepare --prepared`, `return_usage=True` /
+`last_usage`, `--action-timeout`). The method keeps its shim for the rest of tonight's run series so every arm runs
+identical method code (the shim is compatible with the new core and only re-sends the same parameter); remove
+`install_completion_tokens_operator` after the series. Requests 5-6 are open.
+
 1. **Blocker: `OpenAICompatibleOperator` always sends `max_tokens`; OpenAI's gpt-6.1-sol rejects it** (HTTP 400
    "Unsupported parameter: 'max_tokens' ... Use 'max_completion_tokens' instead"; also only `temperature: 1` is
    accepted, which the card can already set). Request: an `OperatorPin` field (e.g. `token_param:
@@ -138,6 +144,22 @@ and force the next review (the paper aborts the episode except in its degraded f
   *Amendment 03:25 PDT, before any RoboDojo episode ran:* stage B was "seed 0, episode 1". vla-eval's RoboDojo adapter
   assigns layouts by a per-process cursor (episode i of a run gets the i-th good layout), so seed-0 episode 1 can only
   run after re-running episode 0; layout group 2, episode 0 is an equally fresh held-out layout at half the cost.
+- **Stage C (conditional, predeclared 03:58 PDT while stage A's null arm was running and before any candidate/null
+  outcome was inspected; only the baseline arm had finished):** if at least 2.5 h of the night remain after stage B
+  and the token budget allows, a second paper task, `stack_bowls` (step_lim 800): development layout group 1,
+  episodes 0-1 (cold, `hs prepare`, case namespace `seed1`), held-out layout group 0, episode 0: cold, warm, baseline,
+  then null if time remains.
+- **Stage D (development-only diagnostic, predeclared 05:55 PDT after stage A, before stage B outcomes; takes
+  precedence over stage C):** stage A showed the warm arm almost never matches its experience on a new layout
+  (median nearest-example distance 0.087 vs threshold 0.06). FastHarness's own protocol most likely repeats one layout,
+  so stage D measures that regime as development data (outcomes allowed, no held-out claim): chained `hs prepare`
+  (core feature added tonight) on layout group 1, episode 0 (the same scene as development episode seed1/0) for three
+  consecutive episodes D1-D3, each starting from the experience accumulated so far (D1 from the stage A artifact; case
+  namespaces `seed1-rep1..3` so the repeated scene is not refused as an earlier development case). Compared quantity:
+  reviewer tokens / reviews / skip rate per repetition vs the cold first visit of the same layout (dev seed1/0:
+  403,495 prompt tokens, 49 reviews), i.e. the paper's "first episode vs later episodes" metric with n = 3 later
+  episodes. The Preparer gained `build(..., previous=...)` so chained artifacts replay new mutations on top of the
+  earlier store (checked: chained replay == one-shot replay, and replay reproduces the pinned stage A artifact).
 - **Reported per arm/episode:** success, score, accepted reviews and all LLM calls, prompt / completion (incl.
   reasoning) / cached tokens, wall time, chunks, fast-path (skip) rate, recovery events, takeovers.
 - **Comparison to the paper:** cold vs warm tokens (paper: -57.2% per task, build tower -67%), episode time
@@ -145,7 +167,89 @@ and force the next review (the paper aborts the episode except in its degraded f
   success-rate claim is possible; token and wall-time deltas are per-episode measurements.
 - **API budget:** <= 4M prompt tokens and <= 0.4M completion tokens in total (about $30 at an assumed $5/M input and
   $25/M output; gpt-6.1-sol pricing is not recorded locally). Stop scheduling LLM arms if the projection exceeds it.
+  *Amendment 04:40 PDT (cost guard only, not a scientific gate):* third-party price listings give gpt-6.1-sol at
+  $2/M input ($0.10/M cached) and $10/M output (one lists $1/$5; no official rate sheet was reachable), so the cap is
+  restated as **<= $25 estimated at $2/$10** (about 7M prompt + 0.6M completion tokens), keeping margin under the
+  user's ~$30. Spent at this point: ~1.51M prompt + ~0.15M completion tokens (~$4.5) incl. both smokes.
+  Sources: techenclave.com/news/items/openai-releases-gpt-6-1-sol-for-codex-chatgpt-work-and-the-api,
+  anotherwrapper.com/llm-pricing/gpt-6.1-sol, pricepertoken.com/pricing-page/model/openai-gpt-6.1-sol.
 
 ## Results
 
-(pending)
+### Tier 2 (= stage A baseline / null / cold), held-out `build_tower`, layout group 0, episode 0
+
+`hs verify fast-harness --tier 2 ... --contract robodojo --profile robodojo-pi05-hs --no-docker`
+(`/bigdata/sejain/hs2-cache/robodojo/runs/fh_tier2_seed0`): **PASS**. All episodes valid; null vs baseline
+**M 0 / R 1 / X 0**. The R is environment branching: the two arms' observation hashes already differ at step 0
+(0/1050 equal). Isaac's RTX renderer is not bitwise reproducible across processes, so the native pi0.5 trajectories
+diverge from the first frame. Consequence: single-episode success differences between arms on RoboDojo are dominated
+by renderer branching (here the null arm, which executes the native policy, succeeded while the baseline failed);
+per-episode token / review / time measurements remain comparable.
+
+| arm | success | score | steps | reviews (LLM calls) | prompt tok | completion tok | chunks | takeovers | recoveries | wall (min) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| baseline (pi0.5 alone) | no | 0.3 | 1050 | 0 | 0 | 0 | - | - | - | 11.7 |
+| null (shadow, cold controller) | yes | 1.0 | 715 | 51 (51) | 417,506 | 40,993 | 51 | (native) | - | 17.5 |
+| cold candidate | no | 0.3 | 1050 | 86 (86) | 809,333 | 71,583 | 86 | 19 | 8 | 28.4 |
+
+Cold candidate details: every chunk reviewed (paper's episode-1 behaviour); 0 schema rejections; 10.8 s per review on
+average (928 s of LLM time); 23 checkpoints; the recovery budget (24 chunks) ran out late in the episode, after which
+9 chunks ran as unreviewed passthrough (as FastHarness specifies). Review triggers: `unknown_context` 41,
+`recovery` 24, `previous_uncertainty` 8, `recovery_replan` 8. gpt-6.1-sol coined **26 distinct stage slugs**, mostly
+ordinal ("grasp-third-block", "place-second-board"), which fragments per-stage statistics; and the 590-D features
+rarely fall within RMS 0.06 of a stored example even inside one episode (41 `unknown_context`). Both predict little
+warm skipping on a new layout.
+
+### Development (`hs prepare`, cold candidate), layout group 1, episodes 0-1
+
+`/bigdata/sejain/hs2-cache/robodojo/runs/fh_prepare_seed1` (`prepared.json`: experience artifact sha256
+`b9df7b89...`, dev cases `robodojo@seed1/robodojo/build_tower/{0,1}`, both valid).
+
+| dev episode | success | score | steps | reviews | prompt tok | completion tok | takeovers | wall (min) |
+|---|---|---|---|---|---|---|---|---|
+| seed1 / 0 | yes | 1.0 | 701 | 49 | 403,495 | 39,356 | 0 | 17.2 |
+| seed1 / 1 | yes | 1.0 | 700 | 48 | 402,580 | 38,113 | 0 | 16.8 |
+
+Frozen experience: 12 stages, 97 stage examples, 95 reviewed outcome events, 0 error cases; confirmed successes per
+stage 1-16 (e.g. `approach-next-block` 16, `place_first_piece` 16, `place-next-block` 11). Stage slugs again vary
+between episodes (`approach-first-block` vs `approach_first_piece`).
+
+### Stage A: cold vs warm on the held-out episode (layout group 0, episode 0)
+
+Warm = `hs eval fast-harness --arms candidate --prepared fh_prepare_seed1` (`/bigdata/sejain/hs2-cache/robodojo/runs/fh_warm_seed0`);
+the controller loaded the artifact (`memory_source=artifact`, 12 stages / 97 examples).
+
+| arm | success | score | reviews | prompt tok | completion tok | chunks | fast-path chunks (skip rate) | takeovers | recoveries | wall (min) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| baseline | no | 0.3 | 0 | 0 | 0 | - | - | - | - | 11.7 |
+| null | yes | 1.0 | 51 | 417,506 | 40,993 | 51 | 0 | - | - | 17.5 |
+| cold | no | 0.3 | 86 | 809,333 | 71,583 | 86 | 0 (0%) | 19 | 8 | 28.4 |
+| **warm** | no | 0.1 | 88 | 719,504 | 71,818 | 86 | 3 (3.5%) | 5 | 5 | 28.7 |
+
+**Warm vs cold: prompt tokens -11.1%, total tokens -10.2%, reviews +2, wall time +1%.** The paper reports -57.2% per
+task (build tower -67%) and 85.5 -> 52.0 min. Why the fast path almost never fires here: review triggers in the warm
+episode were `unknown_context` 56, `recovery` 16, `contact_gripper` 6, `stage_changed` 3, only 3 chunks skipped. The
+nearest stored example is at median RMS distance 0.087 (10th/90th percentile 0.039 / 0.125) against the 0.06
+threshold: only 23% of warm chunks were "familiar". Even within one cold episode only 42% (held-out) and 11%
+(dev seed1/1) of chunks match an earlier example of the same episode. The 8x8-thumbnail + joint features do not carry
+across layouts, and gpt-6.1-sol's stage slugs vary between episodes (`approach-first-block` vs
+`approach_first_piece`), which splits the statistics further. Success differences between arms are within the
+renderer-branching noise documented above (n = 1 per arm).
+
+### Stage B: held-out layout group 2, episode 0 (case namespace `seed2`)
+
+| arm | success | score | steps | reviews | prompt tok | completion tok | chunks | fast-path (skip) | takeovers | recoveries | wall (min) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| cold | no | 0.3 | 1050 | 73 | 650,126 | 58,068 | 78 | 0 (0%) | 2 | 4 | 24.3 |
+| warm | **yes** | 1.0 | 699 | 46 | 364,049 | 36,187 | 49 | 3 (6.1%) | 0 | 0 | 15.4 |
+| baseline | no | 0.1 | 1050 | 0 | 0 | 0 | - | - | - | - | 10.7 |
+| null (shadow, cold) | no | 0.1 | 1050 | 83 | 720,888 | 68,516 | 86 | 0 | (native) | - | 27.5 |
+
+`hs pair` (baseline / null / cold candidate): 1 paired case, null vs baseline **M 0 / R 1 / X 0**, again diverging at
+step 0 (renderer branching).
+
+Raw warm vs cold: prompt tokens -44%, wall -37%. But the warm episode ended early on success (699 steps) while the
+cold one ran to the 1050-step limit, so most of that difference is episode length, not review scheduling: per
+executed step, prompt tokens are 521 (warm) vs 619 (cold), **-16%**; reviews per chunk 0.94 in both; skip rate 6.1%.
+Whether warm's success is due to the method cannot be told from one episode (stage A shows the null arm, which
+executes the native policy, succeeding where the baseline failed on the same layout).
