@@ -21,6 +21,17 @@ All three arms 10/10: pi0.5 is at ceiling on standard LIBERO-10 episode 0, so an
 no headroom here. Null vs baseline 9 M / 1 R / 0 X (the R: observations diverged at step 36 before any action
 did). Policy samples: baseline 246, null 4,940, candidate 7,060 (K = 20); wall 232 s / 1,262 s / 1,996 s.
 
+### medoid-bon and chunk-interrupt, LIBERO-10 episodes 0-2 (30 cases each)
+
+| Method | Baseline | Null | Candidate | Null vs baseline | Policy samples (b / n / c) |
+|---|---|---|---|---|---|
+| medoid-bon (K=8) | 29/30 | 29/30 | 29/30 | 29 M / 1 R / 0 X | 768 / 6,160 / 6,112 |
+| chunk-interrupt | 29/30 | 29/30 | 29/30 | 30 M / 0 R / 0 X | 768 / 768 / 778 |
+
+Same picture as AAC: pi0.5 is at ceiling on standard LIBERO-10 (97%), so these screens only confirm that the
+methods run cleanly on a new benchmark/policy pair (all episodes valid, 0 X). The single failing case is the
+same for every arm.
+
 ## Second screen: LIBERO-Pro (predeclared 2026-10-31 ~09:40 PT, before any run)
 
 Because pi0.5 is near ceiling on standard LIBERO, the same methods are screened where it is not: LIBERO-Pro
