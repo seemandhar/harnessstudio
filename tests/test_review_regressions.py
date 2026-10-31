@@ -71,3 +71,17 @@ def test_seeds_do_not_reach_methods():
     seen = {k for r in recs for e in r["events"] if e.get("t") == "decision"
             for k in (e.get("diagnostics") or {}).get("selector", {}).get("extras_keys", [])}
     assert recs and "seed" not in seen, seen
+
+
+def test_tasks_sharing_an_instruction_get_distinct_case_keys():
+    from harnessstudio.eval.pairing import summarize
+    policy = FakePolicyServer(chunking="harness", seeded=True)
+    with serve(policy) as ph:
+        hs = HarnessServer(tm.pick_last_k4(), policy_url=ph.url, contract=load_contract("fake"), arm=Arm.BASELINE,
+                           profile=load_profile("fake-t1"))
+        with serve(hs) as hh:
+            run_fake(hh.url, n_tasks=3, episodes=2, horizon=8, duplicate_names=True)
+            hs.wait_idle()
+    keys = {(r["task"], r["episode_idx"]) for r in hs.records}
+    assert len(keys) == 6, keys
+    assert summarize({"baseline": hs.records})["paired_cases"] == 6

@@ -134,6 +134,9 @@ class HarnessServer(ModelServer):
         name = str(task.get("name", ""))
         if task.get("suite") is not None:  # suites can share instructions (LIBERO-Pro perturbations)
             name = f"{task['suite']}/{name}"
+        task_id = task.get("task_id", task.get("task_idx"))
+        if isinstance(task_id, (int, str)) and not isinstance(task_id, bool) and str(task_id) != "":
+            name = f"{name}#{task_id}"  # tasks within a suite can share an instruction (LIBERO-Pro goal_task)
         return CaseKey(bench, name, int(task.get("episode_idx", 0)))
 
     async def on_episode_start(self, config: dict[str, Any], ctx: SessionContext) -> None:
