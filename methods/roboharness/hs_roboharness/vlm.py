@@ -28,6 +28,8 @@ def encode_image(image: Union[np.ndarray, bytes, str]) -> str:
     """PNG data URL, as the original _encode_image (float images in [0, 1] are scaled to uint8 first)."""
     if isinstance(image, str):
         return image if image.startswith("data:image") else "data:image/jpeg;base64," + image
+    if hasattr(image, "convert") and hasattr(image, "size"):   # PIL image (the original logger's frames)
+        image = np.asarray(image.convert("RGB"))
     if isinstance(image, (bytes, bytearray)):
         kind = "png" if bytes(image[:8]) == b"\x89PNG\r\n\x1a\n" else "jpeg"
         return f"data:image/{kind};base64," + base64.b64encode(image).decode("ascii")
