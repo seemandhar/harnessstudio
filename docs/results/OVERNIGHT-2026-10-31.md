@@ -24,7 +24,8 @@ method packages (`hs new`, `hs verify` tiers 0/1/2, `hs eval`, `hs prepare`, `hs
 | Harness VLA (zero-shot) | `harness-vla-sol` (gpt-6.1-sol planner) | adapted | same 100 cases | **55/100 vs 23/100 (+41 / -9, p = 5.6e-6)**; Goal-T 27/50, Goal-S 28/50 (paper zero-shot: 79.0 / 31.0) |
 | Harness VLA (zero-shot) | `harness-vla-sol` | adapted | all 8 LIBERO-Pro cells, 10 tasks x 2 eps (160) | **84/160 (52.5%) vs 39/160 (24.4%), +61 / -16, p = 2.4e-7**; better in every cell |
 | Harness VLA (few-shot) | `harness-vla-sol-fewshot` (prepare-stage task memory) | adapted | Goal-T + Goal-S held-out episodes, 60 exactly matched cases | 38/60 vs zero-shot 33/60 (+11 / -6, p = 0.33) vs baseline 15/60 (+27 / -4) |
-| SCALE (OpenVLA decoding) | `scale` | see results doc | LIBERO-10, 10 tasks x 3 episodes | 20/30 vs greedy 16/30 (p = 0.45); paper greedy 52.7 -> SCALE 63.3 |
+| SCALE (OpenVLA decoding) | `scale` | see results doc | LIBERO-10, 10 tasks x 6 episodes (60) | **38/60 (63%) vs greedy 29/60 (48%), +16 / -7, p = 0.093**; paper 52.7 -> 63.3; null vs baseline 60 M / 0 X |
+| SCALE (OpenVLA decoding) | `scale` | see results doc | LIBERO-Goal, 10 tasks x 3 episodes (30) | 24/30 vs 23/30 (p = 1.0); paper 77.7 -> 82.3 |
 | FastHarness | `fast-harness` (gpt-6.1-sol reviewer; experience frozen by `hs prepare`) | adapted | RoboDojo build_tower (+ stack_bowls), held-out layouts, cold vs warm | tier 2 PASS; port matches the original code on 198,542 randomized checks; **token savings not reproduced**: warm vs cold prompt tokens -11% / -16% per step (build_tower), +26% (stack_bowls) vs the paper's -57%; experience features rarely match across layouts; no success claim (n = 1-2) |
 
 Details: `harness_vla.md`, `scale.md`, `fast_harness.md` in this folder.
