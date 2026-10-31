@@ -1,0 +1,33 @@
+# Shard c (task ids [7, 8, 9]) of LIBERO-Pro object_swap (paper Table III, pi0.5), predeclared subset: all 10 tasks x
+# episodes 0-1 (Table III rows are reported as a sub-subset). Instruction fix for lan/task perturbations
+# (harnessstudio.benchmarks.libero_pro_instructions). Official horizon. hs eval overrides server.url.
+extends: /home/sejain/research/cvpr27/vla-eval-v0.8.0/configs/benchmarks/libero_pro/eval.yaml
+server:
+  url: "ws://localhost:1"
+  timeout: 1800
+docker:
+  image: ghcr.io/allenai/vla-evaluation-harness/libero-pro:latest
+  gpus: "7"
+  user: host
+  env:
+    - HOME=/tmp
+    - LIBERO_CONFIG_PATH=/etc/libero
+    - PYTHONPATH=/hs
+  volumes:
+    - /home/sejain/research/cvpr27/hs2-gpu/libero_pro/libero_config:/etc/libero:ro
+    - /home/sejain/research/cvpr27/hs2-gpu/libero_pro/hf_libero_pro/bddl_files/libero_object_swap:/app/libero-pro/libero/libero/bddl_files/libero_object_swap:ro
+    - /home/sejain/research/cvpr27/hs2-gpu/libero_pro/hf_libero_pro/init_files/libero_object_swap:/app/libero-pro/libero/libero/init_files/libero_object_swap:ro
+    - /home/sejain/research/cvpr27/harnessstudio-v2:/hs:ro
+output_dir: /home/sejain/research/cvpr27/hs2-gpu/roboharness/results/unused
+benchmarks:
+  - benchmark: "harnessstudio.benchmarks.libero_pro_instructions:LIBEROProBDDLInstruction"
+    episodes_per_task: 2
+    tasks:
+      - "pick up the milk and place it in the basket"
+      - "pick up the chocolate pudding and place it in the basket"
+      - "pick up the orange juice and place it in the basket"
+    params:
+      suite: libero_object
+      perturbation: swap
+      seed: 7
+      num_steps_wait: 10
