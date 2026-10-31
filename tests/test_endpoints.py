@@ -44,6 +44,7 @@ def test_astra_pin_with_recorded_confirmation():
     entry = E.operator_entry("openai", "gpt-6-astra", "planner",
                              user_confirmation="user said yes 2026-10-31 for run X (20 calls)")
     assert entry["temperature"] is None and entry["user_confirmation"].startswith("user said yes")
+    OperatorPin(**entry)   # the core accepts a confirmed Astra pin
 
 
 def test_unknown_and_unwired_refused():

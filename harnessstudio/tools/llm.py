@@ -1,7 +1,7 @@
 """Pinned, budgeted runtime LLM/VLM operators (spec 5.5; ported from v1 core/llm.py).
 
 - One exact model per operator on an OpenAI-compatible endpoint; the first call checks /models;
-  there is no fallback model. Astra models are refused.
+  there is no fallback model. Astra models need a pin carrying the user's explicit confirmation (rule 2026-10-31).
 - The API key comes only from the environment variable the paper card names; it is never logged.
 - Requests are logged by hash (images replaced by their hashes), responses in full.
 - Tier 1 never touches the network: controllers provide TIER1_LLM_RESPONSES and the harness server
@@ -94,9 +94,10 @@ class OpenAICompatibleOperator(Operator):
 
     def __init__(self, model: str, base_url: str, api_key_env: str, temperature: Optional[float] = 0.0,
                  timeout: float = 120.0, seed: Optional[int] = None, extra_body: Optional[Mapping] = None,
-                 token_param: Optional[str] = None) -> None:
-        if any(w in model.lower() for w in FORBIDDEN_MODEL_WORDS):
-            raise RegistrationError(f"Model {model!r} is not permitted")
+                 token_param: Optional[str] = None, user_confirmation: str = "") -> None:
+        self.confirmed = bool(str(user_confirmation).strip())
+        if any(w in model.lower() for w in FORBIDDEN_MODEL_WORDS) and not self.confirmed:
+            raise RegistrationError(f"Model {model!r} needs the user's explicit confirmation for this use")
         self.model = model
         self.base_url = PRESETS.get(base_url, base_url).rstrip("/")
         if not (self.base_url.startswith("https://") or self.base_url.startswith(("http://127.0.0.1", "http://localhost"))):
@@ -138,8 +139,10 @@ class OpenAICompatibleOperator(Operator):
         for k, v in self.extra_body.items():
             payload.setdefault(k, v)
         body = self._request("/chat/completions", payload)
-        if any(w in str(body.get("model", "")).lower() for w in FORBIDDEN_MODEL_WORDS):
-            raise RuntimeError("Provider answered with a forbidden model")
+        answered = str(body.get("model", "")).lower()
+        if any(w in answered for w in FORBIDDEN_MODEL_WORDS) and not (self.confirmed and answered.startswith(
+                self.model.lower())):
+            raise RuntimeError("Provider answered with an unconfirmed Astra model")
         return body["choices"][0]["message"].get("content") or "", body.get("usage") or {}
 
 
@@ -178,4 +181,6 @@ def build_operators(pins, scripted: Optional[Sequence[str]] = None) -> dict[str,
         return {pin.name: ScriptedOperator(scripted) for pin in pins} or {"llm": ScriptedOperator(scripted)}
     return {pin.name: OpenAICompatibleOperator(pin.model, pin.base_url, pin.api_key_env, pin.temperature,
                                                seed=pin.seed, extra_body=pin.extra_body,
-                                               token_param=getattr(pin, "token_param", None)) for pin in pins}
+                                               token_param=getattr(pin, "token_param", None),
+                                               user_confirmation=getattr(pin, "user_confirmation", ""))
+            for pin in pins}

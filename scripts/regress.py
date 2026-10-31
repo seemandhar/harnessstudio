@@ -15,13 +15,27 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-PYTHON = REPO / ".venv" / "bin" / "python"
+CANONICAL = Path("/home/sejain/research/cvpr27/harnessstudio-v2")   # the checkout that owns the shared venv
+
+
+def default_python() -> Path:
+    """The venv interpreter: $HS_PYTHON, else this checkout's .venv, else the canonical v2 checkout's .venv
+    (worktrees have no venv of their own; PYTHONPATH makes the worktree code shadow the editable installs)."""
+    for cand in (os.environ.get("HS_PYTHON"), REPO / ".venv" / "bin" / "python",
+                 CANONICAL / ".venv" / "bin" / "python"):
+        if cand and Path(cand).is_file():
+            return Path(cand)
+    raise SystemExit("no HarnessStudio venv python found; pass --python or set HS_PYTHON")
+
+
+PYTHON = None   # set in main()
 HS_MARKERS = (" eval ", " prepare ", " serve ", " verify ")
 
 
@@ -58,10 +72,14 @@ def run(argv: list, source: Path, timeout: int) -> dict:
     t0 = time.monotonic()
     try:
         p = subprocess.run(argv, cwd=source, env=env_for(source), capture_output=True, text=True, timeout=timeout)
-        tail = (p.stdout + p.stderr).strip().splitlines()[-6:]
-        return {"rc": p.returncode, "seconds": round(time.monotonic() - t0, 1), "tail": tail}
+        lines = (p.stdout + p.stderr).strip().splitlines()
+        passed = any(re.match(r"^tier \d: .*: PASS\s*$", ln) for ln in lines)
+        failed = [ln for ln in lines if re.match(r"^\s*\[(FAIL|fail|!!|x)\]", ln) or re.match(r"^tier \d: .*: FAIL", ln)]
+        return {"rc": p.returncode, "seconds": round(time.monotonic() - t0, 1), "pass_line": passed,
+                "failed_lines": failed[:10], "tail": lines[-6:]}
     except subprocess.TimeoutExpired:
-        return {"rc": -1, "seconds": timeout, "tail": [f"timeout after {timeout}s"]}
+        return {"rc": -1, "seconds": timeout, "pass_line": False, "failed_lines": ["timeout"],
+                "tail": [f"timeout after {timeout}s"]}
 
 
 def methods(source: Path) -> list:
@@ -81,7 +99,10 @@ def main(argv=None) -> int:
     ap.add_argument("--out", type=Path, default=None)
     ap.add_argument("--inflight", action="store_true", help="only list running hs processes")
     ap.add_argument("--timeout", type=int, default=900, help="per tier-1 run, seconds")
+    ap.add_argument("--python", type=Path, default=None, help="venv interpreter (default: see default_python)")
     args = ap.parse_args(argv)
+    global PYTHON
+    PYTHON = args.python or default_python()
     running = inflight()
     if args.inflight:
         print(json.dumps({"inflight": running}, indent=1))
@@ -95,7 +116,8 @@ def main(argv=None) -> int:
         t0 = run([str(PYTHON), "-m", "harnessstudio.cli", "verify", name, "--tier", "0"], source, 300)
         t1 = run([str(PYTHON), "-m", "harnessstudio.cli", "verify", name], source, args.timeout)
         report["methods"][name] = {"tier0": t0, "tier1": t1,
-                                   "ok": t0["rc"] == 0 and t1["rc"] == 0 and any("PASS" in x for x in t1["tail"])}
+                                   "ok": all(t["rc"] == 0 and t["pass_line"] and not t["failed_lines"]
+                                             for t in (t0, t1))}
     report["ok"] = report["pytest"]["rc"] == 0 and bool(report["methods"]) and \
         all(m["ok"] for m in report["methods"].values())
     text = json.dumps(report, indent=1)

@@ -44,9 +44,22 @@ def test_valid_controller_and_adapted():
     validate(cfg(fidelity=Fidelity.ADAPTED, substitutions=("Claude Code -> NRP Qwen3",)))
 
 
-def test_astra_operator_refused():
+def test_astra_operator_needs_user_confirmation():
+    # User rule 2026-10-31: Astra is confirm-before-use (banned 2026-10-20 before that).
     with pytest.raises(RegistrationError):
         OperatorPin(name="planner", model="gpt-6-astra", base_url="nrp", api_key_env="K")
+    with pytest.raises(RegistrationError):
+        OperatorPin(name="planner", model="gpt-6-astra", base_url="nrp", api_key_env="K", user_confirmation="  ")
+    pin = OperatorPin(name="planner", model="gpt-6-astra", base_url="openai", api_key_env="K",
+                      user_confirmation="user yes 2026-10-31, run X, <=20 calls")
+    from harnessstudio.tools.llm import build_operators
+    assert build_operators([pin])["planner"].confirmed
+
+
+def test_empty_user_confirmation_keeps_fingerprints():
+    from harnessstudio.core.registry import load
+    cfg = load("harness-vla")
+    assert all("user_confirmation" not in o for o in cfg.to_json()["operators"])
 
 
 def test_crn_seed_is_stable_and_distinct():

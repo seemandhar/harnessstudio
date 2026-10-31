@@ -54,10 +54,14 @@ class OperatorPin:
     seed: Optional[int] = None
     extra_body: Mapping[str, Any] = field(default_factory=dict)
     token_param: Optional[str] = None    # "max_tokens" | "max_completion_tokens"; None = auto by endpoint
+    # Astra models are confirm-before-use (user rule 2026-10-31, was banned 2026-10-20): the pin must carry a record
+    # of the user's explicit yes for this use (who, when, scope). Agents never fill it in themselves.
+    user_confirmation: str = ""
 
     def __post_init__(self):
-        if "astra" in self.model.lower():
-            raise RegistrationError("Astra models are not allowed in this workspace")
+        if "astra" in self.model.lower() and not str(self.user_confirmation).strip():
+            raise RegistrationError("Astra models need the user's explicit confirmation for this use (user rule "
+                                    "2026-10-31): ask the user, then record it in the pin's user_confirmation")
         for value in (self.name, self.model, self.base_url, self.api_key_env):
             if not str(value).strip():
                 raise RegistrationError("Operators need a name, model, base_url and api_key_env")
@@ -143,7 +147,9 @@ class MethodConfig:
             "prepare": self.prepare.to_json() if self.prepare else None,
             "null": self.null, "budgets": vars(self.budgets),
             "artifacts": [vars(a) for a in self.artifacts],
-            "operators": [vars(o) for o in self.operators],
+            # an empty user_confirmation is omitted so pins written before the field keep their fingerprint
+            "operators": [{k: v for k, v in vars(o).items() if not (k == "user_confirmation" and not v)}
+                          for o in self.operators],
             "trainable_parameters": self.trainable_parameters,
         }
 
