@@ -119,6 +119,11 @@ fallback).
 | `subtask-sequencer` | Inner Monologue, arXiv:2207.05608v1 (rule-based, no LLM) | tf_variant | agentic_orchestration | T0 + chunk |
 | `llm-subtask-planner` | Inner Monologue, arXiv:2207.05608v1 (NRP qwen3-vl) | tf_variant | agentic_orchestration | T0 + chunk, LLM |
 | `chunktrust-ahs` | ChunkTrust, arXiv:2609.39754v2 (adaptive horizon from flow velocity) | faithful | execution_monitoring | T1 + velocity readout |
+| `harness-vla` | Harness VLA, arXiv:2607.08448 (zero-shot; NRP qwen3-vl planner) | adapted | agentic_orchestration | T0 + chunk, LLM, SAM3 |
+| `harness-vla-sol` | same, gpt-6.1-sol planner | adapted | agentic_orchestration | T0 + chunk, LLM, SAM3 |
+| `harness-vla-sol-fewshot` | same, few-shot task memory built by `hs prepare` | adapted | agentic_orchestration | T0 + chunk, LLM, SAM3 |
+| `scale` | SCALE, arXiv:2602.04208 (OpenVLA uncertainty-aware decoding) | faithful | uncertainty_compute | T1 + decoding_hooks (`openvla-libero-hs`) |
+| `fast-harness` | FastHarness, arXiv:2610.31427 (gpt-6.1-sol reviewer) | adapted | uncertainty_compute | T0 + chunk, LLM (`robodojo-pi05-hs`) |
 | `first-sample` | example plugin (`examples/plugin_method`) | faithful | proposal_selection | T1 |
 
 All pass tier 0 and tier 1. Ported v1 methods agree with v1 decision for decision on randomized cases
@@ -153,6 +158,19 @@ chunktrust-ahs: 100% over ~17.8k decisions).
   valid, null vs baseline 5 M / 0 R / 0 X ([docs/results/m3_libero_eval_pipeline.md](docs/results/m3_libero_eval_pipeline.md)).
 - **Seeded servers:** pi0.5 and GR00T N1.5 return bitwise-identical chunks for the same seed, in one
   process and after a restart; samples are isolated per seed.
+
+## Paper reproductions (2026-10-31, predeclared subsets, paired arms)
+
+| Method | Benchmark | Frozen policy | Harness | Paper |
+|---|---|---|---|---|
+| Harness VLA zero-shot, gpt-6.1-sol planner | LIBERO-Pro, all 8 cells, 160 cases | 39/160 (24%) | **84/160 (52.5%)**, p = 2.4e-7 | Goal-T 79.0, Goal-S 31.0 (Claude Code) |
+| Harness VLA zero-shot, gpt-6.1-sol planner | LIBERO-Pro Goal-T / Goal-S, 50 + 50 | 8/50, 15/50 | **27/50, 28/50** | 79.0, 31.0 |
+| Harness VLA few-shot | LIBERO-Pro Goal held-out, 60 exact cases | 15/60 | 38/60 (zero-shot 33/60) | 87.0 / 87.0 |
+| SCALE | LIBERO-10, 60 cases (OpenVLA) | 29/60 (48%) | **38/60 (63%)**, p = 0.093 | 52.7 -> 63.3 |
+| FastHarness | RoboDojo build_tower / stack_bowls | - | token savings not reproduced on held-out layouts | -57% reviewer tokens |
+
+All with null vs baseline 0 X. Details, disclosures and an independent compliance audit: `docs/results/`
+(`OVERNIGHT-2026-10-31.md` is the summary). Adapted = the paper's LLM was substituted (Astra is not used).
 
 ## Status
 
