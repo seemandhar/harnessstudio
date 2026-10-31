@@ -71,3 +71,11 @@ def test_contract_filtering_and_horizon():
 def test_all_shipped_contracts_load():
     for name in ("fake", "libero", "libero_pro", "robocasa365"):
         assert load_contract(name).name == name
+
+
+def test_libero_pro_perturbed_suites_use_base_horizon():
+    c = load_contract("libero_pro")
+    assert c.horizon({"suite": "libero_spatial_swap"}) == 220
+    assert c.horizon({"suite": "libero_object_with_mug"}) == 280
+    assert c.horizon({"suite": "libero_10_task"}) == 520
+    assert c.horizon({"suite": "libero_goal"}) == 300

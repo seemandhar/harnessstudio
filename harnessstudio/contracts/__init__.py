@@ -63,8 +63,15 @@ class Contract:
         if name in self.horizons:
             return int(self.horizons[name])
         suite = task.get("suite")
-        if suite is not None and str(suite) in self.suite_horizons:
-            return int(self.suite_horizons[str(suite)])
+        if suite is not None:
+            suite = str(suite)
+            if suite in self.suite_horizons:
+                return int(self.suite_horizons[suite])
+            # Perturbed suites (LIBERO-Pro libero_spatial_swap, libero_object_with_mug, ...) use their base
+            # suite's horizon: the longest listed name that is a "<name>_" prefix.
+            bases = [k for k in self.suite_horizons if suite.startswith(f"{k}_")]
+            if bases:
+                return int(self.suite_horizons[max(bases, key=len)])
         return int(self.default_horizon)
 
 
