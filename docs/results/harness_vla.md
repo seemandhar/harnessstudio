@@ -16,6 +16,16 @@ Status: **complete** (05:45 PT): package, tiers 0/1/2, predeclared 100-case subs
    use the same key for the trace file name. Workaround here: records are paired by occurrence order
    (`methods/harness_vla/scripts/merge_arms.py:disambiguate`), valid because every arm runs tasks in the same
    order; the first task's 5 per-episode trace files per arm are overwritten on disk, its records are not.
+2. **On LIBERO / LIBERO-Pro, `episode_idx` does not fix the whole scene** (found 2026-10-31 in the few-shot run, see
+   "Few-shot mode"). The init state fixes the objects (qpos), but the jointless fixtures (stove, cabinet, rack) are
+   placed at every `env.reset()` from the env's seeded RNG, so episode k's fixtures depend on how many resets the
+   process did on that task's env before it (measured: identical qpos, 1-2 cm fixture shift, 18% of agentview pixels
+   differ). A sequential run gives episode k the (k+1)-th placement; a sharded run or any run that starts at k > 0
+   gives a different one under the same case key. `docs/writing-a-method.md` ("the scene is fixed by
+   `episode_idx`") should say this, and pairing should either require arms to run the same episode sequence per
+   task or the benchmark wrapper should replay the skipped resets. Package-side fix used here:
+   `bench_ext` `match_sequential_resets: true` (verified: first observation hash equal to the sequential baseline
+   record's on Goal-S episodes 1 and 3).
 
 ## Predeclared subset (written before any scored episode)
 
@@ -341,3 +351,137 @@ the few-shot (memory) mode with Claude Code; RPent's leaderboard (Astra + memory
 zero-shot (no task memory), with a different base checkpoint and 256 px images, so it is a
 lower bound for the method rather than a replication of those numbers. LIBERO-10 gains are small: long tasks
 hit the 520-step horizon (RPent used a 10,000-step budget).
+
+## Few-shot mode
+
+The paper's second mode (arXiv:2607.08448 §2.4, RPent `--explore`): before evaluation, an agent explores ONE
+reference seed of each task (with RESET) and writes task-specific memory (audit JSON + replayable recipe JSONL);
+evaluation retrieves the memory for the observed task language, re-localizes everything and reuses the technique.
+Paper: LIBERO-PRO few-shot 82.4% overall (Claude Code), Goal-T 87.0, Goal-S 87.0.
+
+### Implementation (`harness-vla-sol-fewshot`, `methods/harness_vla` only)
+
+| Part | What |
+|---|---|
+| Entry point / card | `harness-vla-sol-fewshot` (`hs_harness_vla:config_sol_fewshot`, card `hs_harness_vla/paper_sol_fewshot.yaml`, fidelity `adapted`): the `harness-vla-sol` controller (v2 code, gpt-6.1-sol, same budgets) with `memory: true` and `prepare=hs_harness_vla.memory:Preparer` |
+| Development | `Preparer.collect_arm = "candidate"`: development episodes run this controller itself. Every turn is traced (`turn` events: thought, commands with parameters, results); the turn during which the goal fires is now traced too (trace-only change, the actions are unchanged) |
+| Reference scene + RESET | `bench_ext` parameter `pin_init_index: 0` starts every development episode from init state 0 (the reference scene, = episode_idx 0) whatever its episode_idx; attempt k runs as episode_idx k-1 (`episode_offset: k-1`) under case namespace `dev-ref0`, so chained rounds never reuse a development case key. Round k is `hs prepare ... --prepared <round k-1>`: it sees the memory written by rounds 1..k-1 (RPent-like iteration) |
+| Memory (`Preparer.build`) | deterministic, no LLM: one JSONL line per attempt (`memory.jsonl`, format `harness-vla-task-memory/1`) in RPent's task-memory shape: audit (localization table = first sighting of every `segment` prompt, prompts that found nothing, outcome, failure lessons = errors / stalls / grasps without lift, the planner's per-turn reasoning) + recipe (the executed primitive sequence with its parameters and results; every `move_to` / `move_pose` target also given as an offset from the landmark it was aimed at). Chained builds append to the previous artifact. Only RPent's task-specific layer; no task-family / global layers, and RPent's shipped corpus (PROVEN_LEVERS, MEMORY.md) is not used |
+| Evaluation | `ctx.artifacts["memory"]` (sha256-pinned, read-only); all attempts whose task language equals `ctx.instruction` are rendered into the first planner message (latest successful attempt in full, the others as outcome + what failed); the system prompt gets one paragraph on how to use it (RPent PROVEN_LEVERS framing: reuse technique, re-localize, never copy coordinates). Two Goal-T tasks share the instruction "put the wine bottle in the bowl": both tasks' attempts are shown for it |
+| Leakage | evaluation runs `episode_offset: 1, episodes_per_task: 4`, i.e. episode_idx 1-4 only: **the reference scene (episode 0) is never run in evaluation, by construction**. (The development keys are namespaced, so the framework's automatic refusal would not catch an ep-0 evaluation case; it cannot arise here.) Checked after the run: no evaluation record has episode_idx 0 (holds), and every evaluation case's first observation hash equals that of the zero-shot record of the same case and differs from the reference scene's (failed for the predeclared run, see Results: fixture placement; holds for the exact re-run) |
+
+Development of this mode (before the declaration below) used only unscored original `libero_goal` task 0
+(smoke: 2 development attempts on its init state 0 under namespace `dev-smoke`, 1 evaluation episode at
+episode_idx 1; all 3 succeeded) to check the pipeline: pinned attempts reproduce the reference scene (identical
+first-observation hash), chained rounds see the earlier memory, the offset evaluation keys the case as episode 1.
+
+### Predeclared plan (written 2026-10-31 07:24 PT, before any development or scored episode on Goal-T / Goal-S)
+
+| | |
+|---|---|
+| Development budget | up to **3 exploration attempts per task** on the reference scene (init state 0) of all 20 tasks (Goal-T 10 + Goal-S 10): round 1 = all 20 tasks (memory empty, i.e. the zero-shot controller); round 2 = tasks whose instruction has no successful attempt yet; round 3 = the same rule. Chained `hs prepare`, namespace `dev-ref0`, attempt k = episode_idx k-1. The final round's `prepared.json` is frozen for evaluation |
+| Evaluation | Goal-T and Goal-S, 10 tasks x **episodes 1-4** = **80 cases**, official horizon 300, seeded pi05_libero (:8106), SAM3 (:8117), `docker.gpus: "7"`; candidate arm only (run as 4 processes: per cell episodes 1-2 and 3-4) |
+| Candidate | `harness-vla-sol-fewshot --prepared <final round>` |
+| Comparisons (pair by pair, same 80 cases) | (a) frozen baseline (`runs/subset_v1/goal_{task,swap}_baseline`, episodes 1-4) and (b) zero-shot `harness-vla-sol` (`runs/sol/cand_goal_{task,swap}`, episodes 1-4); both already recorded. Duplicate-instruction pairing by occurrence order as before (`scripts/merge_arms.py:disambiguate`) |
+| Reported | successes per cell and total, wins / losses and two-sided sign-test p per comparison, development successes per round, LLM tokens (prompt / completion) for development and evaluation separately, wall time, OpenAI cost estimate |
+| Budget / stop rules | **$40** OpenAI total for this mode (estimate $5/M prompt, $25/M completion); stop if the running total projects above it. Hard time box: results written by 13:00 PT; an incomplete run is reported as incomplete with its n, never as a percentage of the full plan |
+| Paper reference | few-shot Goal-T 87.0 / Goal-S 87.0 (Claude Code, RLinf pi05_libero130, 10 seeds/task, 10000-step budget, 1024 px renders): not comparable, context only |
+
+### Results (development 07:24-07:37 PT, scored runs 07:37-08:15 PT; every episode valid)
+
+Run dir `R=hs2-gpu/harness_vla/runs/fewshot` (drivers `hs_run.sh`, `dev_round.sh`, `eval_launch.sh`, `eval_exact*.sh`;
+summaries `summary*.json` from `methods/harness_vla/scripts/fewshot_compare.py`; frozen code `code_snapshot/` for
+development and the predeclared run, `code_snapshot_v2/` for the exact re-run, which differs only in `bench_ext`).
+
+**Development** (32 episodes on the reference scenes; first-observation hash identical to the zero-shot episode-0
+records, so every attempt saw exactly the episode-0 scene):
+
+| Cell | attempt 1 (memory empty) | attempt 2 | attempt 3 | tasks with a successful attempt |
+|---|---|---|---|---|
+| Goal-T | 6/10 | 1/4 | 1/3 | 8/10 |
+| Goal-S | 7/10 | 1/3 | 0/2 | 8/10 |
+
+Never solved: Goal-T "open the bottom drawer of the cabinet", "put the plate on the top of the drawer"; Goal-S "open
+the middle drawer of the cabinet", "push the plate to the front of the stove". Frozen memory: `dev/goal_task_r3`
+(17 attempts, sha256 `3ed29dd2...`), `dev/goal_swap_r3` (15 attempts, `a835e369...`).
+
+**Predeclared evaluation** (80 cases, episodes 1-4, `eval/`; no record has episode_idx 0):
+
+| Cell | n | Baseline | Zero-shot sol | **Few-shot** | few vs base (sign p) | few vs zero-shot (sign p) |
+|---|---|---|---|---|---|---|
+| Goal-T | 40 | 6 | 21 | **26** | +21 / -1 (1.1e-5) | +8 / -3 (0.23) |
+| Goal-S | 40 | 12 | 22 | **27** | +17 / -2 (7.3e-4) | +9 / -4 (0.27) |
+| Both | 80 | 18 | 43 | **53** | +38 / -3 (1e-8) | +17 / -7 (0.064) |
+
+**Protocol flaw found in the post-run scene check, and what it changes.** The evaluation ran episodes 1-2 and 3-4
+in fresh processes (`episode_offset`), the baseline and zero-shot records ran episodes 0-4 sequentially. The objects
+are identical (simulator qpos equal for the same init state, checked on 3 tasks x 2 cells), but LIBERO places the
+jointless fixtures (stove, cabinet, rack) at every `env.reset()` from the env's seeded RNG (Core request 2): here
+episodes 1 and 3 got the first reset's placement (= the reference scene's fixtures) and episodes 2 and 4 the
+second's, against resets 2-5 in the sequential runs (mean depth change 1-2 cm over the fixture region, 18% of
+agentview pixels differ; the first-observation hashes matched 0/80). So the table above does not pair identical scenes. The same protocol with
+the frozen policy alone (`control/`, no LLM) gives 23/80 instead of 18/80 (+7 / -2): placement alone moves outcomes.
+
+**Exact-protocol re-run** (`eval_exact/`, `bench_ext` `match_sequential_resets: true`: the skipped resets are replayed,
+so episode k gets reset k+1 as in a sequential run; first-observation hash equal to the baseline and zero-shot
+records on 60/60 cases). The remaining budget covered 60 of the 80 cases: Goal-T episodes 1 and 3, Goal-S episodes 1-4.
+
+| Cases (exactly paired) | n | Baseline | Zero-shot sol | **Few-shot** | few vs base (sign p) | few vs zero-shot (sign p) |
+|---|---|---|---|---|---|---|
+| Goal-T, episodes 1, 3 | 20 | 3 | 11 | **13** | +10 / -0 (0.002) | +4 / -2 (0.69) |
+| Goal-S, episodes 1-4 | 40 | 12 | 22 | **25** | +17 / -4 (0.007) | +7 / -4 (0.55) |
+| All exact | 60 | 15 | 33 | **38** | +27 / -4 (3.4e-5) | +11 / -6 (0.33) |
+
+Cross-check: on episodes 1 and 3, whose fixtures matched the reference scene in the predeclared run, few-shot
+scored 26/40 in both protocols (+2 / -2), so the shared placement did not inflate them. On Goal-S episodes 2 and 4
+the predeclared run's 15/20 drops to 12/20 with exact scenes (zero-shot there: 8/20).
+
+**Cost** (OpenAI gpt-6.1-sol, estimate $5/M prompt + $25/M completion; cached tokens negligible):
+
+| Stage | Episodes | LLM calls | Prompt tokens | Completion tokens | Est. USD | Episode time |
+|---|---|---|---|---|---|---|
+| Development (+ smoke: 3 episodes on original libero_goal) | 32 (+3) | 209 (+10) | 1.262M (+0.043M) | 24.9k (+0.7k) | 6.93 (+0.23) | 1244 s (+57 s) |
+| Evaluation, predeclared | 80 | 496 | 3.318M | 53.4k | 17.92 | 2620 s (33 s/ep) |
+| Evaluation, exact re-run | 60 | 386 | 2.631M | 42.3k | 14.21 | 2219 s (37 s/ep) |
+| **Total, this mode** | | | | | **39.30** (cap 40) | |
+| for reference: zero-shot sol on the same 80 cases | 80 | 515 | 2.718M | 60.6k | 15.10 | 2911 s (36 s/ep) |
+
+The memory adds about 7k prompt tokens per episode (41.5k vs 34.0k; it stays in the first message on every turn).
+Elapsed: development 13 min (2 processes), predeclared evaluation 13 min (4 processes), exact re-run 14 min.
+
+**Reading.**
+- Few-shot vs the frozen policy: large and consistent (exactly paired 38 vs 15 of 60, +27 / -4).
+- Few-shot vs zero-shot: no detectable gain. Exactly paired: 38 vs 33 of 60, +11 / -6, p = 0.33. The predeclared
+  run's +17 / -7 (p = 0.064) compares different fixture placements and is not a valid pairing; it is not promoted.
+- Where the memory changed outcomes (exact cases): it helped multi-stage drawer tasks that development had solved
+  ("open the top drawer and put the bowl inside" 0 -> 4/4, Goal-T "open the top layer of the drawer and put the
+  cream cheese inside" 0 -> 2/2, "turn on the stove" 2 -> 4/4) and hurt pick-and-place tasks that zero-shot already
+  solved ("put the cream cheese in the bowl" 3 -> 1/4, "put the bowl on the stove" 2 -> 1/4, Goal-T wine bottle in
+  bowl 2 -> 1/2 for each of the two tasks). Tasks never solved in development: 1 success in 12 exact cases (Goal-T
+  "put the plate on the top of the drawer" 1/2); "put the plate on the stove", solved once in development, was 0/2
+  (exact) and 0/4 (predeclared) in evaluation.
+- Paper (Claude Code, RLinf pi05_libero130, 1024 px, 10000 steps, agent-written memory): Goal-T 87.0, Goal-S 87.0.
+  Here Goal-S 25/40 (exact) and Goal-T 26/40 (predeclared protocol only; 13/20 exact). Not comparable; the port's
+  memory is the task-specific layer only, distilled without an LLM, from 1-3 attempts per task.
+
+**Known gaps (few-shot).** One seed, small n; the planner is not repeatable (development attempt 1 on episode 0 =
+the zero-shot controller: 13/20, vs 12/20 in the zero-shot run on the same scenes). Exact pairing covers 60 of the 80
+predeclared cases (Goal-T episodes 2 and 4 exist only in the shifted-fixture protocol). The two Goal-T tasks that
+share an instruction get both tasks' memory. No task-family / global memory layer.
+
+### Log (few-shot)
+
+- 07:14-07:21 PT: read docs, package, RPent memory format (task-specific `<cell>_t<i>_s0.json` + `_recipe.jsonl`,
+  PROVEN_LEVERS framing). Wrote `memory.py` (Preparer, render), controller `memory` option, card, entry point,
+  `bench_ext` `pin_init_index` / `episode_offset`; tier 0 / tier 1 PASS.
+- 07:21-07:23 PT: smoke on unscored original libero_goal task 0 (2 pinned attempts + 1 offset evaluation): pinned
+  attempts reproduce the reference scene (hash), chained memory is injected, the offset case is keyed as episode 1.
+- 07:24 PT: plan predeclared (above); code frozen (`code_snapshot/`); development round 1 launched.
+- 07:31 / 07:35 / 07:37 PT: rounds 1 / 2 / 3 done (13/20, 2/7, 1/5). 07:37 PT: predeclared evaluation launched.
+- 07:50 PT: evaluation done, 53/80. Scene check failed (first-observation hashes 0/80 equal to the zero-shot
+  records'). 07:53-07:58 PT: diagnosed in the container (`scene_check/`): equal qpos, fixtures placed per reset by
+  the env RNG. Launched the same-protocol baseline control (no LLM).
+- 07:58 PT: added `match_sequential_resets` to `bench_ext` (off by default), verified on 2 Goal-S cases with the
+  baseline arm (first-observation hash equal to the original baseline records'), froze `code_snapshot_v2/`, re-ran
+  episodes 1 and 3 of both cells (08:06 PT, 26/40), then Goal-S episodes 2 and 4 under a budget guard (08:15 PT).
+  Stopped spending at an estimated $39.30. `pytest` 37 passed; `hs verify harness-vla-sol-fewshot` tier 0 / 1 PASS.

@@ -106,5 +106,20 @@ language names (and the relation landmarks), localize them with segment (several
 move. Current robot state and images follow."""
 
 
-def system_prompt(horizon: int) -> str:
-    return SYSTEM.format(horizon=int(horizon))
+MEMORY_RULE = """
+TASK MEMORY (few-shot mode): your first message contains memory written by exploration attempts on a REFERENCE
+scene of this same task (same task language, a different initialization). Read it before planning. Reuse the
+technique of the successful attempt: which entities to localize and with which segment prompts, staging offsets
+relative to the landmark (the recipe gives each target as "<landmark> center + offset"), VLA prompts and chunk
+counts, carry and release heights, the order of primitives; avoid what failed there. RE-LOCALIZE every entity in
+THIS scene and re-derive every coordinate from THIS scene's segment results: the memory's absolute coordinates are
+stale (positions differ between scenes, fixtures can be swapped). If THIS scene differs so much that the recipe
+does not apply, fall back to the rules above."""
+
+
+def system_prompt(horizon: int, memory: bool = False) -> str:
+    text = SYSTEM.format(horizon=int(horizon))
+    if not memory:
+        return text
+    text = text.replace("(Harness VLA, zero-shot)", "(Harness VLA, few-shot: task memory)", 1)
+    return text.replace("\n\nREPLY FORMAT:", MEMORY_RULE + "\n\nREPLY FORMAT:", 1)

@@ -187,10 +187,18 @@ keeps all earlier development cases forbidden. Separately run arms can be paired
 
 `prepared.json` pins every artifact by sha256 and lists the development case keys; evaluation refuses
 those cases (they show up as invalid and drop out of pairing). A case key is
-`(contract[@case-namespace], task, episode_idx)`. On LIBERO / LIBERO-Pro the scene is fixed by
-`episode_idx` (the benchmark seed does not change it), so do not set a namespace: develop on episodes
-0..k-1 and evaluate on more episodes; the development ones are excluded automatically. Set a namespace
-only when the development run uses a benchmark seed that really changes the scenes (RoboCasa365 `seed`). Components receive artifacts through `load_artifacts(artifacts)` (name -> path); controllers
+`(contract[@case-namespace], task, episode_idx)`. On LIBERO / LIBERO-Pro the benchmark seed does not change
+the initial state, so do not set a namespace for seed changes: develop on episodes 0..k-1 and evaluate on more
+episodes; the development ones are excluded automatically. Set a namespace only when the development run uses
+a benchmark seed that really changes the scenes (RoboCasa365 `seed`).
+
+**Scenes depend on run history.** vla-eval's LIBERO benchmark reuses one environment per task and LIBERO
+re-places fixtures (stove, cabinet, rack) on every reset, so the scene of (task, episode k) depends on which
+earlier episodes of that task ran in the same process; RoboCasa365 resets depend on process history too.
+Paired arms are exact only when they run the same case list in the same order, each in a fresh process, as
+`hs eval` does. Do not pair runs that split one task's episodes differently (e.g. an episode offset or a subset
+of episodes) unless the benchmark replays the earlier resets (see `methods/harness_vla/bench_ext`,
+`match_sequential_resets`). Components receive artifacts through `load_artifacts(artifacts)` (name -> path); controllers
 read `ctx.artifacts`. `harnessstudio.components.memory` has `write_trajectories` / `TrajectoryStore`
 (nearest-neighbour retrieval over stored states). Report zero-shot and prepared results separately.
 

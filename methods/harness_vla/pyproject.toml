@@ -5,13 +5,14 @@ build-backend = "hatchling.build"
 [project]
 name = "hs-harness-vla"
 version = "1.0.0"
-description = "Harness VLA (arXiv:2607.08448) zero-shot mode for HarnessStudio v2"
+description = "Harness VLA (arXiv:2607.08448) zero-shot and few-shot (memory) modes for HarnessStudio v2"
 requires-python = ">=3.10"
 dependencies = ["harnessstudio"]
 
 [project.entry-points."harnessstudio.methods"]
 harness-vla = "hs_harness_vla:config"
 harness-vla-sol = "hs_harness_vla:config_sol"
+harness-vla-sol-fewshot = "hs_harness_vla:config_sol_fewshot"
 
 [tool.hatch.build.targets.wheel]
 packages = ["hs_harness_vla"]

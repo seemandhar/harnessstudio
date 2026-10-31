@@ -26,6 +26,7 @@ from harnessstudio.tools.llm import image_data_url
 
 from . import perception as P
 from . import primitives as prim
+from .memory import read_memory, render
 from .prompts import FIRST, system_prompt
 
 TIER1_SCRIPT = [
@@ -87,10 +88,12 @@ class HarnessVLA:
 
     def __init__(self, max_turns: int = 40, max_tool_calls: int = 60, image_scale: int = 2, wrist_image: bool = True,
                  history_turns: int = 8, llm_retries: int = 2, sam3_url: str = "http://127.0.0.1:8117",
-                 max_tokens: int = 800) -> None:
+                 max_tokens: int = 800, memory: bool = False, memory_chars: int = 9000) -> None:
         self.max_turns, self.max_tool_calls = int(max_turns), int(max_tool_calls)
         self.image_scale, self.wrist_image = int(image_scale), bool(wrist_image)
         self.history_turns, self.llm_retries, self.max_tokens = int(history_turns), int(llm_retries), int(max_tokens)
+        # Few-shot (memory) mode: task memory from the development stage (ctx.artifacts["memory"], read-only).
+        self.memory, self.memory_chars = bool(memory), int(memory_chars)
         # Endpoint of the SAM3 server (a deployment detail, not a method parameter): env var overrides the default.
         self.sam3 = P.Sam3Client(os.environ.get("HS_HARNESS_VLA_SAM3_URL", sam3_url))
         self.tool_calls = 0
@@ -236,9 +239,15 @@ class HarnessVLA:
     async def run(self, ctx) -> None:
         llm = ctx.tools["llm"]
         horizon = ctx.steps + ctx.remaining
-        system = {"role": "system", "content": system_prompt(horizon)}
-        first = [{"type": "text", "text": FIRST.format(instruction=ctx.instruction)},
-                 {"type": "text", "text": self._state_text(ctx)}] + self._images(ctx.observe(), [])
+        system = {"role": "system", "content": system_prompt(horizon, memory=self.memory)}
+        first = [{"type": "text", "text": FIRST.format(instruction=ctx.instruction)}]
+        if self.memory:
+            entries = read_memory(ctx.artifacts.get("memory"))
+            text = render(entries, ctx.instruction, max_chars=self.memory_chars)
+            ctx.record("task_memory", entries_total=len(entries), found=bool(text), chars=len(text))
+            first.append({"type": "text", "text": text or "TASK MEMORY: none for this task language (no reference-"
+                                                          "scene exploration recorded); act zero-shot."})
+        first += [{"type": "text", "text": self._state_text(ctx)}] + self._images(ctx.observe(), [])
         history: list = [{"role": "user", "content": first}]
         self._debug_dump(ctx, "start")
         failures = 0
@@ -283,7 +292,7 @@ class HarnessVLA:
             results, overlays, stop = [], [], False
             for cmd in plan["commands"][:MAX_COMMANDS]:
                 if ctx.ended:
-                    return
+                    break  # the goal fired (or the horizon hit) during the previous command: record the turn
                 if str(cmd.get("action")) == "finish":
                     stop = True
                     finish_reason = "finish: " + str(cmd.get("reason", ""))[:200]
@@ -310,6 +319,8 @@ class HarnessVLA:
                         {"role": "user", "content": [
                             {"type": "text", "text": "RESULTS" + note + ": " + json.dumps(results)},
                             {"type": "text", "text": self._state_text(ctx)}] + self._images(ctx.observe(), overlays)}]
+        if ctx.ended and finish_reason == "turn_budget":
+            finish_reason = "episode_ended"
         ctx.record("planner_stop", reason=finish_reason, tool_calls=self.tool_calls, repeats_rejected=self.repeats)
         if not ctx.ended:
             await self._hold(ctx)

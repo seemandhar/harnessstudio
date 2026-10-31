@@ -70,3 +70,27 @@ there, so `segment` / `back_project` return `{"error": ...}` and the planner con
 
 Version 2 (the scored one): Qwen's recommended non-thinking sampling (temperature 0.7, top_p 0.8, top_k 20,
 seed 7) and an identical-reply guard; v1 used greedy decoding and looped (see the results doc).
+
+## Few-shot (memory) mode: `harness-vla-sol-fewshot`
+
+Same controller and planner as `harness-vla-sol` with `memory: true` and a development stage
+(`hs_harness_vla/memory.py:Preparer`, card `hs_harness_vla/paper_sol_fewshot.yaml`). Development explores the
+reference scene (init state 0) of each task: `bench_ext` parameter `pin_init_index: 0` replays that scene for every
+attempt (RPent's RESET), attempt k runs as episode_idx k-1 (`episode_offset`) under `--case-namespace dev-ref0`,
+and each round is a chained `hs prepare --prepared <previous round>`. `Preparer.build` turns the traced turns into
+`memory.jsonl` (per attempt: localization table, outcome, failure lessons, reasoning, and the executed primitive
+recipe with landmark-relative targets). Evaluation must exclude the reference scene: run it with
+`"params": {"episode_offset": 1, "match_sequential_resets": true}` so only episodes >= 1 exist and each episode gets
+the same fixture placement as in a sequential run (LIBERO places fixtures per `env.reset()` from the env RNG; without
+the flag, episode k of an offset run is not the scene of episode k in other arms' sequential records).
+
+```bash
+OV='{"episodes_per_task": 1, "params": {"pin_init_index": 0, "episode_offset": 0}}'   # attempt 1
+hs prepare harness-vla-sol-fewshot --config configs/libero_pro_goal_swap.yaml --case-namespace dev-ref0 \
+  --benchmark-overrides "$OV" --out prep_r1 --policy-url ws://127.0.0.1:8106 \
+  --contract hs_harness_vla/contracts/libero_pro_rgbd.yaml --profile pi05-libero-hs --action-timeout 1800
+# attempt 2 (unsolved tasks only, via "tasks": [...]): episode_offset 1, --prepared prep_r1 --out prep_r2
+hs eval harness-vla-sol-fewshot --arms candidate --prepared prep_r2 --config configs/libero_pro_goal_swap.yaml \
+  --benchmark-overrides '{"episodes_per_task": 4, "params": {"episode_offset": 1, "match_sequential_resets": true}}' ...
+python scripts/fewshot_compare.py --fewshot EVAL_DIRS --baseline BASE_DIRS --zeroshot ZERO_DIRS --dev PREP_DIRS
+```

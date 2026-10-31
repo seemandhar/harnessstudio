@@ -29,3 +29,14 @@ def config_sol():
         "hs_harness_vla.controller:HarnessVLA",
         {"max_turns": 40, "max_tool_calls": 60, "image_scale": 2, "wrist_image": True, "history_turns": 8,
          "llm_retries": 2, "sam3_url": "http://127.0.0.1:8117", "max_tokens": 6000}))
+
+
+def config_sol_fewshot():
+    """harness-vla-sol in the paper's few-shot (memory) mode: a development stage explores the reference scene of
+    each task and distills task memory (hs_harness_vla.memory.Preparer); evaluation injects it into the planner."""
+    return config_from_card(Path(__file__).with_name("paper_sol_fewshot.yaml"), controller=ModuleRef(
+        "hs_harness_vla.controller:HarnessVLA",
+        {"max_turns": 40, "max_tool_calls": 60, "image_scale": 2, "wrist_image": True, "history_turns": 8,
+         "llm_retries": 2, "sam3_url": "http://127.0.0.1:8117", "max_tokens": 6000, "memory": True,
+         "memory_chars": 9000}),
+        prepare=ModuleRef("hs_harness_vla.memory:Preparer"))
