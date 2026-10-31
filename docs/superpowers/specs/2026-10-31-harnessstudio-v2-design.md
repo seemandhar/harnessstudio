@@ -429,3 +429,44 @@ Each milestone gets its own implementation plan. The first plan covers M0 and M1
 - Open (decide in M4): which π0.5 checkpoint for LIBERO-Pro: RLinf `pi05_libero130` (Harness VLA)
   or openpi `pi05_libero` (Pigey). Baselines across papers differ (12.8% to 50.0%), so one is pinned
   per benchmark.
+
+## 16. Decisions from spec and plan review (2026-10-31)
+
+These override earlier sections where they conflict.
+
+1. **Chunk ownership.** Unchanged allenai `PredictModelServer`s buffer a chunk per session and ignore
+   observations until it empties. Each policy profile declares `chunking`:
+   - `server`: the policy server chunks; `policy.act` returns one action per observation. Only used
+     for the M1 transparency check and for methods that act every step without changing inputs.
+   - `harness` (default): the server runs with `chunk_size: null` and returns the raw chunk; the
+     profile declares `execute_horizon` (the native number of executed actions, e.g. 10 for π0).
+     The harness's native stream executes `chunk[:execute_horizon]`. In sync mode this reproduces the
+     buffered behavior, and lets instruction/observation ops, monitors and skills take effect at once.
+   Capability `chunk` means "returns the full chunk" and is satisfied by `harness` chunking at T0.
+2. **Policy input.** The policy receives the raw benchmark observation. Methods see only the public
+   (contract-filtered) view; method overrides (instruction, images) are merged into the raw
+   observation before it is sent. The baseline therefore stays the native allenai policy.
+3. **Native stream.** Native decisions use T1 seeded sampling (seed of sample 0 at decision `d`) when
+   the policy has `seeded_sampling`; otherwise `policy.act`. Baseline, derived null and native
+   fallback all draw from this stream. In shadow mode, the controller's own policy calls go to a
+   second policy session so they cannot consume the native session's state.
+4. **Paired guarantees.** M/R/X attribution and common random numbers require T1 seeding or a
+   deterministic policy. Stochastic T0 servers keep one process-wide noise stream, so their arms are
+   compared by rates only, and reports say so.
+5. **Episode finalization.** EPISODE_END is not guaranteed: after an ERROR reply the runner skips it,
+   and on disconnect it arrives with an empty result. The harness server finalizes any unfinished
+   episode of the session at the next `on_episode_start`, and on an empty result; both mark the
+   episode invalid. Method tasks are wrapped so an exception never reaches the server task group.
+6. **Trace keys.** Traces are keyed by `(benchmark, task name, episode_idx)` from the EPISODE_START task
+   payload. The benchmark name comes from the contract (a ModelServer does not see the client HELLO).
+7. **Validity.** allenai's collector counts errored episodes as failures. HarnessStudio computes rates
+   from its own collection and excludes episodes with a `failure_reason` or an invalid trace.
+8. **Live mode** is detected from `"mode": "live"` in the EPISODE_START payload and refused.
+9. **M1 gate (a)** is in-run transparency: on the fake stack, the policy receives byte-identical
+   observations and the benchmark receives byte-identical actions through `identity`. The real LIBERO
+   gate compares success rates (b) and reports per-episode outcome agreement.
+10. **RTC** needs live mode and leaves the M3 port list; async methods are a later extension.
+11. **Extra observations (M4).** HELLO `observation_params` only toggles constructor parameters a
+    benchmark already has; LIBERO, LIBERO-Pro and RoboCasa365 expose no depth or calibration. M4 adds
+    them through HarnessStudio-owned subclasses of the allenai benchmark classes, referenced by import
+    string in the eval config, with the package mounted in the benchmark container.
