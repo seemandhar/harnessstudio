@@ -338,6 +338,6 @@ cell by case (duplicate instructions in goal_task and spatial_task disambiguated
 
 For reference the paper reports zero-shot only for Goal (T 79.0, S 31.0) and an overall LIBERO-PRO 82.4% for
 the few-shot (memory) mode with Claude Code; RPent's leaderboard (Astra + memory) is 92.6%. This run is
-zero-shot, open-loop-free of any task memory, with a different base checkpoint and 256 px images, so it is a
+zero-shot (no task memory), with a different base checkpoint and 256 px images, so it is a
 lower bound for the method rather than a replication of those numbers. LIBERO-10 gains are small: long tasks
 hit the 520-step horizon (RPent used a 10,000-step budget).
