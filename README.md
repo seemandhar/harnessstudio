@@ -26,7 +26,7 @@ vla-eval benchmark (Docker, unchanged)  ◄─ws─►  HarnessStudio harness se
 ```bash
 git clone -b v2 https://github.com/seemandhar/harnessstudio && cd harnessstudio
 uv venv --python 3.11 .venv && uv pip install --python .venv/bin/python -e '.[test]'
-.venv/bin/hs list
+scripts/install_methods.sh        # every package under methods/ (editable), then `hs list`
 ```
 
 ## Quick start
@@ -101,6 +101,39 @@ fallback).
 | T0 | any vla-eval policy server, unchanged (`allenai-passthrough`, `pi05-libero-stock`) | agent, instruction and monitoring methods |
 | T1 | HarnessStudio subclass via `HarnessPolicyMixin`: seeded, isolated full chunks | best-of-N, executors, exact derived nulls |
 | T2/T3 | denoising hooks, velocity / attention / logits / predicted futures | steering and introspection methods |
+
+## Methods
+
+| Method | Paper | Fidelity | Category | Needs |
+|---|---|---|---|---|
+| `identity` | none (native policy) | faithful | - | T0 |
+| `medoid-bon` | CycleVLA, arXiv:2601.02295v2 (MBR selection only) | component | proposal_selection | T1 |
+| `aac` | AAC, arXiv:2604.04161v2 (disclosed D1-D7) | faithful | uncertainty_compute | T1 |
+| `chunk-interrupt` | VLA-Corrector, arXiv:2607.01804v1 (truncation only) | tf_variant | execution_monitoring | T0 + chunk |
+| `subtask-sequencer` | Inner Monologue, arXiv:2207.05608v1 (rule-based, no LLM) | tf_variant | agentic_orchestration | T0 + chunk |
+| `llm-subtask-planner` | Inner Monologue, arXiv:2207.05608v1 (NRP qwen3-vl) | tf_variant | agentic_orchestration | T0 + chunk, LLM |
+| `first-sample` | example plugin (`examples/plugin_method`) | faithful | proposal_selection | T1 |
+
+All pass tier 0 and tier 1. Ported v1 methods agree with v1 decision for decision on randomized cases
+(medoid-bon, chunk-interrupt: 300 each; AAC: bitwise against the authors' code on 600 cases).
+
+## Policy servers
+
+| Profile | Server | Tier |
+|---|---|---|
+| `allenai-passthrough`, `pi05-libero-stock` | any unchanged vla-eval policy server | T0 (server chunking) |
+| `pi05-libero-hs` | `harnessstudio/policies/pi05_openpi.py` (openpi pi0.5, seeded) | T1 |
+| `gr00t-n15-robocasa365` | `harnessstudio/policies/gr00t_n15_robocasa365.py` (GR00T N1.5, seeded, velocity readout) | T1 (+ velocity) |
+| `fake-t0`, `fake-t1` | `harnessstudio/policy_ext/fake.py` (tier 1) | T0 / T1 |
+
+## Results so far
+
+- **Transparency (M1):** on real LIBERO, `identity` through the harness is bitwise identical to the
+  direct vla-eval run, 5/5 episodes, every action and state ([docs/results/m1_libero_parity.md](docs/results/m1_libero_parity.md)).
+- **Paired pipeline:** `hs eval` with three arms on real LIBERO and the seeded pi0.5 server: all episodes
+  valid, null vs baseline 5 M / 0 R / 0 X ([docs/results/m3_libero_eval_pipeline.md](docs/results/m3_libero_eval_pipeline.md)).
+- **Seeded servers:** pi0.5 and GR00T N1.5 return bitwise-identical chunks for the same seed, in one
+  process and after a restart; samples are isolated per seed.
 
 ## Status
 
