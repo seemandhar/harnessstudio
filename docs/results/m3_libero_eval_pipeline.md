@@ -35,3 +35,8 @@ GR00T N1.5 (RoboCasa365) seeded server: `harnessstudio/policies/gr00t_n15_roboca
 `scripts/check_t1_determinism.py`: bitwise determinism for K=1/8, isolated streams, identical after a
 restart (11/11 chunks), [16, 12] chunks, native replies unchanged by seeded requests, velocity readout
 available; v1's Human300 checkpoint-120000 loads on vla-eval's server. K=8 about 0.35 s.
+
+## Tier 2 on real LIBERO (`hs verify medoid-bon --tier 2`)
+
+PASS: 2 paired cases (libero_spatial task 0, episodes 0-1), every episode valid, null vs baseline 2 M / 0 R / 0 X.
+baseline 2/2 (22 policy samples, 27 s), null 2/2 (176 samples, 54 s), candidate 2/2 (128 samples, 39 s).

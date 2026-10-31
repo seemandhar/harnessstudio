@@ -33,3 +33,6 @@ the host's NVIDIA driver wedged machine-wide (every CUDA/EGL/nvidia-smi client b
 - Found and fixed in HarnessStudio: perturbed suite names now use their base suite's horizon; case keys
   include the suite (no collisions across perturbations).
 - Observation keys match the `libero_pro` contract.
+- **Parity (after the driver recovered): 3/3 episodes bitwise identical** between the benchmark connected
+  directly to stock pi0.5 and through `hs serve identity` (libero_spatial_with_mug, episodes 0-2: success/74,
+  fail/220, success/74 in both). `hs2-gpu/libero_pro/parity.sh`, fresh policy server before each run.
