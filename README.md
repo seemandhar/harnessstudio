@@ -113,10 +113,12 @@ fallback).
 | `chunk-interrupt` | VLA-Corrector, arXiv:2607.01804v1 (truncation only) | tf_variant | execution_monitoring | T0 + chunk |
 | `subtask-sequencer` | Inner Monologue, arXiv:2207.05608v1 (rule-based, no LLM) | tf_variant | agentic_orchestration | T0 + chunk |
 | `llm-subtask-planner` | Inner Monologue, arXiv:2207.05608v1 (NRP qwen3-vl) | tf_variant | agentic_orchestration | T0 + chunk, LLM |
+| `chunktrust-ahs` | ChunkTrust, arXiv:2609.39754v2 (adaptive horizon from flow velocity) | faithful | execution_monitoring | T1 + velocity readout |
 | `first-sample` | example plugin (`examples/plugin_method`) | faithful | proposal_selection | T1 |
 
 All pass tier 0 and tier 1. Ported v1 methods agree with v1 decision for decision on randomized cases
-(medoid-bon, chunk-interrupt: 300 each; AAC: bitwise against the authors' code on 600 cases).
+(medoid-bon, chunk-interrupt: 300 each; AAC: bitwise against the authors' code on 600 cases;
+chunktrust-ahs: 100% over ~17.8k decisions).
 
 ## Policy servers
 
@@ -126,6 +128,17 @@ All pass tier 0 and tier 1. Ported v1 methods agree with v1 decision for decisio
 | `pi05-libero-hs` | `harnessstudio/policies/pi05_openpi.py` (openpi pi0.5, seeded) | T1 |
 | `gr00t-n15-robocasa365` | `harnessstudio/policies/gr00t_n15_robocasa365.py` (GR00T N1.5, seeded, velocity readout) | T1 (+ velocity) |
 | `fake-t0`, `fake-t1` | `harnessstudio/policy_ext/fake.py` (tier 1) | T0 / T1 |
+
+## Building blocks for agent harnesses
+
+- `harnessstudio.skills.eef_delta`: analytic `move_to`, `move_by`, `set_gripper`, `release`, and
+  `vla_act` (the frozen policy as a skill).
+- `harnessstudio.tools.llm`: pinned, budgeted runtime LLM/VLM operators (NRP by default; Astra refused).
+- `hs prepare` + `harnessstudio.components.memory`: development runs -> sha256-pinned artifacts
+  (e.g. trajectory memory); evaluation refuses development cases.
+- `harnessstudio.benchmarks.libero_rgbd`: LIBERO / LIBERO-Pro with metric depth and camera calibration
+  (sensor data only), plus `harnessstudio.tools.geometry` pixel <-> world helpers (pixel convention
+  validated on real LIBERO frames).
 
 ## Results so far
 
