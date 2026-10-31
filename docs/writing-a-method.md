@@ -89,19 +89,21 @@ Interfaces are in `harnessstudio/components/protocols.py`:
 |---|---|
 | `proposer` | attribute `num_samples` (K seeded samples; sample 0 is the native stream) |
 | `selector` | `select(chunks: list[np.ndarray [H, A]], extras: list[dict], obs: dict) -> int` |
-| `executor` | `min_k`, `per_step`, `plan(chunk, extras, obs) -> k`, `continue_after(executed, obs) -> bool`, `record_executed(actions)`; set `sees_proposals = True` to get `extras["proposals"]` |
+| `executor` | `min_k`, `per_step`, `plan(chunk, extras, obs) -> k`, `continue_after(executed, obs) -> bool`, `record_executed(actions)`; `extras["native_length"]` = actions the native policy would run; set `sees_proposals = True` to get `extras["proposals"]`; never cut before `min_k` |
 | `monitor` | `check(obs, history) -> "continue" | "interrupt"` |
 | `instruction_op` | `rewrite(instruction, obs, memory) -> str` |
 | `observation_op` | `transform(obs) -> dict of replaced public keys` |
 | `action_op` | `transform(chunk, obs, memory) -> chunk` |
 | `gate` | `plan(obs, history) -> {"num_samples": k, ...}` |
 
-Any component can define `bind(embodiment)`. It receives `Embodiment.action_layout`
+Any component can define `diagnostics() -> dict` (JSON); it is written to the trace after every
+decision, in every arm. Any component can define `bind(embodiment)`. It receives `Embodiment.action_layout`
 (`name -> (start, end)` from the policy's action spec, e.g. `position (0,3)`, `rotation (3,6)`,
 `gripper (6,7)`) and can use `embodiment.dims("position", "rotation")`.
 `embodiment.eef_position(obs)` returns the end-effector position from a public observation (the
 contract says where it lives: LIBERO `states[0:3]`, RoboCasa365 `state["state.end_effector_position_relative"]`,
-fake `state[0:2]`), or `None` if the benchmark does not expose it.
+fake `state[0:2]`), or `None` if the benchmark does not expose it. When a policy declares its actions
+as one raw block (vla-eval's pi0 servers), the contract's `action_layout` supplies the names.
 
 The null arm for slot methods is derived automatically: every component still runs, but the policy
 gets the original observation and instruction, sample 0 executes for its native length, and cuts
