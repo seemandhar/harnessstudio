@@ -29,6 +29,10 @@ method packages (`hs new`, `hs verify` tiers 0/1/2, `hs eval`, `hs prepare`, `hs
 | SCALE (OpenVLA decoding) | `scale` | see results doc | LIBERO-Goal, 10 tasks x 3 episodes (30) | 24/30 vs 23/30 (p = 1.0); paper 77.7 -> 82.3 |
 | FastHarness | `fast-harness` (gpt-6.1-sol reviewer; experience frozen by `hs prepare`) | adapted | RoboDojo build_tower (+ stack_bowls), held-out layouts, cold vs warm | tier 2 PASS; port matches the original code on 198,542 randomized checks; **token savings not reproduced**: warm vs cold prompt tokens -11% / -16% per step (build_tower), +26% (stack_bowls) vs the paper's -57%; experience features rarely match across layouts; no success claim (n = 1-2) |
 
+Ported v1 methods on new benchmarks (`v1_methods_libero.md`): medoid-bon, chunk-interrupt and AAC run cleanly
+(0 X) but are at ceiling on standard LIBERO-10 (29/30 all arms) and unchanged on LIBERO-Pro task-perturbation
+cells (object 2/20 and goal 3/20 baseline; candidates 2 and 3-4).
+
 Details: `harness_vla.md`, `scale.md`, `fast_harness.md` in this folder.
 
 ## Audit of the new packages

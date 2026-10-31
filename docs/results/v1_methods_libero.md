@@ -38,3 +38,20 @@ Because pi0.5 is near ceiling on standard LIBERO, the same methods are screened 
 `libero_object` and `libero_goal` with the `task` perturbation (instruction fix:
 `harnessstudio.benchmarks.libero_pro_instructions`), 10 tasks x episodes 0-1 = 20 cases per cell,
 `medoid-bon` and `chunk-interrupt`, three arms each, same server, config `hs2-gpu/configs/libero_pro_hs.yaml`.
+
+### LIBERO-Pro results (finished ~11:40 PT)
+
+All 240 episodes valid. Goal-task runs started before the case-key fix was merged, so they were paired with
+`methods/harness_vla/scripts/merge_arms.py` (occurrence order; two goal_task tasks share an instruction).
+
+| Method | Cell (20 cases) | Baseline | Null | Candidate | vs baseline | Null vs baseline |
+|---|---|---|---|---|---|---|
+| medoid-bon (K=8) | libero_object task | 2 | 2 | 2 | +0 / -0 | 20 M / 0 R / 0 X |
+| medoid-bon (K=8) | libero_goal task | 3 | 3 | 4 | +2 / -1 | 19 M / 1 R / 0 X |
+| chunk-interrupt | libero_object task | 2 | 2 | 2 | +0 / -0 | 20 M / 0 R / 0 X |
+| chunk-interrupt | libero_goal task | 3 | 3 | 3 | +0 / -0 | 19 M / 1 R / 0 X |
+
+Reading: action-level methods (consensus selection over 8 seeded samples, stall-based chunk cutting) do not
+change outcomes under LIBERO-Pro's task perturbation: when the policy executes the wrong task, every sample
+executes the same wrong task. On the same cells the agentic Harness VLA moves 2 -> 14 (object) and 3 -> 11 (goal)
+with the success cue, 3 -> 6 (goal) without it.
