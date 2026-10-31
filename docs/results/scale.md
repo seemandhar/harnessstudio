@@ -1,6 +1,18 @@
 # SCALE (arXiv:2602.04208) on OpenVLA / LIBERO through HarnessStudio v2
 
-Status: **in progress** (started 2026-10-31 02:40 PT). This file is updated as results land.
+Status (2026-10-31 09:45 PT): port done and verified; libero_10 subset + extension and a libero_goal subset complete;
+official-pipeline reference runs in progress.
+
+## Summary
+
+- `scale` (faithful) runs inside a new OpenVLA policy server (`decoding_hooks`); its decoder matches the official
+  SCALE `predict_action` token for token (1050/1050 tokens, 150/150 actions, u, gamma and state on the same
+  checkpoint and seeds). The server's native path is bitwise the stock vla-eval server (a 520-step episode).
+- Tier 0/1 PASS; tier 2 PASS (2 M / 0 R / 0 X).
+- LIBERO-10, 60 paired cases (predeclared 30 + 30 extension): baseline 29/60, null 29/60 (60 M / 0 R / 0 X),
+  **SCALE 38/60, +16 / -7, sign test p = 0.093** (paper: 52.7 -> 63.3). Same direction and size as the paper,
+  not significant at this n.
+- LIBERO-Goal, 30 paired cases: baseline 23/30, null 23/30 (30 M), SCALE 24/30, +6 / -5 (p = 1.0): no effect seen.
 
 ## Core requests
 
@@ -148,7 +160,7 @@ hs pair --arm baseline=.../subset_l10_base/baseline --arm null=.../subset_l10_nu
 (Task lists: `hs2-gpu/scale/ovr_null_{a,b}.json`. Per-task and per-case table: `results/scale/subset_l10_paired/extra.json`
 from `hs2-gpu/scale/pair_runs.py`.)
 
-### Extension: libero_10 episodes 3-5 (running)
+### Extension: libero_10 episodes 3-5 (complete)
 
 Same setup, LIBERO initial states 3, 4, 5 for every task (30 new cases). vla-eval always runs episodes
 0..N-1, so the benchmark is `hs2-gpu/scale/bench/libero_offset.py:LIBEROEpisodeOffset` (vla-eval's
@@ -158,6 +170,24 @@ EPISODE_START payload, so case keys and seeds carry the true episode index), mou
 (tasks 7-9) on 8116. The extension baseline started at 05:35 PT, before the subset's second null part finished
 (05:53); the rule was met, so it counts. It would have been reported but not counted otherwise.
 
+| Arm | Episodes 3-5 (30) | vs baseline | **All libero_10, episodes 0-5 (60)** | vs baseline |
+|---|---|---|---|---|
+| baseline (greedy) | 13/30 | - | **29/60 (48%)** | - |
+| null (derived) | 13/30 | +0 / -0 | **29/60** | +0 / -0 (p = 1.0) |
+| candidate (SCALE) | 18/30 | +6 / -1 (p = 0.125) | **38/60 (63%)** | **+16 / -7 (p = 0.093)** |
+
+- Null vs baseline: 30 M / 0 R / 0 X on the extension, **60 M / 0 R / 0 X** over all 60 cases. Candidate vs null is
+  identical to candidate vs baseline (+16 / -7).
+- Policy samples (= steps): baseline 24,161, candidate 22,133 over 60 cases. Arm wall times on the extension:
+  baseline 6,191 s, candidate 5,811 s (two servers sharing GPU 5).
+- Per task over 60 (baseline -> candidate, of 6): alphabet soup + cream cheese 0 -> 4, white mug + pudding 2 -> 5,
+  alphabet soup + tomato sauce 3 -> 5, cream cheese + butter 5 -> 6, stove + moka 4 -> 5, black bowl drawer 4 -> 4,
+  book caddy 5 -> 5, both moka pots 1 -> 1, microwave 2 -> 2, **white mug left / yellow-white mug right 3 -> 1**.
+- Reading: the direction matches the paper (SCALE paper, OpenVLA LIBERO-Long: 52.7 -> 63.3; here 48 -> 63 on 60
+  paired cases), but the paired sign test gives p = 0.093: **not significant at 0.05** with n = 60. Combined
+  tables merge `hs pair` inputs (`results/scale/l10_all/<arm>/records.jsonl` = subset + extension records);
+  summaries in `results/scale/{ext_l10,l10_all}_paired/`.
+
 ### Second suite (predeclared 05:54 PT, before any libero_goal arm ran): libero_goal
 
 - **libero_goal**, 10 tasks x episodes 0-2 = 30 cases, seed 7, `num_steps_wait = 10`, official horizon 300,
@@ -166,6 +196,29 @@ EPISODE_START payload, so case keys and seeds carry the true episode index), mou
 - Arms and statistics as for libero_10. Runs after the libero_10 extension: candidate + null (tasks 4-9) on 8116,
   baseline + null (tasks 0-3) on 8115, each server restarted with the goal checkpoint.
 
+Result (complete, 90 episodes all valid):
+
+| Arm | Successes | vs baseline | Policy samples | Arm wall time |
+|---|---|---|---|---|
+| baseline (greedy) | **23/30 (77%)** | - | 4,830 | 2,446 s |
+| null (derived) | **23/30** | +0 / -0 (p = 1.0) | 4,830 | 1,155 s + 1,304 s (two servers) |
+| candidate (SCALE) | **24/30 (80%)** | **+6 / -5 (p = 1.0)** | 4,810 | 2,536 s |
+
+- Null vs baseline **30 M / 0 R / 0 X**; candidate vs null +6 / -5.
+- No measurable effect on libero_goal at n = 30: one net success, 11 discordant pairs that nearly cancel
+  (paper: 77.7 -> 82.3). Per task, baseline -> candidate (of 3): open top drawer + bowl 1 -> 3, open middle drawer
+  1 -> 2, wine bottle on cabinet 2 -> 3; bowl on cabinet 3 -> 2, wine bottle on rack 2 -> 1, turn on stove 3 -> 2;
+  the other four unchanged. Not extended (time).
+
+### Official SCALE pipeline, for reference (running)
+
+The official repo's own `run_libero_eval.py` (its LIBERO install, TF preprocessing, flash-attention-2, global
+seed 7, `env.seed(0)`), libero_10, `--num_trials_per_task 2` (initial states 0 and 1 of each task), `greedy` and
+`scale` concurrently on GPU 5 (`hs2-gpu/scale/run_official.sh`, in the LIBERO container with only GPU 5 visible).
+Different random streams and preprocessing from the HarnessStudio runs, so only rates are comparable, not pairs.
+(Run outside a container first, robosuite's EGL device index 5 rendered on physical GPU 6; those runs were stopped
+after one episode and discarded. TensorFlow's preallocation was turned off with `TF_FORCE_GPU_ALLOW_GROWTH`.)
+
 ## Deviations and disclosures
 
 - Random stream: one torch generator per (decision, seed) from HarnessStudio's common random numbers, instead of
@@ -173,7 +226,8 @@ EPISODE_START payload, so case keys and seeds carry the true episode index), mou
   arithmetic is unchanged; only which uniform draws feed `torch.multinomial` differs.
 - Image preprocessing and LLM attention kernel are vla-eval's OpenVLA server's for every arm: PIL JPEG
   round-trip, Lanczos resize, PIL center crop (official: TF JPEG round-trip + TF `crop_and_resize`), and the
-  transformers default attention for the LLM (official `get_vla` asks for flash-attention-2). These are policy-
+  the LLM's attention kernel transformers 4.40.1 picks by default for this checkpoint, SDPA (official `get_vla` asks
+  for flash-attention-2). These are policy-
   server settings shared by baseline, null and candidate, not part of SCALE.
 - Prompt: vla-eval's `task_description` as sent (the official script lower-cases it; LIBERO-10 instructions
   are already lower case).

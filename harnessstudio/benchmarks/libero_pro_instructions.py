@@ -32,6 +32,7 @@ class LIBEROProBDDLInstruction(LIBEROProBenchmark):
             words = robosuite_parse_problem(str(bddl))["language_instruction"]
             text = " ".join(words) if isinstance(words, (list, tuple)) else str(words)
             if text.strip():
-                task["filename_instruction"] = task["name"]
+                # Do not keep the original instruction in the task dict: vla-eval forwards task fields to the
+                # policy server in EPISODE_START, and a policy that read them would see the unperturbed task.
                 task["name"] = text.strip()
         return tasks

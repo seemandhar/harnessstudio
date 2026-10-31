@@ -366,3 +366,13 @@ What differs, and which of it plausibly explains the gap:
   --arm candidate=... --out ...`.
 - The `install_completion_tokens_operator` shim is still in `controller.py` so the code matches what produced these
   results; it is redundant with core commit `e68c01b` and can be removed (re-run tier 0/1 afterwards).
+
+## Audit (2026-10-31, ~10:50 PT)
+
+A read-only compliance audit found no critical violations (no simulator state in method code, experience built
+only from development episodes and frozen, every LLM call charged: `llm_calls` equals traced LLM events in 19/19
+records; Stage A/B token tables recompute from the records). Disclosures it required, now in the paper card:
+development smoke tests (60 steps, no success signal) ran on the Stage A held-out layout (seed 0) before scoring,
+and `controller.py` was edited between them; Stage A cold/null/baseline and Stage A warm ran under two method
+fingerprints because a core LLM-tool change landed mid-run; the controller clips the proposal gripper to [0, 1],
+audits with a constant RNG seed and namespaces experience by instruction+model+config.

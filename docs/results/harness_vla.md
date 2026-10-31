@@ -485,3 +485,16 @@ share an instruction get both tasks' memory. No task-family / global memory laye
   baseline arm (first-observation hash equal to the original baseline records'), froze `code_snapshot_v2/`, re-ran
   episodes 1 and 3 of both cells (08:06 PT, 26/40), then Goal-S episodes 2 and 4 under a budget guard (08:15 PT).
   Stopped spending at an estimated $39.30. `pytest` 37 passed; `hs verify harness-vla-sol-fewshot` tier 0 / 1 PASS.
+
+## Audit (2026-10-31, ~10:50 PT)
+
+A read-only compliance audit of the package found no critical violations: no simulator state or evaluator
+labels in method code, sensor-only benchmark additions (RGB-D + calibration), nothing trained, memory built only
+from development records and pinned by sha256, null arms reproducing the baseline (90 M / 10 R / 0 X); the
+8-cell table and the few-shot rows recompute from `records.jsonl`. Disclosures it required, now listed in the
+three paper cards: the planner is told the goal is not yet reached on every turn, which uses LIBERO's
+termination-on-success as an implicit verifier (the baseline and a real robot have no such check, so the
+harness's advantage partly reflects this); controller-side aids not in the paper (stall early-return,
+identical-reply guard, failed-command refusal, a localization table); SAM3 calls bypass `ctx.tools`; gpt-6.1-sol
+is unseeded; few-shot development uses a namespace, so the framework's dev-case refusal cannot fire and
+held-out evaluation relies on `episode_offset` (the exactly-paired 60 cases are the valid comparison).

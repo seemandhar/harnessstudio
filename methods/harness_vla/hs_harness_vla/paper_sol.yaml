@@ -14,6 +14,10 @@ substitutions:
   - "RPent pi0_pick / pi0_doubled with RLinf chunks -> vla_act over HarnessStudio decisions (10 executed actions per chunk), default max_chunks 12 (RPent: 24 / 20)"
   - "prompts: RPent evaluate prompt + strict/pro hybrid guides condensed for an open-weight model; all Task Specific / Global Memory content (PROVEN_LEVERS, seed-0 recipes, MEMORY.md) removed (zero-shot)"
   - "finish / spent turn budget -> the arm holds its pose until the horizon (RPent ends the episode)"
+  - "benchmark success termination as an implicit verifier: LIBERO ends an episode on success, so the controller treats 'still running' as 'goal not reached' and tells the planner so every turn (prompts.py, controller.py); the baseline and a real robot have no such check"
+  - "controller-side aids not in the paper: stall early-return in primitives, identical-reply guard and failed-command refusal, a controller-kept localization table, extra prompt rules"
+  - "SAM3 perception is called over HTTP directly (not through ctx.tools), so the framework records no per-call hashes; the controller caps tool calls itself"
+  - "gpt-6.1-sol is called without a seed, so the planner is not deterministic across runs"
 requires: {capabilities: [act, chunk]}
 budgets: {policy_calls: 400, llm_calls: 45, tool_calls: 60, max_tokens: 6000}
 null: shadow

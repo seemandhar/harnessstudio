@@ -17,6 +17,11 @@ substitutions:
   - "agent-written task memory (audit JSON + recipe JSONL + task-family + global layers, written by the exploring agent) -> deterministic distillation of the recorded turns (Preparer.build, no LLM): per attempt an audit (localization table, outcome, failure lessons, planner reasoning) and the executed primitive recipe with every target also given as an offset from its landmark; task-specific layer only"
   - "memory retrieval by Claude Code reading files -> the controller injects every attempt for the current task language into the first planner message (two goal_task tasks share one instruction: both tasks' attempts are shown)"
   - "finish / spent turn budget -> the arm holds its pose until the horizon (RPent ends the episode)"
+  - "benchmark success termination as an implicit verifier: LIBERO ends an episode on success, so the controller treats 'still running' as 'goal not reached' and tells the planner so every turn (prompts.py, controller.py); the baseline and a real robot have no such check"
+  - "controller-side aids not in the paper: stall early-return in primitives, identical-reply guard and failed-command refusal, a controller-kept localization table, extra prompt rules"
+  - "SAM3 perception is called over HTTP directly (not through ctx.tools), so the framework records no per-call hashes; the controller caps tool calls itself"
+  - "gpt-6.1-sol is called without a seed, so the planner is not deterministic across runs"
+  - "development attempts replay the reference scene (init state 0) under the case namespace dev-ref0 with episode_idx 0..k-1 relabelled; the framework's dev-case refusal therefore cannot match evaluation keys, and held-out evaluation relies on episode_offset (never evaluate episode 0 with these artifacts)"
 requires: {capabilities: [act, chunk]}
 budgets: {policy_calls: 400, llm_calls: 45, tool_calls: 60, max_tokens: 6000}
 null: shadow

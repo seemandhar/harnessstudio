@@ -9,6 +9,8 @@ substitutions:
   - "the unreleased RoboDojo runtime is re-derived from the public X5A URDF: numpy forward kinematics for current_eef / student_eef_trajectory and damped-least-squares IK with joint interpolation for edit / eef takeovers"
   - "reviewer protocol: request_id is bound by the harness instead of echoed by the model, no terminal audit review (HarnessStudio never shows the terminal observation), compact request JSON"
   - "reviewer failures (transport or schema retries exhausted) execute the fresh student prefix unreviewed and force the next review, instead of aborting the episode"
+  - "proposals' gripper command is clipped to [0, 1] by the controller (RoboDojo clips it anyway); audit sampling uses a constant RNG seed 0; experience is namespaced by instruction+model+config"
+  - "development smoke tests (60 steps, no success signal) ran on the stage A held-out layout (seed 0) before the scored runs; the max_completion_tokens operator shim and stage A warm ran after a core change, so stage A arms have two method fingerprints"
 requires: {capabilities: [act, chunk]}
 budgets: {policy_calls: 1200, llm_calls: 250, tool_calls: 0, max_tokens: 8000}
 null: shadow
