@@ -7,11 +7,11 @@
     python3 methods/rtcf/scripts/check_split.py --self-test
 
 Checks (exit 1 if any fails):
-- development init states (prepared.json dev_cases) are within [10, 49] and evaluation init states (traces) are
+- development init states (prepared.json dev_cases) are within [10, 29] (run-order.md) and evaluation init states (traces) are
   within [0, 9] for every (suite, task), ignoring namespace and seed; no (task, init state) pair is in both.
   HarnessStudio's own refusal compares case keys, which differ by namespace ('libero' vs 'libero@seed10X'), so it
   cannot catch a same-init-state collision under another seed;
-- every config sets quat_no_antipodal: true; dev configs use episode_offset >= 10 with offset+episodes <= 50 and
+- every config sets quat_no_antipodal: true; dev configs use init states within [10, 29] and
   match_sequential_resets: true; eval configs use episode_offset 0 and <= 10 episodes per task;
 - every run (dev and eval) used execute_horizon 5 (run manifest profile);
 - every eval run's case namespace is 'seed<S>' with S == the config's params.seed, and eval output directories are
@@ -27,6 +27,7 @@ from pathlib import Path
 import yaml
 
 CADENCE = 5
+DEV_MIN, DEV_MAX = 10, 29   # run-order.md: development init states 10-29 (20 per task), all suites
 
 
 def bench_params(config: Path) -> tuple[dict, int]:
@@ -42,8 +43,8 @@ def lint_config(config: Path, problems: list) -> dict:
         problems.append(f"{name}: quat_no_antipodal is not true")
     off = int(params.get("episode_offset") or 0)
     if off:   # development
-        if off < 10 or off + episodes > 50:
-            problems.append(f"{name}: development init states {off}..{off + episodes - 1} not within [10, 49]")
+        if off < DEV_MIN or off + episodes - 1 > DEV_MAX:
+            problems.append(f"{name}: development init states {off}..{off + episodes - 1} not within [{DEV_MIN}, {DEV_MAX}]")
         if params.get("match_sequential_resets") is not True:
             problems.append(f"{name}: development config without match_sequential_resets: true")
     else:
@@ -79,10 +80,10 @@ def check_pairs(dev: set, ev: set, problems: list) -> dict:
     overlap = sorted(dev & ev)
     if overlap:
         problems.append(f"{len(overlap)} (task, init state) pairs are in development and evaluation, e.g. {overlap[:3]}")
-    bad_dev = sorted(e for _, e in dev if not 10 <= e <= 49)
+    bad_dev = sorted(e for _, e in dev if not DEV_MIN <= e <= DEV_MAX)
     bad_ev = sorted(e for _, e in ev if not 0 <= e <= 9)
     if bad_dev:
-        problems.append(f"development init states outside [10, 49]: {sorted(set(bad_dev))[:10]}")
+        problems.append(f"development init states outside [{DEV_MIN}, {DEV_MAX}]: {sorted(set(bad_dev))[:10]}")
     if bad_ev:
         problems.append(f"evaluation init states outside [0, 9]: {sorted(set(bad_ev))[:10]}")
     return {"dev_pairs": len(dev), "eval_pairs": len(ev), "overlap": len(overlap),

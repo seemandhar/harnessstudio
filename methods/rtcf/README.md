@@ -31,7 +31,7 @@ H=/home/sejain/research/cvpr27/RoboMetaHarness-claude/harnessstudio; M=$H/method
 # SigLIP service (own uv venv; weights google/siglip-so400m-patch14-224 @ d04cf29, sha256 30a00c26...)
 CUDA_VISIBLE_DEVICES=G HF_HUB_OFFLINE=1 uv run $M/scripts/siglip_service.py --snapshot SNAPSHOT_DIR \
     --revision d04cf29fca7b6374f74d8bea1969314492266b5e --port 8149
-# configs (quat_no_antipodal: true; dev init states 10-49 seed 7; eval init states 0-9 seeds 101-105)
+# configs (quat_no_antipodal: true; dev init states 10-29 seed 7; eval init states 0-9 seeds 101-105)
 python3 $M/scripts/make_configs.py --suite libero_10 --kind dev --seed 7 --out $M/configs/generated
 cd /home/sejain/research/cvpr27/vla-eval-v0.8.0
 export HS_RTCF_ENCODER_URL=http://127.0.0.1:8149

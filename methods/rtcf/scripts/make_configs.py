@@ -4,7 +4,8 @@
     python3 methods/rtcf/scripts/make_configs.py --suite libero_10 --kind dev  --seed 7   --out methods/rtcf/configs/generated
     python3 methods/rtcf/scripts/make_configs.py --suite libero_10 --kind eval --seed 101 --out ...
 
-dev : init states 10-49 (episode_offset 10, 40 episodes per task, match_sequential_resets: true so the scenes are
+dev : init states 10-29 (episode_offset 10, 20 episodes per task; budget decision predeclared in
+      runs/rtcf-20261031/protocol/run-order.md before outcomes, match_sequential_resets: true so the scenes are
       those of a stock sequential seed-7 run, critic B3), seed 7 (paper: memory seed 7)
 eval: init states 0-9 (10 episodes per task), seeds 101-105 (paper); one whole (task, seed) block per shard, run with
       --case-namespace seed<S> --benchmark-overrides '{"params": {"seed": S}}' and its own --out (critic B7)
@@ -61,12 +62,12 @@ def main() -> int:
     ap.add_argument("--seed", type=int, required=True)
     ap.add_argument("--tasks-per-shard", type=int, default=1)
     ap.add_argument("--dev-first", type=int, default=10, help="first development init state (dev only)")
-    ap.add_argument("--dev-count", type=int, default=40, help="development init states per task (dev only)")
+    ap.add_argument("--dev-count", type=int, default=20, help="development init states per task (dev only)")
     ap.add_argument("--gpu", default="7")
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
-    if a.kind == "dev" and a.dev_first < 10:
-        raise SystemExit("development init states must not overlap the evaluation init states 0-9")
+    if a.kind == "dev" and (a.dev_first < 10 or a.dev_first + a.dev_count > 30):
+        raise SystemExit("development init states must lie within [10, 29] (run-order.md; eval uses 0-9)")
     offset, episodes = (a.dev_first, a.dev_count) if a.kind == "dev" else (0, 10)
     what = f"init states {offset}-{offset + episodes - 1}"
     out = Path(a.out)

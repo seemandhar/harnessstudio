@@ -4,7 +4,7 @@ Runs inside the vla-eval LIBERO container (Python 3.8). Both parameters default 
 benchmark behaves exactly like vla_eval.benchmarks.libero.benchmark:LIBEROBenchmark.
 
   episode_offset: N  -> run k = 0..episodes_per_task-1 as episode_idx N+k (LIBERO init state N+k). The rtcf
-                        development memory uses N = 10 with 40 episodes (init states 10-49), so it never touches the
+                        development memory uses N = 10 with 20 episodes (init states 10-29), so it never touches the
                         evaluation init states 0-9. HarnessStudio keys the case by this episode_idx (vla-eval's
                         sync runner calls reset(task) before it builds the EPISODE_START payload from the same dict).
   match_sequential_resets: true -> with episode_offset, reproduce the scene of a plain sequential run exactly
