@@ -117,6 +117,13 @@ def test_cli_exposes_norm_mode_and_parent_args():
     import yaml
     args = yaml.safe_load(yaml_cfg.read_text())["args"]
     assert args["norm_mode"] == "zscore" and args["config_name"] == "pi0_fast_libero"
+    from jsonargparse import ActionConfigFile          # the launch path: run_server(--config yaml)
+    full = ArgumentParser()
+    full.add_argument("--config", action=ActionConfigFile)
+    full.add_argument("--script", default=None)
+    full.add_class_arguments(P.HarnessPi0Server, nested_key="args", fail_untyped=False, sub_configs=True)
+    d = full.parse_args(["--config", str(yaml_cfg)]).args.as_dict()
+    assert d["norm_mode"] == "zscore" and d["state_dim"] == 8 and d["image_resolution"] == 224
 
 
 # ------------------------------------------------------------------------------- part 2 (openpi env, CPU, stub model)
