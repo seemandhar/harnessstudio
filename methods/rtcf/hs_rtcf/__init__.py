@@ -29,6 +29,8 @@ PARAMS = {
     "encoder_weights_sha256": "30a00c26a045c84a0bd14adc94278d7f1cc941c8bd67e5fa50f7bed34c34e60d",   # checked via /health
     "norm_stats": NORM_STATS,
     "norm_stats_sha256": NORM_STATS_SHA256,
+    "norm_mode": "zscore",      # MUST equal the policy server (pi0_fast_libero was trained with z-score; serve with
+                                # use_quantile_norm=False, repair/diagnosis.md); a mismatch raises (token-grid check)
     "token_scale": 10.0,
     "lambda0": 0.1,
     "f_cut": 3,
@@ -42,7 +44,8 @@ PARAMS = {
     "correction": "spectral",
     "store_png": True,
 }
-PREPARE = {"only_success": True, "norm_stats": NORM_STATS, "norm_stats_sha256": NORM_STATS_SHA256, "token_scale": 10.0}
+PREPARE = {"only_success": True, "norm_stats": NORM_STATS, "norm_stats_sha256": NORM_STATS_SHA256, "token_scale": 10.0,
+           "norm_mode": "zscore"}
 
 
 def _config(card: str, **override):

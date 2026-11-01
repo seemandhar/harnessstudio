@@ -47,12 +47,13 @@ class Preparer:
 
     def __init__(self, only_success: bool = True, norm_stats: str = "assets/pi0_fast_libero_norm_stats.json",
                  norm_stats_sha256: Optional[str] = None, token_scale: float = 10.0,
-                 zero_chunk_tol: float = 1e-4) -> None:
+                 zero_chunk_tol: float = 1e-4, norm_mode: str = "zscore") -> None:
         self.only_success = bool(only_success)
         self.norm_stats_path = resolve(norm_stats)
-        self.scale = spectral.load_scale(self.norm_stats_path, norm_stats_sha256)
+        self.norm_mode = norm_mode
+        self.scale = spectral.load_scale(self.norm_stats_path, norm_stats_sha256, mode=norm_mode)
+        self.center = spectral.norm_center(self.norm_stats_path, norm_mode, norm_stats_sha256)
         self.token_scale = float(token_scale)
-        self.q01, self.q99 = spectral.load_norm_bounds(self.norm_stats_path, norm_stats_sha256)
         self.zero_chunk_tol = float(zero_chunk_tol)
 
     def build(self, records, out_dir) -> dict:
@@ -78,7 +79,7 @@ class Preparer:
                 coefs.append(spectral.quantize(c, self.token_scale))
                 state = from_f32_b64(d["state_f32"]).astype(np.float64) if "state_f32" in d else None
                 missing_state += int(state is None)
-                failed.append(spectral.is_openpi_zero_chunk(chunk, state, self.q01, self.q99, self.zero_chunk_tol))
+                failed.append(spectral.is_openpi_zero_chunk(chunk, state, tol=self.zero_chunk_tol, center=self.center))
                 encoders.add(d["encoder"])
             offsets.append(offsets[-1] + len(rows))
             cases.append({"benchmark": r["benchmark"], "task": r["task"], "episode_idx": int(r["episode_idx"]),
@@ -90,7 +91,7 @@ class Preparer:
             raise ValueError(f"descriptor dimensions differ: {sorted(dims)}")
         meta = {"format": "rtcf-memory-v1", "encoder": sorted(encoders)[0] if encoders else None,
                 "norm_stats_sha256": hashlib.sha256(self.norm_stats_path.read_bytes()).hexdigest(),
-                "token_scale": self.token_scale, "chunk_shape": list(shape) if shape else None,
+                "token_scale": self.token_scale, "norm_mode": self.norm_mode, "chunk_shape": list(shape) if shape else None,
                 "only_success": self.only_success, "memories": cases, "num_memories": len(cases),
                 "num_positions": offsets[-1], "decode_failed_positions": int(sum(failed)),
                 "positions_without_state": missing_state, "decode_failure_rule": "openpi zero-chunk exact signature",

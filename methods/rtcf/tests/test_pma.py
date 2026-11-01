@@ -193,10 +193,10 @@ def test_empty_bank_skips(tmp_path):
 def test_decode_failed_memory_skips(tmp_path):
     from hs_rtcf import spectral as sp
     from hs_rtcf.action_op import resolve
-    q01, q99 = sp.load_norm_bounds(resolve("assets/pi0_fast_libero_norm_stats.json"))
+    center = sp.norm_center(resolve("assets/pi0_fast_libero_norm_stats.json"), "zscore")
     state = np.array([0.05, -0.1, 1.0, 3.1, 0.2, -0.4, 0.03, -0.03], np.float32)
     rec = collect_record(np.random.default_rng(4), [10])
-    zero = np.tile(sp.openpi_zero_chunk_row(state, q01, q99), (10, 1)).astype(np.float32)
+    zero = np.tile(sp.openpi_zero_chunk_row(state, center=center), (10, 1)).astype(np.float32)
     d = rec["events"][0]["diagnostics"]["action_op"]
     d["chunk_f32"], d["state_f32"] = f32_b64(zero), f32_b64(state)
     op = make_op(tmp_path, [rec])
@@ -257,3 +257,24 @@ def test_decision_pre_events_preferred(tmp_path):
     assert len(decision_rows(rec)) == 3
     names = Preparer().build([rec], tmp_path)
     assert MemoryBank.load(tmp_path / names["memory"]).num_positions == 3
+
+
+
+def test_off_grid_proposal_fails_loudly(tmp_path):
+    """norm_mode must match the server: a real (non-tier-1) proposal off the FAST token grid raises."""
+    from hs_rtcf import spectral as sp
+    from hs_rtcf.action_op import resolve
+    ns = resolve("assets/pi0_fast_libero_norm_stats.json")
+    op = make_op()
+    op.encoder.encode = lambda obs: (tier1_pixel_descriptor(np.zeros((8, 8, 3), np.uint8)), "siglip-mock", np.zeros((8, 8, 3), np.uint8))
+    rng = np.random.default_rng(10)
+    q = rng.integers(-30, 30, (10, 7))
+    for mode, ok in (("zscore", True), ("quantile", False)):
+        s = sp.load_scale(ns, mode=mode)
+        a = ((sp.dct_matrix(10).T @ (q / 10.0)) / s[None, :]).astype(np.float32)
+        obs = {"images": {"agentview": np.zeros((256, 256, 3), np.uint8)}, "states": np.zeros(8, np.float32)}
+        if ok:
+            assert op.transform(a, obs, {}).tobytes() == a.tobytes()
+        else:
+            with pytest.raises(RuntimeError, match="off the FAST token grid"):
+                op.transform(a, obs, {})

@@ -18,7 +18,7 @@ from typing import Any, Optional, Sequence
 import numpy as np
 
 from . import spectral
-from .encoder import Encoder, f32_b64, png_b64
+from .encoder import TIER1_ENCODER, Encoder, f32_b64, png_b64
 from .memory import MemoryBank
 from .pma import ProgressiveMemoryAlignment
 
@@ -40,11 +40,13 @@ class RTCFActionOp:
                  read_offset: int = 0, motion: Sequence[str] = ("position", "rotation"),
                  action_limit: Optional[float] = 1.0, retrieval: str = "pma", correction: str = "spectral",
                  store_png: bool = True, state_key: str = "states", zero_chunk_tol: float = 1e-4,
-                 encoder_weights_sha256: str = "") -> None:
+                 encoder_weights_sha256: str = "", norm_mode: str = "zscore", token_grid_tol: float = 0.02) -> None:
         self.encoder = Encoder(image_key, encoder_url, encoder_model, encoder_revision, pooling, encoder_timeout,
                                encoder_weights_sha256)
-        self.scale = spectral.load_scale(resolve(norm_stats), norm_stats_sha256)
-        self.q01, self.q99 = spectral.load_norm_bounds(resolve(norm_stats), norm_stats_sha256)
+        self.norm_mode = norm_mode
+        self.scale = spectral.load_scale(resolve(norm_stats), norm_stats_sha256, mode=norm_mode)
+        self.center = spectral.norm_center(resolve(norm_stats), norm_mode, norm_stats_sha256)
+        self.token_grid_tol = float(token_grid_tol)
         self.state_key, self.zero_chunk_tol = state_key, float(zero_chunk_tol)
         self.token_scale = float(token_scale)
         self.lambda0, self.f_cut, self.delta_max = float(lambda0), int(f_cut), float(delta_max)
@@ -103,7 +105,15 @@ class RTCFActionOp:
         t_enc = time.monotonic() - t0
         state = obs.get(self.state_key)
         state = None if state is None else np.asarray(state, dtype=np.float64).reshape(-1)
-        native_failed = spectral.is_openpi_zero_chunk(native, state, self.q01, self.q99, self.zero_chunk_tol)
+        native_failed = spectral.is_openpi_zero_chunk(native, state, tol=self.zero_chunk_tol, center=self.center)
+        if enc_name != TIER1_ENCODER and self.token_grid_tol > 0:
+            # The policy decoded this chunk from integer FAST tokens: in the server's own normalization its f > 0
+            # coefficients sit on the 1/10 grid. Off-grid means norm_mode does not match the server: fail loudly.
+            grid = spectral.token_grid_error(native, self.scale, self.token_scale)
+            if grid > self.token_grid_tol:
+                raise RuntimeError(f"proposal is off the FAST token grid in norm_mode={self.norm_mode!r} "
+                                   f"(max error {grid:.3f} > {self.token_grid_tol}); the policy server normalizes "
+                                   "actions differently")
         self.stats["native_decode_failed"] += int(native_failed)
         diag: dict = {"t": self.stats["decisions"], "encoder": enc_name, "enc_ms": round(1000 * t_enc, 2),
                       "native_decode_failed": native_failed}

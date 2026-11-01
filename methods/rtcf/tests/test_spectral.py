@@ -35,9 +35,31 @@ def test_dct_matches_scipy_when_available():
 
 
 def test_scale_from_norm_stats():
+    ns = resolve("assets/pi0_fast_libero_norm_stats.json")
     assert SCALE.shape == (7,)
-    # q01/q99 of pi0_fast_libero actions dim 0: -0.7262..., 1.0789...
-    assert abs(SCALE[0] - 2.0 / (1.0789 - (-0.7262))) < 1e-3
+    # default = z-score (the checkpoint's training normalization): std dim 0 = 0.3709...
+    assert abs(SCALE[0] - 1.0 / 0.3709) < 1e-3
+    q = spectral.load_scale(ns, mode="quantile")       # q01/q99 dim 0: -0.7262..., 1.0789...
+    assert abs(q[0] - 2.0 / (1.0789 - (-0.7262))) < 1e-3
+    assert np.allclose(spectral.norm_center(ns, "zscore")[:3], [0.1017, 0.0533, -0.8519], atol=1e-3)
+    with pytest.raises(ValueError):
+        spectral.load_scale(ns, mode="minmax")
+
+
+@pytest.mark.parametrize("mode", ["zscore", "quantile"])
+def test_token_grid_detects_mode_mismatch(mode):
+    """A chunk decoded from integer FAST tokens is on the 1/10 grid only in its own normalization."""
+    ns = resolve("assets/pi0_fast_libero_norm_stats.json")
+    rng = np.random.default_rng(13)
+    s_true = spectral.load_scale(ns, mode=mode)
+    s_wrong = spectral.load_scale(ns, mode="quantile" if mode == "zscore" else "zscore")
+    errs_true, errs_wrong = [], []
+    for _ in range(50):
+        q = rng.integers(-30, 30, (10, 7))
+        a = ((spectral.dct_matrix(10).T @ (q / 10.0)) / s_true[None, :] + rng.normal(size=7)[None, :]).astype(np.float32)
+        errs_true.append(spectral.token_grid_error(a, s_true))
+        errs_wrong.append(spectral.token_grid_error(a, s_wrong))
+    assert max(errs_true) < 1e-3 and min(errs_wrong) > 0.05
 
 
 def test_per_dim_offsets_only_touch_dc():
@@ -59,6 +81,18 @@ def test_token_integrality_roundtrip():
 
 
 Q01, Q99 = spectral.load_norm_bounds(resolve("assets/pi0_fast_libero_norm_stats.json"))
+
+
+def test_exact_zero_chunk_signature_zscore():
+    """Under z-score openpi's zero chunk is mean (+ state[0:6] on the motion dims)."""
+    ns = resolve("assets/pi0_fast_libero_norm_stats.json")
+    center = spectral.norm_center(ns, "zscore")
+    state = np.array([0.05, -0.1, 1.0, 3.1, 0.2, -0.4, 0.03, -0.03])
+    zero = np.tile(spectral.openpi_zero_chunk_row(state, center=center), (10, 1)).astype(np.float32)
+    assert spectral.is_openpi_zero_chunk(zero, state, center=center)
+    assert not spectral.is_openpi_zero_chunk(zero, state, Q01, Q99)          # quantile center differs
+    still = np.tile(np.array([0, 0, 0, 0, 0, 0, 1.0], np.float32), (10, 1))
+    assert not spectral.is_openpi_zero_chunk(still, state, center=center)
 
 
 def test_exact_zero_chunk_signature():

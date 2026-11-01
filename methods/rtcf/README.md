@@ -9,7 +9,7 @@ report is frozen a priori (see `hs_rtcf/paper.yaml` substitutions and `runs/rtcf
 - `hs_rtcf.action_op:RTCFActionOp` (slot `action_op`, derived null). At every policy invocation:
   SigLIP descriptor of the agentview image (service `scripts/siglip_service.py`) -> PMA frontier update over the
   whole frozen success memory (`hs_rtcf/pma.py`, Eq. 5-9) -> read the aligned record -> clipped low-frequency DCT
-  residual on the motion dims in pi0-FAST's coefficient space (`hs_rtcf/spectral.py`, Eq. 10-11) -> magnitude limit.
+  residual on the motion dims in pi0-FAST's coefficient space (z-score normalization, `norm_mode` must match the server) (`hs_rtcf/spectral.py`, Eq. 10-11) -> magnitude limit.
   No memory artifact = collection mode (native chunk, diagnostics carry descriptor + full chunk + PNG).
 - `hs_rtcf.prepare:Preparer` (`collect_arm: candidate` = native in collection mode): successful development
   episodes -> `memory.npz` (descriptors, offsets, quantized coefficients, decode-failure flags) + `memory.json`.
@@ -20,6 +20,7 @@ report is frozen a priori (see `hs_rtcf/paper.yaml` substitutions and `runs/rtcf
 from hs_rtcf.spectral import rtcf_correct, coefficients, load_scale, dct_matrix, quantize, dequantize
 corrected, info = rtcf_correct(native_chunk[H, A], memory_coef[H, A], scale[A], motion_dims, f_cut, delta_max,
                                lambda0, action_limit=1.0, mode="spectral")   # memory_coef = FAST tokens / 10
+scale = load_scale(norm_stats_json, sha256=None, mode="zscore")   # 1/(std+1e-6); "quantile": 2/(q99-q01+1e-6)
 from hs_rtcf.pma import local_cost, pma_init, pma_step, pma_select, frame_nn_select, local_index
 J = pma_init(local_cost(z_1, Z)); J = pma_step(J, local_cost(z_t, Z), local_index(offsets), v_max, gamma)
 i_star, b_star, d = pma_select(J, offsets, t)            # 0-based positions, lowest index on ties
@@ -56,6 +57,11 @@ Checks: `scripts/check_native_equivalence.py` (collection mode == baseline hashe
 (10 s C integral on real chunks, exact zero-chunk signature hits), `scripts/check_split.py` (dev init states disjoint
 from eval, config flags, cadence 5, seed == namespace, distinct outputs), `scripts/summarize.py` (paired table vs the
 withdrawn paper rows, exact McNemar per seed and pooled, CIs clustered by (task, init state), clipping rates).
+
+## Normalization
+pi0_fast_libero was trained with z-score action/state normalization; openpi >= a3d8ea3 serves it with quantile
+norm unless `use_quantile_norm=False`. The policy servers must run z-score, and the method's `norm_mode: zscore` must
+match: a real proposal that is off the FAST token grid in `norm_mode` raises (`spectral.token_grid_error`).
 
 ## Known limitations
 - HarnessStudio logs diagnostics after a decision's actions ran; an episode ending mid-chunk (every LIBERO success)

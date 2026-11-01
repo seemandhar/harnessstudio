@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Live check that rtcf's coefficient coordinates are pi0-FAST's own: on real server chunks, 10 * s_d * DCT(A)
-for f > 0 must be (numerically) integers, because the policy output is the inverse DCT of integer FAST tokens
+for f > 0 must be (numerically) integers (s_d of the server's normalization, --norm-mode, default zscore; the
+other mode's error is reported for contrast and should be large), because the policy output is the inverse DCT of integer FAST tokens
 after an affine per-dimension unnormalization and a per-dimension state offset (which only touches f = 0).
 
     .venv/bin/python methods/rtcf/scripts/probe_fast_integrality.py RUN_DIR [--tol 1e-3] [--out R.json]
@@ -30,10 +31,16 @@ def main() -> int:
     ap.add_argument("--tol", type=float, default=1e-3)
     ap.add_argument("--min-chunks", type=int, default=200)
     ap.add_argument("--sabotage", action="store_true", help="perturb the scale by 3%% (must fail)")
+    ap.add_argument("--norm-mode", default="zscore", choices=["zscore", "quantile"],
+                    help="the policy server's action normalization (pi0_fast_libero: zscore)")
     ap.add_argument("--out")
     a = ap.parse_args()
-    scale = spectral.load_scale(resolve("assets/pi0_fast_libero_norm_stats.json"))
-    q01, q99 = spectral.load_norm_bounds(resolve("assets/pi0_fast_libero_norm_stats.json"))
+    ns = resolve("assets/pi0_fast_libero_norm_stats.json")
+    scale = spectral.load_scale(ns, mode=a.norm_mode)
+    center = spectral.norm_center(ns, a.norm_mode)
+    other = "quantile" if a.norm_mode == "zscore" else "zscore"
+    other_scale = spectral.load_scale(ns, mode=other)
+    other_errs = []
     if a.sabotage:
         scale = scale * 1.03
     errs, failed, n, no_state = [], 0, 0, 0
@@ -48,7 +55,8 @@ def main() -> int:
             n += 1
             state = from_f32_b64(d["state_f32"]) if "state_f32" in d else None
             no_state += int(state is None)
-            if spectral.is_openpi_zero_chunk(a_chunk, state, q01, q99):     # B4 exact signature hits
+            other_errs.append(spectral.token_grid_error(a_chunk, other_scale))
+            if spectral.is_openpi_zero_chunk(a_chunk, state, center=center):     # B4 exact signature hits
                 failed += 1
                 continue
             x = 10.0 * c[1:]
@@ -56,7 +64,8 @@ def main() -> int:
     per_dim = np.max(np.stack(errs), axis=0).tolist() if errs else []
     worst = max(per_dim) if per_dim else None
     report = {"chunks": n, "decode_failed_exact_signature": failed, "chunks_without_state": no_state, "max_abs_err_per_dim": per_dim, "max_abs_err": worst,
-              "tol": a.tol, "sabotage": a.sabotage, "ok": bool(errs) and n >= a.min_chunks and worst <= a.tol}
+              "tol": a.tol, "sabotage": a.sabotage, "norm_mode": a.norm_mode,
+              "other_mode_max_err": max(other_errs) if other_errs else None, "ok": bool(errs) and n >= a.min_chunks and worst <= a.tol}
     text = json.dumps(report, indent=1)
     print(text)
     if a.out:

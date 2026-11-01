@@ -2,10 +2,18 @@
 
 Coordinates. pi0-FAST (openpi pi0_fast_libero) tokenizes round(10 * DCT_ortho_time(N(A_model))), where A_model is
 the action minus a per-dimension constant (state[:6] on dims 0-5, openpi DeltaActions) and N is the per-dimension
-quantile normalization x -> 2 (x - q01) / (q99 - q01 + 1e-6) - 1. Both are affine per dimension, the DCT is linear
-and orthonormal, and every per-dimension constant lands in the f = 0 (DC) coefficient. So for f > 0
+normalization the checkpoint was TRAINED with. For pi0_fast_libero (checkpoint 2025-05-28) that is z-score,
+x -> (x - mean) / (std + 1e-6) (openpi transforms.Normalize._normalize, use_quantiles=False); openpi >= a3d8ea3
+(2025-07-05) serves it with quantile norm x -> 2 (x - q01) / (q99 - q01 + 1e-6) - 1 unless the server is started
+with use_quantile_norm=False (runs/rtcf-20261031/repair/diagnosis.md). Both maps are affine per dimension, the DCT
+is linear and orthonormal, and every per-dimension constant (state offset, mean or q01) lands in the f = 0 (DC)
+coefficient. So for f > 0
 
-    C[f, d] = s_d * DCT(A)[f, d],     s_d = 2 / (q99_d - q01_d + 1e-6),
+    C[f, d] = s_d * DCT(A)[f, d],   s_d = 1 / (std_d + 1e-6)          (mode "zscore", the default)
+                                    s_d = 2 / (q99_d - q01_d + 1e-6)  (mode "quantile")
+
+The mode must equal the policy server's normalization; `token_grid_error` detects a mismatch on live chunks
+(f > 0 coefficients of a served chunk are integers / 10 only in the server's own mode).
 
 computed from the executable action chunk A the server returns. DC is masked by Eq. 10, so the correction never
 needs the state offset. `coefficients(A, s)` returns s * DCT(A) for every f (its DC row is in executable-action
@@ -15,7 +23,10 @@ Pure functions only (no state); the parity script imports them:
     dct_matrix(H) -> [H, H] orthonormal DCT-II
     coefficients(chunk [H, A], scale [A]) -> C [H, A]
     quantize(C, token_scale=10) -> int64 tokens-equivalent  /  dequantize(q, token_scale) -> C
+    load_scale(norm_stats_json, sha256=None, mode="zscore") -> s [A]      (default mode changed to zscore in v0.4)
     load_norm_bounds(norm_stats_json) -> (q01 [A], q99 [A])
+    norm_center(norm_stats_json, mode="zscore") -> the unnormalized value of a normalized 0 (mean, or (q01+q99+eps)/2)
+    token_grid_error(chunk, scale, token_scale=10) -> max |10 s C - round(10 s C)| over f > 0
     is_openpi_zero_chunk(chunk, state, q01, q99, tol=1e-4) -> bool
         exact signature of openpi's zero chunk after a failed FAST decode (HF FAST `decode` and openpi
         `extract_actions` silently return zeros): every row identical, gripper == (q01+q99)/2, and motion dims
@@ -53,16 +64,43 @@ def dct_matrix(h: int) -> np.ndarray:
     return _dct_matrix_cached(int(h))
 
 
-def load_scale(norm_stats_path: str | Path, expected_sha256: Optional[str] = None) -> np.ndarray:
-    """s_d = 2 / (q99 - q01 + 1e-6) for the 'actions' entry of an openpi norm_stats.json (quantile norm)."""
+NORM_MODES = ("zscore", "quantile")
+
+
+def _action_stats(norm_stats_path: str | Path, expected_sha256: Optional[str] = None) -> dict:
     import hashlib
     raw = Path(norm_stats_path).read_bytes()
     if expected_sha256 and hashlib.sha256(raw).hexdigest() != expected_sha256:
         raise ValueError(f"norm stats {norm_stats_path} do not match the pinned sha256")
     stats = json.loads(raw)
-    stats = stats.get("norm_stats", stats)["actions"]
-    q01, q99 = np.asarray(stats["q01"], dtype=np.float64), np.asarray(stats["q99"], dtype=np.float64)
-    return 2.0 / (q99 - q01 + NORM_EPS)
+    return {k: np.asarray(v, dtype=np.float64) for k, v in stats.get("norm_stats", stats)["actions"].items()}
+
+
+def load_scale(norm_stats_path: str | Path, expected_sha256: Optional[str] = None, mode: str = "zscore") -> np.ndarray:
+    """s_d of the policy's action normalization: zscore 1 / (std + 1e-6); quantile 2 / (q99 - q01 + 1e-6)."""
+    st = _action_stats(norm_stats_path, expected_sha256)
+    if mode == "zscore":
+        return 1.0 / (st["std"] + NORM_EPS)
+    if mode == "quantile":
+        return 2.0 / (st["q99"] - st["q01"] + NORM_EPS)
+    raise ValueError(f"unknown normalization mode {mode!r}; expected one of {NORM_MODES}")
+
+
+def norm_center(norm_stats_path: str | Path, mode: str = "zscore", expected_sha256: Optional[str] = None) -> np.ndarray:
+    """openpi's Unnormalize(0): zscore -> mean; quantile -> (q01 + q99 + 1e-6) / 2."""
+    st = _action_stats(norm_stats_path, expected_sha256)
+    if mode == "zscore":
+        return st["mean"].copy()
+    if mode == "quantile":
+        return (st["q01"] + st["q99"] + NORM_EPS) / 2.0
+    raise ValueError(f"unknown normalization mode {mode!r}; expected one of {NORM_MODES}")
+
+
+def token_grid_error(chunk: np.ndarray, scale: np.ndarray, token_scale: float = 10.0) -> float:
+    """max |token_scale * C - round(token_scale * C)| over f > 0. ~1e-5 for a chunk the server decoded from FAST
+    tokens in the same normalization mode; O(0.1-0.5) when the mode (scale) is wrong."""
+    x = token_scale * coefficients(chunk, scale)[1:]
+    return float(np.max(np.abs(x - np.round(x)))) if x.size else 0.0
 
 
 def load_norm_bounds(norm_stats_path: str | Path, expected_sha256: Optional[str] = None) -> tuple:
@@ -76,25 +114,32 @@ def load_norm_bounds(norm_stats_path: str | Path, expected_sha256: Optional[str]
     return np.asarray(stats["q01"], dtype=np.float64), np.asarray(stats["q99"], dtype=np.float64)
 
 
-def openpi_zero_chunk_row(state: np.ndarray, q01: np.ndarray, q99: np.ndarray, delta_dims: int = 6) -> np.ndarray:
-    """The action row openpi returns for an all-zero normalized chunk: Unnormalize(0) = (q01+q99)/2 (+5e-7),
-    then AbsoluteActions adds state[0:delta_dims] (pi0_fast_libero: make_bool_mask(6, -1))."""
-    row = (np.asarray(q01, np.float64) + np.asarray(q99, np.float64) + NORM_EPS) / 2.0
+def openpi_zero_chunk_row(state: np.ndarray, q01: np.ndarray = None, q99: np.ndarray = None, delta_dims: int = 6,
+                          center: Optional[np.ndarray] = None) -> np.ndarray:
+    """The action row openpi returns for an all-zero normalized chunk: Unnormalize(0) (`center`: the mean under
+    z-score, (q01+q99+1e-6)/2 under quantile; q01/q99 kept for backward compatibility = quantile), then
+    AbsoluteActions adds state[0:delta_dims] (pi0_fast_libero: make_bool_mask(6, -1))."""
+    if center is not None:
+        row = np.asarray(center, np.float64).copy()
+    else:
+        row = (np.asarray(q01, np.float64) + np.asarray(q99, np.float64) + NORM_EPS) / 2.0
     st = np.asarray(state, dtype=np.float64).reshape(-1)
     row[:delta_dims] = row[:delta_dims] + st[:delta_dims]
     return row
 
 
-def is_openpi_zero_chunk(chunk: np.ndarray, state: Optional[np.ndarray], q01: np.ndarray, q99: np.ndarray,
-                         tol: float = 1e-4, delta_dims: int = 6) -> bool:
+def is_openpi_zero_chunk(chunk: np.ndarray, state: Optional[np.ndarray], q01: np.ndarray = None,
+                         q99: np.ndarray = None, tol: float = 1e-4, delta_dims: int = 6,
+                         center: Optional[np.ndarray] = None) -> bool:
     """Exact signature of a failed FAST decode (critic B4 / audit C3). Needs the observation state the policy saw;
     without a state (e.g. HarnessStudio's synthetic tier-1 benchmark) it returns False."""
     a = np.asarray(chunk, dtype=np.float64)
-    if state is None or a.ndim != 2 or a.shape[1] != len(q01) or np.asarray(state).size < delta_dims:
+    width = len(center) if center is not None else len(q01)
+    if state is None or a.ndim != 2 or a.shape[1] != width or np.asarray(state).size < delta_dims:
         return False
     if not np.all(np.abs(a - a[0:1]) <= tol):
         return False
-    return bool(np.all(np.abs(a[0] - openpi_zero_chunk_row(state, q01, q99, delta_dims)) <= tol))
+    return bool(np.all(np.abs(a[0] - openpi_zero_chunk_row(state, q01, q99, delta_dims, center)) <= tol))
 
 
 def coefficients(chunk: np.ndarray, scale: np.ndarray) -> np.ndarray:
