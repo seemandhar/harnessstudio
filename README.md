@@ -137,8 +137,16 @@ chunktrust-ahs: 100% over ~17.8k decisions).
 |---|---|---|
 | `allenai-passthrough`, `pi05-libero-stock` | any unchanged vla-eval policy server | T0 (server chunking) |
 | `pi05-libero-hs` | `harnessstudio/policies/pi05_openpi.py` (openpi pi0.5, seeded) | T1 |
+| (run profile) | `harnessstudio/policies/pi05_openpi.py --config harnessstudio/policies/configs/pi0_fast_libero_zscore.yaml` (openpi pi0-FAST LIBERO, greedy; `norm_mode: zscore`, the checkpoint's training normalization, EXT openpi-norm) | T1 |
 | `gr00t-n15-robocasa365` | `harnessstudio/policies/gr00t_n15_robocasa365.py` (GR00T N1.5, seeded, velocity readout) | T1 (+ velocity) |
 | `fake-t0`, `fake-t1` | `harnessstudio/policy_ext/fake.py` (tier 1) | T0 / T1 |
+
+`pi05_openpi.py` takes `--args.norm_mode=config|zscore|quantile` (default `config`: the pinned openpi TrainConfig,
+unchanged). openpi >= a3d8ea3 (2025-07-05) serves every non-PI0 config with quantile norm. Verified for one checkpoint
+only: `pi0_fast_libero` (created 2025-05-28, before that switch) needs `zscore` (`docs/extensions/openpi-norm.md`).
+Other checkpoints may need it: verify each one (config history at its training date, plus a FAST token-grid or
+demo-frame check). A forced mode is
+announced in the HELLO action-spec description and so recorded in every run manifest's `policy_hello`.
 
 ## Building blocks for agent harnesses
 
