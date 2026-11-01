@@ -26,9 +26,18 @@ from typing import Optional
 import numpy as np
 
 
-def local_cost(z: np.ndarray, descriptors: np.ndarray) -> np.ndarray:
-    """Eq. 5: cosine dissimilarity between the query descriptor and every stored descriptor."""
-    sim = np.asarray(descriptors, dtype=np.float64) @ np.asarray(z, dtype=np.float64).reshape(-1)
+def local_cost(z: np.ndarray, descriptors: np.ndarray, block: int = 1024) -> np.ndarray:
+    """Eq. 5: cosine dissimilarity between the query descriptor and every stored descriptor.
+
+    Computed row by row (elementwise product + numpy's per-row reduction, in fixed-size row blocks), so a stored
+    descriptor's cost does not depend on its row position in the bank. A BLAS matrix-vector product can round the
+    same row differently at different positions, which made exact ties break inconsistently (parity report)."""
+    q = np.asarray(z, dtype=np.float64).reshape(-1)
+    d = np.asarray(descriptors)
+    sim = np.empty(d.shape[0], dtype=np.float64)
+    for start in range(0, d.shape[0], block):
+        rows = np.asarray(d[start:start + block], dtype=np.float64)
+        sim[start:start + block] = np.sum(rows * q[None, :], axis=1)
     return 1.0 - np.clip(sim, -1.0, 1.0)
 
 

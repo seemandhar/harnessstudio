@@ -191,13 +191,43 @@ def test_empty_bank_skips(tmp_path):
 
 
 def test_decode_failed_memory_skips(tmp_path):
+    from hs_rtcf import spectral as sp
+    from hs_rtcf.action_op import resolve
+    q01, q99 = sp.load_norm_bounds(resolve("assets/pi0_fast_libero_norm_stats.json"))
+    state = np.array([0.05, -0.1, 1.0, 3.1, 0.2, -0.4, 0.03, -0.03], np.float32)
     rec = collect_record(np.random.default_rng(4), [10])
-    const = np.tile(np.linspace(-0.5, 0.5, 7, dtype=np.float32), (10, 1))
-    rec["events"][0]["diagnostics"]["action_op"]["chunk_f32"] = f32_b64(const)
+    zero = np.tile(sp.openpi_zero_chunk_row(state, q01, q99), (10, 1)).astype(np.float32)
+    d = rec["events"][0]["diagnostics"]["action_op"]
+    d["chunk_f32"], d["state_f32"] = f32_b64(zero), f32_b64(state)
     op = make_op(tmp_path, [rec])
+    assert op.bank.decode_failed.tolist() == [True]
     ch = np.random.default_rng(5).uniform(-1, 1, (10, 7)).astype(np.float32)
     assert op.transform(ch, fake_obs(10), {}).tobytes() == ch.tobytes()
     assert op.diagnostics()["skip"] == "memory_decode_failed"
+
+
+def test_unusable_memory_chunk_falls_back(tmp_path):
+    rng = np.random.default_rng(8)
+    op = make_op(tmp_path, [collect_record(rng, [10, 60])])
+    ch = rng.uniform(-1, 1, (10, 7)).astype(np.float32)
+    op._memory_coef = lambda i, q: np.full((10, 7), np.nan)        # non-finite aligned chunk
+    assert op.transform(ch, fake_obs(10), {}).tobytes() == ch.tobytes()
+    assert op.diagnostics()["skip"] == "memory_chunk_unusable"
+    op._memory_coef = lambda i, q: np.zeros((8, 7))                # wrong shape
+    assert op.transform(ch, fake_obs(60), {}).tobytes() == ch.tobytes()
+    op._memory_coef = lambda i, q: None                            # missing
+    assert op.transform(ch, fake_obs(60), {}).tobytes() == ch.tobytes()
+    assert op.stats["skipped_unusable"] == 3
+
+
+def test_local_cost_independent_of_row_position():
+    rng = np.random.default_rng(9)
+    z = unit_rows(rng, 1, 1152)[0]
+    bank = unit_rows(rng, 3000, 1152).astype(np.float32)
+    row = bank[17].copy()
+    for pos in (0, 1, 999, 1023, 1024, 2999):
+        b = bank.copy(); b[pos] = row
+        assert pma.local_cost(z, b)[pos] == pma.local_cost(z, bank)[17]
 
 
 def test_lambda_zero_op_is_native(tmp_path):

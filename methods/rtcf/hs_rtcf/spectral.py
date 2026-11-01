@@ -15,7 +15,11 @@ Pure functions only (no state); the parity script imports them:
     dct_matrix(H) -> [H, H] orthonormal DCT-II
     coefficients(chunk [H, A], scale [A]) -> C [H, A]
     quantize(C, token_scale=10) -> int64 tokens-equivalent  /  dequantize(q, token_scale) -> C
-    is_decode_failure(C) -> bool      (all f > 0 coefficients zero: openpi's zero chunk after a failed decode)
+    load_norm_bounds(norm_stats_json) -> (q01 [A], q99 [A])
+    is_openpi_zero_chunk(chunk, state, q01, q99, tol=1e-4) -> bool
+        exact signature of openpi's zero chunk after a failed FAST decode (HF FAST `decode` and openpi
+        `extract_actions` silently return zeros): every row identical, gripper == (q01+q99)/2, and motion dims
+        == (q01+q99)/2 + state[0:6] (openpi AbsoluteActions). A genuinely stationary chunk does not match it.
     rtcf_correct(native_chunk, memory_coef, scale, motion_dims, f_cut, delta_max, lambda0,
                  action_limit=1.0, mode="spectral") -> (corrected [H, A] in native dtype, info dict)
 """
@@ -61,6 +65,38 @@ def load_scale(norm_stats_path: str | Path, expected_sha256: Optional[str] = Non
     return 2.0 / (q99 - q01 + NORM_EPS)
 
 
+def load_norm_bounds(norm_stats_path: str | Path, expected_sha256: Optional[str] = None) -> tuple:
+    """(q01, q99) of the 'actions' entry of an openpi norm_stats.json."""
+    import hashlib
+    raw = Path(norm_stats_path).read_bytes()
+    if expected_sha256 and hashlib.sha256(raw).hexdigest() != expected_sha256:
+        raise ValueError(f"norm stats {norm_stats_path} do not match the pinned sha256")
+    stats = json.loads(raw)
+    stats = stats.get("norm_stats", stats)["actions"]
+    return np.asarray(stats["q01"], dtype=np.float64), np.asarray(stats["q99"], dtype=np.float64)
+
+
+def openpi_zero_chunk_row(state: np.ndarray, q01: np.ndarray, q99: np.ndarray, delta_dims: int = 6) -> np.ndarray:
+    """The action row openpi returns for an all-zero normalized chunk: Unnormalize(0) = (q01+q99)/2 (+5e-7),
+    then AbsoluteActions adds state[0:delta_dims] (pi0_fast_libero: make_bool_mask(6, -1))."""
+    row = (np.asarray(q01, np.float64) + np.asarray(q99, np.float64) + NORM_EPS) / 2.0
+    st = np.asarray(state, dtype=np.float64).reshape(-1)
+    row[:delta_dims] = row[:delta_dims] + st[:delta_dims]
+    return row
+
+
+def is_openpi_zero_chunk(chunk: np.ndarray, state: Optional[np.ndarray], q01: np.ndarray, q99: np.ndarray,
+                         tol: float = 1e-4, delta_dims: int = 6) -> bool:
+    """Exact signature of a failed FAST decode (critic B4 / audit C3). Needs the observation state the policy saw;
+    without a state (e.g. HarnessStudio's synthetic tier-1 benchmark) it returns False."""
+    a = np.asarray(chunk, dtype=np.float64)
+    if state is None or a.ndim != 2 or a.shape[1] != len(q01) or np.asarray(state).size < delta_dims:
+        return False
+    if not np.all(np.abs(a - a[0:1]) <= tol):
+        return False
+    return bool(np.all(np.abs(a[0] - openpi_zero_chunk_row(state, q01, q99, delta_dims)) <= tol))
+
+
 def coefficients(chunk: np.ndarray, scale: np.ndarray) -> np.ndarray:
     """Normalized temporal DCT coefficients C = s * DCT(chunk) (time axis 0), shape [H, A], float64."""
     a = np.asarray(chunk, dtype=np.float64)
@@ -81,12 +117,6 @@ def dequantize(q: np.ndarray, token_scale: float = 10.0) -> np.ndarray:
     return np.asarray(q, dtype=np.float64) / token_scale
 
 
-def is_decode_failure(coef: np.ndarray, atol: float = 1e-9) -> bool:
-    """openpi returns a zero normalized chunk when FAST tokens fail to decode: every f > 0 coefficient is 0."""
-    c = np.asarray(coef, dtype=np.float64)
-    return bool(c.shape[0] > 1 and np.all(np.abs(c[1:]) <= atol))
-
-
 def rtcf_correct(native_chunk: np.ndarray, memory_coef: np.ndarray, scale: np.ndarray,
                  motion_dims: Sequence[int], f_cut: int, delta_max: float, lambda0: float,
                  action_limit: Optional[float] = 1.0, mode: str = "spectral") -> tuple[np.ndarray, dict]:
@@ -97,7 +127,10 @@ def rtcf_correct(native_chunk: np.ndarray, memory_coef: np.ndarray, scale: np.nd
     mode "spectral":    dC = G * clip(C^mem - C^pi, -delta_max, delta_max), G = 1[0 < f < f_cut] 1[d in motion];
                         A_corr = A^pi + IDCT(lambda0 * dC) / s.
     mode "time_domain": the Time-Domain ablation (inferred): the same clipped, lambda0-scaled residual on the
-                        normalized time-domain actions of the motion dims (all frequencies incl. DC).
+                        normalized time-domain actions of the motion dims (all frequencies incl. DC). It needs
+                        memory_coef in EXECUTABLE coordinates (s * DCT(A_mem), as the Preparer stores it). Raw FAST
+                        tokens / 10 carry a model-coordinate DC row (state offset, q01 shift), which would be mixed
+                        with the executable DC of A^pi. Not run in rtcf-20261031; disclosed in the card.
     action_limit: the 'final action magnitude limit' (inferred: LIBERO bounds [-1, 1]); applied only to entries
                   the residual changed, so an all-zero residual (or lambda0 = 0) returns the native chunk bitwise.
     Non-motion dims (the gripper) are returned bitwise unchanged.
@@ -138,12 +171,18 @@ def rtcf_correct(native_chunk: np.ndarray, memory_coef: np.ndarray, scale: np.nd
     delta[:, [d for d in range(dim) if d not in motion]] = 0.0
     out = a64 + delta
     changed = delta != 0.0
+    limited = 0
     if action_limit is not None:
         lim = float(action_limit)
+        limited = int(np.count_nonzero(changed & (np.abs(out) > lim)))
         out = np.where(changed, np.clip(out, -lim, lim), out)
     result = np.where(changed, out, a64).astype(a.dtype, copy=False)
     if not np.any(changed):
         result = a.copy()
+    n_changed = int(np.count_nonzero(changed))
     info = {"residual_l2": float(np.sqrt(np.sum((lambda0 * resid) ** 2))), "clipped": clipped, "active": active,
-            "changed": int(np.count_nonzero(changed)), "max_abs_delta": float(np.max(np.abs(delta))) if delta.size else 0.0}
+            "clipped_frac": (clipped / active) if active else 0.0,           # masked coefficients hitting delta_max
+            "changed": n_changed, "limit_clipped": limited,
+            "limit_clipped_frac": (limited / n_changed) if n_changed else 0.0,  # changed actions hitting the limit
+            "max_abs_delta": float(np.max(np.abs(delta))) if delta.size else 0.0}
     return result, info

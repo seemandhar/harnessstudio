@@ -24,4 +24,5 @@ benchmarks:
       num_steps_wait: 10
       quat_no_antipodal: true
       episode_offset: 0
+      match_sequential_resets: false
       task_ids: [3]

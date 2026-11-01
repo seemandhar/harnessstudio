@@ -58,10 +58,30 @@ def test_token_integrality_roundtrip():
     assert np.allclose(spectral.dequantize(spectral.quantize(c))[1:], c[1:], atol=1e-9)
 
 
-def test_decode_failure_signature():
-    const = np.tile(np.arange(7, dtype=np.float32), (10, 1))
-    assert spectral.is_decode_failure(spectral.coefficients(const, SCALE))
-    assert not spectral.is_decode_failure(spectral.coefficients(chunk(np.random.default_rng(3)), SCALE))
+Q01, Q99 = spectral.load_norm_bounds(resolve("assets/pi0_fast_libero_norm_stats.json"))
+
+
+def test_exact_zero_chunk_signature():
+    """Critic B4 / audit C3: openpi's zero chunk = (q01+q99)/2 on every row, + state[0:6] on the motion dims."""
+    state = np.array([0.05, -0.1, 1.0, 3.1, 0.2, -0.4, 0.03, -0.03])
+    zero = np.tile(spectral.openpi_zero_chunk_row(state, Q01, Q99), (10, 1)).astype(np.float32)
+    assert spectral.is_openpi_zero_chunk(zero, state, Q01, Q99)
+    assert not spectral.is_openpi_zero_chunk(zero, None, Q01, Q99)          # no state -> never flagged
+    assert not spectral.is_openpi_zero_chunk(zero, state + 0.01, Q01, Q99)  # other state
+    moved = zero.copy(); moved[3, 0] += 1e-3
+    assert not spectral.is_openpi_zero_chunk(moved, state, Q01, Q99)
+    # a genuinely stationary chunk (all f > 0 coefficients zero) is NOT a decode failure
+    still = np.tile(np.array([0, 0, 0, 0, 0, 0, 1.0], np.float32), (10, 1))
+    assert np.all(np.abs(spectral.coefficients(still, SCALE)[1:]) < 1e-9)
+    assert not spectral.is_openpi_zero_chunk(still, state, Q01, Q99)
+
+
+def test_clipped_fractions_reported():
+    rng = np.random.default_rng(12)
+    a = chunk(rng)
+    _, info = spectral.rtcf_correct(a, rng.normal(0, 5, (10, 7)), SCALE, MOTION, 3, 0.1, 0.1)
+    assert 0.0 <= info["clipped_frac"] <= 1.0 and info["active"] == 12 and "limit_clipped_frac" in info
+    assert info["clipped_frac"] > 0.5
 
 
 @pytest.mark.parametrize("mode", ["spectral", "time_domain"])

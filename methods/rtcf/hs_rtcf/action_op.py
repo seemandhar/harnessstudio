@@ -39,9 +39,11 @@ class RTCFActionOp:
                  lambda0: float = 0.1, f_cut: int = 3, delta_max: float = 1.0, v_max: int = 2, gamma: float = 0.05,
                  read_offset: int = 0, motion: Sequence[str] = ("position", "rotation"),
                  action_limit: Optional[float] = 1.0, retrieval: str = "pma", correction: str = "spectral",
-                 store_png: bool = True) -> None:
+                 store_png: bool = True, state_key: str = "states", zero_chunk_tol: float = 1e-4) -> None:
         self.encoder = Encoder(image_key, encoder_url, encoder_model, encoder_revision, pooling, encoder_timeout)
         self.scale = spectral.load_scale(resolve(norm_stats), norm_stats_sha256)
+        self.q01, self.q99 = spectral.load_norm_bounds(resolve(norm_stats), norm_stats_sha256)
+        self.state_key, self.zero_chunk_tol = state_key, float(zero_chunk_tol)
         self.token_scale = float(token_scale)
         self.lambda0, self.f_cut, self.delta_max = float(lambda0), int(f_cut), float(delta_max)
         self.v_max, self.gamma, self.read_offset = int(v_max), float(gamma), int(read_offset)
@@ -55,7 +57,7 @@ class RTCFActionOp:
         self.pma: Optional[ProgressiveMemoryAlignment] = None
         self._diag: dict = {}
         self.stats = {"decisions": 0, "applied": 0, "skipped_empty": 0, "skipped_end": 0,
-                      "skipped_decode_failed": 0, "native_decode_failed": 0}
+                      "skipped_decode_failed": 0, "skipped_unusable": 0, "native_decode_failed": 0}
 
     # -- framework hooks ----------------------------------------------------------------
     def bind(self, embodiment) -> None:
@@ -76,6 +78,18 @@ class RTCFActionOp:
         extension `decision-pre-diagnostics`); not called by HarnessStudio main as of f4c9a5d. Empty otherwise."""
         return dict(self._diag) if self._diag.get("mode") == "collect" else {}
 
+    def _memory_coef(self, i: int, q: int):
+        try:
+            return spectral.dequantize(self.bank.coef_q[self.bank.row(i, q)], self.token_scale)
+        except Exception:  # noqa: BLE001  (Alg. 1: an unavailable aligned chunk means no correction)
+            return None
+
+    @staticmethod
+    def _usable(c_mem, native: np.ndarray) -> bool:
+        """Alg. 1 fallback: the aligned chunk must exist, match the proposal's shape and be finite (as must A^pi)."""
+        return (c_mem is not None and np.shape(c_mem) == native.shape and bool(np.all(np.isfinite(c_mem)))
+                and bool(np.all(np.isfinite(native))))
+
     # -- one policy invocation ------------------------------------------------------------
     def transform(self, chunk, obs, memory):
         t0 = time.monotonic()
@@ -85,14 +99,17 @@ class RTCFActionOp:
         self.stats["decisions"] += 1
         z, enc_name, image = self.encoder.encode(obs)
         t_enc = time.monotonic() - t0
-        c_pi = spectral.coefficients(native, self.scale)
-        native_failed = spectral.is_decode_failure(c_pi)
+        state = obs.get(self.state_key)
+        state = None if state is None else np.asarray(state, dtype=np.float64).reshape(-1)
+        native_failed = spectral.is_openpi_zero_chunk(native, state, self.q01, self.q99, self.zero_chunk_tol)
         self.stats["native_decode_failed"] += int(native_failed)
         diag: dict = {"t": self.stats["decisions"], "encoder": enc_name, "enc_ms": round(1000 * t_enc, 2),
                       "native_decode_failed": native_failed}
         if self.bank is None:  # collection mode (development): native chunk, record what memory needs
             diag.update({"mode": "collect", "descriptor_f32": f32_b64(z), "chunk_f32": f32_b64(native),
                          "chunk_shape": list(native.shape)})
+            if state is not None:   # needed to recognise a failed FAST decode in the memory (exact signature)
+                diag["state_f32"] = f32_b64(state)
             if self.store_png:
                 diag["png_b64"] = png_b64(image)
             self._diag = diag
@@ -113,8 +130,10 @@ class RTCFActionOp:
             elif bool(self.bank.decode_failed[self.bank.row(i, q)]):
                 self.stats["skipped_decode_failed"] += 1
                 diag.update({"applied": False, "skip": "memory_decode_failed"})
+            elif not self._usable(c_mem := self._memory_coef(i, q), native):
+                self.stats["skipped_unusable"] += 1
+                diag.update({"applied": False, "skip": "memory_chunk_unusable"})
             else:
-                c_mem = spectral.dequantize(self.bank.coef_q[self.bank.row(i, q)], self.token_scale)
                 out, info = spectral.rtcf_correct(native, c_mem, self.scale, self.motion_dims, self.f_cut,
                                                   self.delta_max, self.lambda0, self.action_limit, self.correction)
                 self.stats["applied"] += 1

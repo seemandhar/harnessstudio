@@ -40,6 +40,10 @@ import numpy as np
 
 MODEL_ID = "google/siglip-so400m-patch14-224"
 WEIGHTS_SHA256 = "30a00c26a045c84a0bd14adc94278d7f1cc941c8bd67e5fa50f7bed34c34e60d"   # model.safetensors @ d04cf29
+PINNED_FILES = {   # critic B5: pin the processor config with the weights (bicubic resize 224, mean/std 0.5)
+    "preprocessor_config.json": "bec6ca696ddd6c2050ce0ea9fcb7581b052d267059a3341b6c1456cab54b1d07",
+    "config.json": "28c6981582dbd0dc6e1c2eeae21a240e6952019bca3cdffbc22b9da2c747cb6b",
+}
 
 
 def sha256_file(path: Path) -> str:
@@ -68,6 +72,10 @@ def main() -> int:
     digest = sha256_file(snap / "model.safetensors")
     if digest != a.weights_sha256:
         raise SystemExit(f"model.safetensors sha256 {digest} != pinned {a.weights_sha256}")
+    for name, want in PINNED_FILES.items():
+        got = sha256_file(snap / name)
+        if got != want:
+            raise SystemExit(f"{name} sha256 {got} != pinned {want}")
     torch.manual_seed(0)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
@@ -80,7 +88,8 @@ def main() -> int:
         p.requires_grad_(False)
     lock = threading.Lock()
     info = {"status": "ok", "model": MODEL_ID, "revision": a.revision, "pooling": "pooler_output",
-            "dim": int(model.config.hidden_size), "device": str(device), "weights_sha256": digest}
+            "dim": int(model.config.hidden_size), "device": str(device), "weights_sha256": digest, "pinned_files": PINNED_FILES,
+            "output_dtype": "float32 (memory and query descriptors identical, critic B5)"}
 
     def embed(png_b64: str) -> dict:
         img = Image.open(io.BytesIO(base64.b64decode(png_b64))).convert("RGB")

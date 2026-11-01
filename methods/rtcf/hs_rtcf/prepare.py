@@ -46,16 +46,19 @@ class Preparer:
     record = ()          # nothing per step: everything comes from the per-decision diagnostics
 
     def __init__(self, only_success: bool = True, norm_stats: str = "assets/pi0_fast_libero_norm_stats.json",
-                 norm_stats_sha256: Optional[str] = None, token_scale: float = 10.0) -> None:
+                 norm_stats_sha256: Optional[str] = None, token_scale: float = 10.0,
+                 zero_chunk_tol: float = 1e-4) -> None:
         self.only_success = bool(only_success)
         self.norm_stats_path = resolve(norm_stats)
         self.scale = spectral.load_scale(self.norm_stats_path, norm_stats_sha256)
         self.token_scale = float(token_scale)
+        self.q01, self.q99 = spectral.load_norm_bounds(self.norm_stats_path, norm_stats_sha256)
+        self.zero_chunk_tol = float(zero_chunk_tol)
 
     def build(self, records, out_dir) -> dict:
         out_dir = Path(out_dir)
         descs, coefs, failed, offsets, cases = [], [], [], [0], []
-        encoders, shape = set(), None
+        encoders, shape, missing_state = set(), None, 0
         ordered = sorted(records, key=lambda r: (str(r["benchmark"]), str(r["task"]), int(r["episode_idx"])))
         for r in ordered:
             if self.only_success and not r.get("success"):
@@ -73,7 +76,9 @@ class Preparer:
                 c = spectral.coefficients(chunk, self.scale)
                 descs.append(from_f32_b64(d["descriptor_f32"]))
                 coefs.append(spectral.quantize(c, self.token_scale))
-                failed.append(spectral.is_decode_failure(c))
+                state = from_f32_b64(d["state_f32"]).astype(np.float64) if "state_f32" in d else None
+                missing_state += int(state is None)
+                failed.append(spectral.is_openpi_zero_chunk(chunk, state, self.q01, self.q99, self.zero_chunk_tol))
                 encoders.add(d["encoder"])
             offsets.append(offsets[-1] + len(rows))
             cases.append({"benchmark": r["benchmark"], "task": r["task"], "episode_idx": int(r["episode_idx"]),
@@ -88,6 +93,7 @@ class Preparer:
                 "token_scale": self.token_scale, "chunk_shape": list(shape) if shape else None,
                 "only_success": self.only_success, "memories": cases, "num_memories": len(cases),
                 "num_positions": offsets[-1], "decode_failed_positions": int(sum(failed)),
+                "positions_without_state": missing_state, "decode_failure_rule": "openpi zero-chunk exact signature",
                 "development_records": len(records),
                 "development_successes": sum(bool(r.get("success")) for r in records)}
         if descs:

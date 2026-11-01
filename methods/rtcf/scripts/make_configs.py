@@ -4,8 +4,11 @@
     python3 methods/rtcf/scripts/make_configs.py --suite libero_10 --kind dev  --seed 7   --out methods/rtcf/configs/generated
     python3 methods/rtcf/scripts/make_configs.py --suite libero_10 --kind eval --seed 101 --out ...
 
-dev : init states 10-49 (episode_offset 10, 40 episodes per task), seed 7 (paper: memory seed 7)
-eval: init states 0-9 (10 episodes per task), seeds 101-105 (paper), run with --case-namespace seed<S>
+dev : init states 10-49 (episode_offset 10, 40 episodes per task, match_sequential_resets: true so the scenes are
+      those of a stock sequential seed-7 run, critic B3), seed 7 (paper: memory seed 7)
+eval: init states 0-9 (10 episodes per task), seeds 101-105 (paper); one whole (task, seed) block per shard, run with
+      --case-namespace seed<S> --benchmark-overrides '{"params": {"seed": S}}' and its own --out (critic B7)
+Cadence is not in these files: it is the profile (methods/rtcf/configs/pi0fast-libero-hs.yaml, execute_horizon 5).
 Every config sets quat_no_antipodal: true (openpi/robosuite axis-angle; vla-eval's default flips rx near the
 gripper-down pose and breaks pi0_fast_libero, found in bring-up 2026-10-31) and num_steps_wait 10; horizons come
 from vla-eval / the HarnessStudio libero contract (220/280/300/520). `--gpu` is the LIBERO render GPU.
@@ -46,6 +49,7 @@ benchmarks:
       num_steps_wait: 10
       quat_no_antipodal: true
       episode_offset: {offset}
+      match_sequential_resets: {msr}
       task_ids: [{ids}]
 """
 
@@ -71,7 +75,7 @@ def main() -> int:
         ids = list(range(start, min(10, start + a.tasks_per_shard)))
         text = TEMPLATE.format(kind=a.kind, suite=a.suite, ids=", ".join(map(str, ids)), what=what, seed=a.seed,
                                vla_eval=VLA_EVAL, stock=STOCK[a.suite], gpu=a.gpu, hs=HS, episodes=episodes,
-                               offset=offset)
+                               offset=offset, msr="true" if a.kind == "dev" else "false")
         name = f"{a.kind}_{a.suite}_seed{a.seed}_t{'-'.join(map(str, ids))}.yaml"
         (out / name).write_text(text)
         print(out / name)

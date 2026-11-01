@@ -38,15 +38,31 @@ export HS_RTCF_ENCODER_URL=http://127.0.0.1:8149
 $H/.venv/bin/hs prepare rtcf --config $M/configs/generated/dev_libero_10_seed7_t0.yaml --contract libero \
     --policy-url ws://127.0.0.1:8140 --profile $M/configs/pi0fast-libero-hs.yaml --port P --out DEV_t0
 $H/.venv/bin/python $M/scripts/merge_dev.py PREP DEV_t0 ... DEV_t9
+# (v_max, gamma): critic's fixed LOO rule on the Long development memory, BEFORE any evaluation episode; then
+# freeze the chosen values into hs_rtcf/__init__.py PARAMS (new fingerprint) and rebuild prepared.json with merge_dev
+OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 $H/.venv/bin/python $M/scripts/select_pma_params.py PREP --out SELECT.json
+# one whole (task, seed) block per shard, own --out per (suite, seed, stage)
 $H/.venv/bin/hs eval rtcf --config $M/configs/generated/eval_libero_10_seed101_t0.yaml --contract libero \
-    --case-namespace seed101 --policy-url ws://127.0.0.1:8140 --profile $M/configs/pi0fast-libero-hs.yaml \
-    --arms baseline,candidate --prepared PREP --port P --out EVAL
+    --case-namespace seed101 --benchmark-overrides '{"params": {"seed": 101}}' \
+    --policy-url ws://127.0.0.1:8140 --profile $M/configs/pi0fast-libero-hs.yaml \
+    --arms baseline,candidate --prepared PREP --port P --out EVAL_libero_10_seed101_t0
+$H/.venv/bin/python $M/scripts/check_split.py --prepared PREP --dev-run DEV_t0 ... \
+    --eval EVAL_libero_10_seed101_t0=$M/configs/generated/eval_libero_10_seed101_t0.yaml ...
 ```
-Checks: `scripts/check_native_equivalence.py` (collection mode == baseline hashes), `scripts/probe_fast_integrality.py`
-(10 s C integral on real chunks), `scripts/check_split.py` (dev init states disjoint from eval), `scripts/summarize.py`
-(paired table vs the withdrawn paper rows, exact McNemar).
+Cadence: 5 executed actions per policy call (openpi client protocol, profile `configs/pi0fast-libero-hs.yaml`), for
+development memory and every arm. Every config sets `quat_no_antipodal: true`; dev configs `match_sequential_resets: true`.
 
-## Known limitation
-HarnessStudio logs diagnostics after a decision's actions ran; an episode ending mid-chunk (every LIBERO success)
-cancels that last decision, so each memory misses its final invocation. Proposed framework extension
-`decision-pre-diagnostics` (the Preparer already prefers its `decision_pre` events when present).
+Checks: `scripts/check_native_equivalence.py` (collection mode == baseline hashes), `scripts/probe_fast_integrality.py`
+(10 s C integral on real chunks, exact zero-chunk signature hits), `scripts/check_split.py` (dev init states disjoint
+from eval, config flags, cadence 5, seed == namespace, distinct outputs), `scripts/summarize.py` (paired table vs the
+withdrawn paper rows, exact McNemar per seed and pooled, CIs clustered by (task, init state), clipping rates).
+
+## Known limitations
+- HarnessStudio logs diagnostics after a decision's actions ran; an episode ending mid-chunk (every LIBERO success)
+  cancels that last decision, so each memory misses its final policy call (<= 5 steps at cadence 5). Not fixed in
+  this run (supervisor decision); the method defines `pre_diagnostics()` and the Preparer prefers `decision_pre`
+  events, so a future framework extension needs no method change.
+- The Time-Domain ablation needs memory coefficients in executable coordinates (as the Preparer stores them); raw
+  FAST tokens would put a model-coordinate DC row next to the proposal's executable DC. Ablations are not run in
+  rtcf-20261031.
+- Raw l2 SigLIP (no PCA centering/truncation) changes the retrieval geometry, not only the cost (critic C1).
