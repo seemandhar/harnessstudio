@@ -125,6 +125,7 @@ fallback).
 | `harness-vla-sol-fewshot` | same, few-shot task memory built by `hs prepare` | adapted | agentic_orchestration | T0 + chunk, LLM, SAM3 |
 | `scale` | SCALE, arXiv:2602.04208 (OpenVLA uncertainty-aware decoding) | faithful | uncertainty_compute | T1 + decoding_hooks (`openvla-libero-hs`) |
 | `fast-harness` | FastHarness, arXiv:2610.31427 (gpt-6.1-sol reviewer) | adapted | uncertainty_compute | T0 + chunk, LLM (`robodojo-pi05-hs`) |
+| `rtcf` | RTCF, arXiv:2608.04527v2 (withdrawn v3): PMA retrieval over a frozen success memory + low-frequency DCT residual; PCA omitted | tf_variant | memory_retrieval | T1 + chunk, `hs prepare` memory, SigLIP service (pi0-FAST z-score, exec 5) |
 | `first-sample` | example plugin (`examples/plugin_method`) | faithful | proposal_selection | T1 |
 
 All pass tier 0 and tier 1. Ported v1 methods agree with v1 decision for decision on randomized cases
@@ -139,6 +140,7 @@ chunktrust-ahs: 100% over ~17.8k decisions).
 | `pi05-libero-hs` | `harnessstudio/policies/pi05_openpi.py` (openpi pi0.5, seeded) | T1 |
 | (run profile) | `harnessstudio/policies/pi05_openpi.py --config harnessstudio/policies/configs/pi0_fast_libero_zscore.yaml` (openpi pi0-FAST LIBERO, greedy; `norm_mode: zscore`, the checkpoint's training normalization, EXT openpi-norm) | T1 |
 | `gr00t-n15-robocasa365` | `harnessstudio/policies/gr00t_n15_robocasa365.py` (GR00T N1.5, seeded, velocity readout) | T1 (+ velocity) |
+| `methods/rtcf/configs/pi0fast-libero-hs.yaml` (path profile, 5 executed actions/call) | `harnessstudio/policies/pi05_openpi.py` with `config_name=pi0_fast_libero`, **served with z-score normalization** (the checkpoint's training norm; openpi 981483d defaults to quantile and breaks it: `--args.norm_mode` after EXT openpi-norm, docs/results/rtcf.md) | T1 (greedy FAST decoding) |
 | `fake-t0`, `fake-t1` | `harnessstudio/policy_ext/fake.py` (tier 1) | T0 / T1 |
 
 `pi05_openpi.py` takes `--args.norm_mode=config|zscore|quantile` (default `config`: the pinned openpi TrainConfig,
@@ -178,6 +180,7 @@ announced in the HELLO action-spec description and so recorded in every run mani
 | Harness VLA few-shot, with the cue | LIBERO-Pro Goal held-out, 60 exact cases | 15/60 | 38/60 (zero-shot 33/60) | 87.0 / 87.0 |
 | SCALE | LIBERO-10, 60 cases (OpenVLA) | 29/60 (48%) | **38/60 (63%)**, p = 0.093 | 52.7 -> 63.3 |
 | FastHarness | RoboDojo build_tower / stack_bowls | - | token savings not reproduced on held-out layouts | -57% reviewer tokens |
+| RTCF (withdrawn paper), disjoint dev memory (init 10-29), cadence 5, z-score serving | LIBERO-Long, complete seeds 101, 102, 103, 104, 105, 500 paired cases (pi0-FAST) | 319/500 (63.8%) | 311/500 (62.2%), 49/57, p = 0.5, delta -1.6 pp [-7.27, 4.07] | 61.6 -> 68.6 (withdrawn v2, n = 500) |
 
 All with null vs baseline 0 X. Caveat for Harness VLA: the original prompt tells the planner the goal is not yet
 reached (LIBERO ends episodes on success, an oracle a real robot lacks); the no-cue row is the fair number. Details, disclosures and an independent compliance audit: `docs/results/`
