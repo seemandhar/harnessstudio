@@ -26,6 +26,7 @@ PARAMS = {
     "encoder_model": "google/siglip-so400m-patch14-224",
     "encoder_revision": "d04cf29fca7b6374f74d8bea1969314492266b5e",
     "pooling": "pooler_output",
+    "encoder_weights_sha256": "30a00c26a045c84a0bd14adc94278d7f1cc941c8bd67e5fa50f7bed34c34e60d",   # checked via /health
     "norm_stats": NORM_STATS,
     "norm_stats_sha256": NORM_STATS_SHA256,
     "token_scale": 10.0,

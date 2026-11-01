@@ -41,7 +41,7 @@ docker:
     - {hs}:/hs:ro
 output_dir: /tmp/rtcf-vla-eval-unused
 benchmarks:
-  - benchmark: "hs_rtcf_bench:LIBEROSelect"
+  - benchmark: "{bench_class}"
     subname: {suite}
     episodes_per_task: {episodes}
     params:
@@ -51,7 +51,7 @@ benchmarks:
       quat_no_antipodal: true
       episode_offset: {offset}
       match_sequential_resets: {msr}
-      task_ids: [{ids}]
+      task_ids: [{ids}]{extra}
 """
 
 
@@ -65,6 +65,10 @@ def main() -> int:
     ap.add_argument("--dev-count", type=int, default=20, help="development init states per task (dev only)")
     ap.add_argument("--gpu", default="7")
     ap.add_argument("--out", required=True)
+    ap.add_argument("--benchmark-class", default="hs_rtcf_bench:LIBEROSelect",
+                    help="override when a reviewed protocol fix needs another (subclass) benchmark")
+    ap.add_argument("--param", action="append", default=[],
+                    help="extra benchmark param KEY=YAML_VALUE (e.g. a reviewed protocol fix); repeated")
     a = ap.parse_args()
     if a.kind == "dev" and (a.dev_first < 10 or a.dev_first + a.dev_count > 30):
         raise SystemExit("development init states must lie within [10, 29] (run-order.md; eval uses 0-9)")
@@ -76,7 +80,9 @@ def main() -> int:
         ids = list(range(start, min(10, start + a.tasks_per_shard)))
         text = TEMPLATE.format(kind=a.kind, suite=a.suite, ids=", ".join(map(str, ids)), what=what, seed=a.seed,
                                vla_eval=VLA_EVAL, stock=STOCK[a.suite], gpu=a.gpu, hs=HS, episodes=episodes,
-                               offset=offset, msr="true" if a.kind == "dev" else "false")
+                               offset=offset, msr="true" if a.kind == "dev" else "false",
+                               bench_class=a.benchmark_class,
+                               extra="".join(f"\n      {kv.partition('=')[0]}: {kv.partition('=')[2]}" for kv in a.param))
         name = f"{a.kind}_{a.suite}_seed{a.seed}_t{'-'.join(map(str, ids))}.yaml"
         (out / name).write_text(text)
         print(out / name)

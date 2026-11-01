@@ -83,6 +83,7 @@ def main() -> int:
     ap.add_argument("--out", required=True)
     ap.add_argument("--budget-minutes", type=float, default=30.0)
     ap.add_argument("--max-heldout", type=int, default=0, help="0 = all memories (the rule); >0 only for smoke tests")
+    ap.add_argument("--allow-non-long", action="store_true", help="synthetic smoke tests only")
     a = ap.parse_args()
     t_start, cpu_start = time.monotonic(), time.process_time()
     prep = Path(a.prepared)
@@ -92,6 +93,9 @@ def main() -> int:
     bank = MemoryBank.load(arts["memory"], arts["memory_meta"])
     meta = bank.meta
     tasks = [m["task"] for m in meta["memories"]]
+    not_long = sorted({t for t in tasks if not str(t).startswith("libero_10/")})
+    if not_long and not a.allow_non_long:     # preflight R6: Decision 3 selects once, on the LIBERO-Long memory
+        raise SystemExit(f"memory contains non-LIBERO-Long tasks {not_long[:3]}; the rule selects on Long only")
     n = bank.num_memories
     out: dict = {"rule": "critic review-plan Decision 3", "grid": {"v_max": V_MAX, "gamma": GAMMA},
                  "memory_sha256": hashlib.sha256(Path(arts["memory"]).read_bytes()).hexdigest(),

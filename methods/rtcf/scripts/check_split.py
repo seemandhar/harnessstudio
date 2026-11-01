@@ -15,7 +15,10 @@ Checks (exit 1 if any fails):
   match_sequential_resets: true; eval configs use episode_offset 0 and <= 10 episodes per task;
 - every run (dev and eval) used execute_horizon 5 (run manifest profile);
 - every eval run's case namespace is 'seed<S>' with S == the config's params.seed, and eval output directories are
-  distinct.
+  distinct;
+- (preflight R5) with --expect-fingerprint / --expect-memory-sha: every candidate and null arm manifest of every eval
+  run has that method_fingerprint and loads a memory.npz with that sha256 (the fingerprint covers config only; pair
+  this with scripts/freeze_manifest.py check for the code).
 """
 from __future__ import annotations
 
@@ -67,6 +70,20 @@ def check_cadence(run: Path, problems: list) -> None:
             problems.append(f"{run} ({m.get('arm')}): execute_horizon {eh} != {CADENCE}")
 
 
+def check_freeze(run: Path, fingerprint: str | None, memory_sha: str | None, problems: list) -> None:
+    import hashlib
+    for m in manifest(run):
+        if m.get("arm") not in ("candidate", "null"):
+            continue
+        if fingerprint and m.get("method_fingerprint") != fingerprint:
+            problems.append(f"{run} ({m['arm']}): method_fingerprint {m.get('method_fingerprint')} != {fingerprint}")
+        if memory_sha:
+            mem = (m.get("artifacts") or {}).get("memory")
+            got = hashlib.sha256(Path(mem).read_bytes()).hexdigest() if mem and Path(mem).is_file() else None
+            if got != memory_sha:
+                problems.append(f"{run} ({m['arm']}): memory {mem} sha256 {got} != {memory_sha}")
+
+
 def dev_pairs(prepared: Path) -> set:
     p = prepared / "prepared.json" if prepared.is_dir() else prepared
     return {(str(t), int(e)) for (_b, t, e) in json.loads(p.read_text())["dev_cases"]}
@@ -107,6 +124,8 @@ def run_checks(a) -> dict:
         outs.append(run)
         params = lint_config(Path(cfg_s), problems) if cfg_s else {}
         check_cadence(run, problems)
+        if a.expect_fingerprint or a.expect_memory_sha:
+            check_freeze(run, a.expect_fingerprint, a.expect_memory_sha, problems)
         recs = eval_records(run)
         if not recs:
             problems.append(f"{run}: no traces")
@@ -138,6 +157,8 @@ def main() -> int:
     ap.add_argument("--dev-run", action="append")
     ap.add_argument("--eval", action="append", help="RUN_DIR=CONFIG.yaml")
     ap.add_argument("--config", action="append")
+    ap.add_argument("--expect-fingerprint")
+    ap.add_argument("--expect-memory-sha")
     ap.add_argument("--out")
     ap.add_argument("--self-test", action="store_true")
     a = ap.parse_args()

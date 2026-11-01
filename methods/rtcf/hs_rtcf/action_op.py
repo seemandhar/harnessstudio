@@ -39,8 +39,10 @@ class RTCFActionOp:
                  lambda0: float = 0.1, f_cut: int = 3, delta_max: float = 1.0, v_max: int = 2, gamma: float = 0.05,
                  read_offset: int = 0, motion: Sequence[str] = ("position", "rotation"),
                  action_limit: Optional[float] = 1.0, retrieval: str = "pma", correction: str = "spectral",
-                 store_png: bool = True, state_key: str = "states", zero_chunk_tol: float = 1e-4) -> None:
-        self.encoder = Encoder(image_key, encoder_url, encoder_model, encoder_revision, pooling, encoder_timeout)
+                 store_png: bool = True, state_key: str = "states", zero_chunk_tol: float = 1e-4,
+                 encoder_weights_sha256: str = "") -> None:
+        self.encoder = Encoder(image_key, encoder_url, encoder_model, encoder_revision, pooling, encoder_timeout,
+                               encoder_weights_sha256)
         self.scale = spectral.load_scale(resolve(norm_stats), norm_stats_sha256)
         self.q01, self.q99 = spectral.load_norm_bounds(resolve(norm_stats), norm_stats_sha256)
         self.state_key, self.zero_chunk_tol = state_key, float(zero_chunk_tol)

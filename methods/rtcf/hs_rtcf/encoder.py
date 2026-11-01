@@ -67,13 +67,30 @@ def tier1_pixel_descriptor(image: np.ndarray, bins: int = 16, width: float = 0.0
     return unit(np.exp(-0.5 * ((level - centers) / width) ** 2) + 1e-3)
 
 
+_HEALTH_OK: set = set()   # (url, weights sha) verified in this process (preflight R7)
+
+
 class SigLIPClient:
-    def __init__(self, url: str, model: str, revision: str, pooling: str, timeout: float = 30.0) -> None:
+    def __init__(self, url: str, model: str, revision: str, pooling: str, timeout: float = 30.0,
+                 weights_sha256: str = "") -> None:
         self.url = os.environ.get("HS_RTCF_ENCODER_URL", url).rstrip("/")
         self.model, self.revision, self.pooling, self.timeout = model, revision, pooling, float(timeout)
+        self.weights_sha256 = weights_sha256
         self.calls, self.seconds = 0, 0.0
 
+    def check_health(self) -> None:
+        """Once per process: the service must report the pinned weights sha256 it verified at start."""
+        if not self.weights_sha256 or (self.url, self.weights_sha256) in _HEALTH_OK:
+            return
+        with urllib.request.urlopen(self.url + "/health", timeout=self.timeout) as resp:
+            info = json.loads(resp.read().decode())
+        if info.get("weights_sha256") != self.weights_sha256 or str(info.get("revision")) != str(self.revision):
+            raise RuntimeError(f"SigLIP service reports weights {info.get('weights_sha256')} / revision "
+                               f"{info.get('revision')}, pinned {self.weights_sha256} / {self.revision}")
+        _HEALTH_OK.add((self.url, self.weights_sha256))
+
     def encode_png(self, png_b64_text: str) -> np.ndarray:
+        self.check_health()
         body = json.dumps({"png_b64": png_b64_text}).encode()
         req = urllib.request.Request(self.url + "/embed", data=body, headers={"Content-Type": "application/json"})
         t0 = time.monotonic()
@@ -90,9 +107,10 @@ class SigLIPClient:
 class Encoder:
     """Picks the pinned SigLIP service, or the tier-1 seam for the synthetic benchmark only."""
 
-    def __init__(self, image_key: str, url: str, model: str, revision: str, pooling: str, timeout: float = 30.0):
+    def __init__(self, image_key: str, url: str, model: str, revision: str, pooling: str, timeout: float = 30.0,
+                 weights_sha256: str = ""):
         self.image_key = image_key
-        self.client = SigLIPClient(url, model, revision, pooling, timeout)
+        self.client = SigLIPClient(url, model, revision, pooling, timeout, weights_sha256)
         self.name = f"{model}@{revision}:{pooling}"
 
     def image(self, obs: Mapping[str, Any]) -> tuple[np.ndarray, bool]:
