@@ -64,13 +64,15 @@ class MemoryBank:
     def load(cls, npz_path: str | Path, json_path: Optional[str | Path] = None) -> "MemoryBank":
         """Read-only load, cached per file content (the bank is frozen and sha-pinned by prepared.json)."""
         raw = Path(npz_path).read_bytes()
-        key = hashlib.sha256(raw).hexdigest()
+        meta_raw = Path(json_path).read_bytes() if json_path else b""
+        # the cache key covers the arrays AND the metadata (a bank object carries its meta; R10 reads it)
+        key = hashlib.sha256(raw).hexdigest() + ":" + hashlib.sha256(meta_raw).hexdigest()
         if key not in _CACHE:
             import io
             with np.load(io.BytesIO(raw), allow_pickle=False) as z:
                 arrays = {k: np.array(z[k]) for k in ("descriptors", "offsets", "coef_q", "decode_failed")}
             for arr in arrays.values():
                 arr.setflags(write=False)
-            meta = json.loads(Path(json_path).read_text()) if json_path else {}
+            meta = json.loads(meta_raw.decode()) if json_path else {}
             _CACHE[key] = cls(meta=meta, **arrays)
         return _CACHE[key]

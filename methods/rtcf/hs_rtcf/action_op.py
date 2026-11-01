@@ -69,7 +69,19 @@ class RTCFActionOp:
 
     def load_artifacts(self, artifacts) -> None:
         if "memory" in artifacts:
-            self.bank = MemoryBank.load(artifacts["memory"], artifacts.get("memory_meta"))
+            bank = MemoryBank.load(artifacts["memory"], artifacts.get("memory_meta"))
+            # R10: the memory's coefficients are only meaningful in the normalization they were built with. Refuse a
+            # memory whose recorded norm_mode (or token scale) differs, and one that records none (v0.3/quantile era).
+            recorded = bank.meta.get("norm_mode")
+            if recorded is None:
+                raise RuntimeError("rtcf memory records no norm_mode (built before v0.4 or without memory.json); "
+                                   "refusing to load it")
+            if recorded != self.norm_mode:
+                raise RuntimeError(f"rtcf memory was built with norm_mode={recorded!r}, the method uses "
+                                   f"{self.norm_mode!r}; refusing to load it")
+            if float(bank.meta.get("token_scale", self.token_scale)) != self.token_scale:
+                raise RuntimeError(f"rtcf memory token_scale {bank.meta.get('token_scale')} != {self.token_scale}")
+            self.bank = bank
             if self.bank.num_memories:
                 self.pma = ProgressiveMemoryAlignment(self.bank.descriptors, self.bank.offsets, self.v_max,
                                                       self.gamma, self.retrieval)

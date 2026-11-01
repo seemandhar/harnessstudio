@@ -278,3 +278,27 @@ def test_off_grid_proposal_fails_loudly(tmp_path):
         else:
             with pytest.raises(RuntimeError, match="off the FAST token grid"):
                 op.transform(a, obs, {})
+
+
+def test_r10_memory_norm_mode_must_match(tmp_path):
+    """R10: a memory with another or no recorded norm_mode is refused at load."""
+    rng = np.random.default_rng(11)
+    names = Preparer().build([collect_record(rng, [10, 60])], tmp_path)
+    meta_path = tmp_path / names["memory_meta"]
+    arts = {k: str(tmp_path / v) for k, v in names.items()}
+    assert json.loads(meta_path.read_text())["norm_mode"] == "zscore"
+    op = RTCFActionOp()
+    op.load_artifacts(arts)                                   # matching mode loads
+    assert op.bank is not None and op.pma is not None
+    with pytest.raises(RuntimeError, match="norm_mode='zscore'"):
+        RTCFActionOp(norm_mode="quantile").load_artifacts(arts)
+    for variant, meta in (("other", {**json.loads(meta_path.read_text()), "norm_mode": "quantile"}),
+                          ("none", {k: v for k, v in json.loads(meta_path.read_text()).items() if k != "norm_mode"})):
+        d = tmp_path / variant
+        d.mkdir()
+        (d / "memory.npz").write_bytes((tmp_path / names["memory"]).read_bytes())   # same arrays, other meta
+        (d / "memory.json").write_text(json.dumps(meta))
+        with pytest.raises(RuntimeError, match="norm_mode"):
+            RTCFActionOp().load_artifacts({"memory": str(d / "memory.npz"), "memory_meta": str(d / "memory.json")})
+    with pytest.raises(RuntimeError, match="no norm_mode"):     # memory without its memory.json
+        RTCFActionOp().load_artifacts({"memory": str(tmp_path / names["memory"])})
