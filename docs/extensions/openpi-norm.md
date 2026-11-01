@@ -11,6 +11,11 @@ and the build were written in one pass. The independent critic reviews proposal,
   flag chooses z-score (mean/std) or quantile (q01/q99).
 - **What changed upstream.** openpi commits a3d8ea3 and 540ebe8 (2025-07-05) set it to `model_type != PI0` for every config.
   Before that, `LeRobotLiberoDataConfig` never set the flag, so the DataConfig default False applied (z-score).
+- **Scope (critic D1).** The claim is verified for **one checkpoint only**, `pi0_fast_libero`, from three pieces of
+  evidence: the GCS creation date (2025-05-28, before the switch), the openpi config history, and the demo-frame
+  behaviour test. Other openpi checkpoints from before 2025-07-05, on LeRobot*DataConfig or otherwise, *may* need
+  `zscore`. Verify each one: config history at its training date, plus a FAST token-grid or demo-frame check.
+  `config` stays the default.
 - **Why it matters.** `gs://openpi-assets/checkpoints/pi0_fast_libero` was created 2025-05-28 and was trained with z-score.
   Our pinned openpi rev 981483d serves it with quantile norm. pi0-FAST then emits position commands up to ±2.2 and
   fails LIBERO-Long 0/10. Under z-score, its outputs on demo frames track the demo actions: position MAE drops from
@@ -54,7 +59,8 @@ and the build were written in one pass. The independent critic reviews proposal,
   - `quantile` equals the default for pi0_fast_libero; `zscore` differs in both actions and state tokens.
   - An unknown mode is refused before loading.
   - The context manager restores `get_config` even on failure.
-  - Sabotage check: making the factory ignore the mode fails 4 of the 12 tests.
+  - Sabotage check: making the factory ignore the mode fails 4 of the 12 tests
+    (`runs/rtcf-20261031/repair/ext2/sabotage_run.txt`).
 - **Unchanged framework.** Core, runtime, contracts, profiles and methods are untouched. `scripts/regress.py --source`
   this worktree: see `regress.json` (result recorded in `runs/rtcf-20261031/repair/ext2-report.md`).
 - **Not yet done (evaluator, GPU).** A 2-case native-equivalence check on the worktree code:

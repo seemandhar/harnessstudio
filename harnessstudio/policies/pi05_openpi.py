@@ -29,9 +29,10 @@ normalization openpi applies around the frozen model.
 - ``config`` (default): whatever the pinned openpi TrainConfig says. Unchanged behaviour and HELLO payload.
 - ``zscore`` / ``quantile``: force ``use_quantile_norm`` False / True for the config's data factory; nothing else
   (weights, norm_stats.json, transform order, tokenizer, prompt) changes. openpi >= a3d8ea3 (2025-07-05) serves every
-  non-PI0 config with quantile norm, but checkpoints trained before that on LeRobot*DataConfig (e.g.
-  ``pi0_fast_libero``, GCS 2025-05-28) were trained with z-score: serve them with ``--args.norm_mode=zscore``
-  (configs: harnessstudio/policies/configs/pi0_fast_libero_zscore.yaml).
+  non-PI0 config with quantile norm. Verified for one checkpoint only: ``pi0_fast_libero`` (GCS 2025-05-28) was
+  trained with z-score and must be served with ``--args.norm_mode=zscore``
+  (configs: harnessstudio/policies/configs/pi0_fast_libero_zscore.yaml). Other checkpoints from before that switch
+  MAY need it: verify each one (config history at its training date, plus a FAST token-grid or demo-frame check).
 An explicit mode is announced in the HELLO action spec description (``actions``), which HarnessStudio records as
 ``policy_hello`` in every run manifest, and in the server log.
 """

@@ -142,8 +142,10 @@ chunktrust-ahs: 100% over ~17.8k decisions).
 | `fake-t0`, `fake-t1` | `harnessstudio/policy_ext/fake.py` (tier 1) | T0 / T1 |
 
 `pi05_openpi.py` takes `--args.norm_mode=config|zscore|quantile` (default `config`: the pinned openpi TrainConfig,
-unchanged). openpi >= a3d8ea3 (2025-07-05) serves every non-PI0 config with quantile norm; checkpoints trained before
-that on LeRobot*DataConfig (e.g. `pi0_fast_libero`) need `zscore` (`docs/extensions/openpi-norm.md`). A forced mode is
+unchanged). openpi >= a3d8ea3 (2025-07-05) serves every non-PI0 config with quantile norm. Verified for one checkpoint
+only: `pi0_fast_libero` (created 2025-05-28, before that switch) needs `zscore` (`docs/extensions/openpi-norm.md`).
+Other checkpoints may need it: verify each one (config history at its training date, plus a FAST token-grid or
+demo-frame check). A forced mode is
 announced in the HELLO action-spec description and so recorded in every run manifest's `policy_hello`.
 
 ## Building blocks for agent harnesses
