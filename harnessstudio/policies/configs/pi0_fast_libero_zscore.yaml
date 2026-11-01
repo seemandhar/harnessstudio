@@ -1,0 +1,18 @@
+# EXT openpi-norm (docs/extensions/openpi-norm.md): openpi pi0-FAST LIBERO with the normalization its checkpoint was
+# trained with. Same args as vla-eval configs/model_servers/pi0/libero_fast.yaml (chunk_size 10, image 224, state 8-D)
+# plus norm_mode: zscore. gs://openpi-assets/checkpoints/pi0_fast_libero (GCS 2025-05-28) predates openpi a3d8ea3
+# (2025-07-05), after which openpi serves every non-PI0 config with quantile norm; under quantile norm this checkpoint
+# emits position commands up to +-2.2 (runs/rtcf-20261031/repair/diagnosis.md).
+# Launch (from the vla-eval checkout, openpi env, harnessstudio on PYTHONPATH):
+#   python harnessstudio/policies/pi05_openpi.py --config harnessstudio/policies/configs/pi0_fast_libero_zscore.yaml \
+#     --address 127.0.0.1:PORT
+script: "harnessstudio/policies/pi05_openpi.py"
+args:
+  config_name: pi0_fast_libero
+  image_key: "observation/image"
+  wrist_image_key: "observation/wrist_image"
+  state_key: "observation/state"
+  state_dim: 8
+  image_resolution: 224
+  chunk_size: 10
+  norm_mode: zscore
