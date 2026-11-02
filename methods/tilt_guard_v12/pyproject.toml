@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hs-tilt-guard-v12"
+version = "1.2.0"
+description = "tilt-guard v1.2: Z -> B (boundary tilt envelope, optional saturation arming), no G, for pi0_fast_libero (original RoboMetaHarness method rtcfpp-20261101) as a HarnessStudio v2 method"
+requires-python = ">=3.10"
+dependencies = ["harnessstudio", "numpy"]
+
+[project.entry-points."harnessstudio.methods"]
+tilt-guard-v12-b = "hs_tilt_guard_v12:config_b"
+tilt-guard-v12-b-yaw = "hs_tilt_guard_v12:config_b_yaw"
+tilt-guard-v12-bz = "hs_tilt_guard_v12:config_bz"
+tilt-guard-v12-bsat = "hs_tilt_guard_v12:config_bsat"
+tilt-guard-v12-bsatz = "hs_tilt_guard_v12:config_bsatz"
+tilt-guard-v12-bsat-yaw = "hs_tilt_guard_v12:config_bsat_yaw"
+tilt-guard-v12-z = "hs_tilt_guard_v12:config_z"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hs_tilt_guard_v12"]

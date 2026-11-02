@@ -1,0 +1,17 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hs-u5z"
+version = "1.0.0"
+description = "U5+Z: frozen tube-steer (U5) composed with frozen tilt-guard v1.2 'z' zero-chunk substitution acting only before U5's first arming (rtcfpp-20261101 A6.Z composition) as a HarnessStudio v2 method"
+requires-python = ">=3.10"
+dependencies = ["harnessstudio", "numpy", "pyyaml", "hs-tube-steer==1.0.0", "hs-tilt-guard-v12==1.2.0", "hs-tilt-guard-v11==1.1.0"]
+
+[project.entry-points."harnessstudio.methods"]
+u5z-t = "hs_u5z:config_u5z_t"
+u5zsign-t = "hs_u5z:config_u5zsign_t"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hs_u5z"]

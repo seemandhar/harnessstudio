@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hs-tilt-guard"
+version = "1.0.0"
+description = "tilt-guard: decode-failure substitution + saturation-gated rx band guard (hs-band-guard, read-only) + boundary tilt envelope for pi0_fast_libero (original RoboMetaHarness method rtcfpp-20261101 round 1) as a HarnessStudio v2 method"
+requires-python = ">=3.10"
+dependencies = ["harnessstudio", "numpy", "hs-band-guard==1.0.0"]
+
+[project.entry-points."harnessstudio.methods"]
+tilt-guard-gb = "hs_tilt_guard:config_gb"
+tilt-guard-gyaw = "hs_tilt_guard:config_gyaw"
+tilt-guard-gbz = "hs_tilt_guard:config_gbz"
+tilt-guard-gz = "hs_tilt_guard:config_gz"
+tilt-guard-gbzsign = "hs_tilt_guard:config_gbzsign"
+tilt-guard-gzsign = "hs_tilt_guard:config_gzsign"
+tilt-guard-z = "hs_tilt_guard:config_z"
+tilt-guard-zsign = "hs_tilt_guard:config_zsign"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hs_tilt_guard"]

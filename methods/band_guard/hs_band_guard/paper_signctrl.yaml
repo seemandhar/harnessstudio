@@ -1,0 +1,49 @@
+name: band-guard-signctrl
+version: "1.0"
+paper: {id: "rmh:rtcfpp-20261101/r1g-p1-signctrl", title: "DEVELOPMENT-ONLY norm-matched sign control for band-guard (r1g-p1 saturation-band-signctrl): same gate, same magnitude, public-coin sign; never a Campaign arm, never on validation/final scenes (critic C3)", venue: "none (internal)"}
+categories: {primary: execution_monitoring, secondary: [uncertainty_compute]}
+# Original method: 'faithful' to its own specification (proposal runs/rtcfpp-20261101/ideation/r1-general.json sha256
+# 3bcf58eb..., review conditions C1-C10 of runs/rtcfpp-20261101/reviews/r1-general-proposal-review.json); the fidelity
+# enum has no 'new method' value (critic C9).
+fidelity: faithful
+substitutions: []
+requires: {capabilities: [act, chunk]}
+# No extra policy, LLM or tool calls: pure numpy post-processing of the native chunk (inference ratio 1.00).
+budgets: {policy_calls: null, llm_calls: 0, tool_calls: 0, max_tokens: 0}
+null: derived
+artifacts:
+  - {name: pi0_fast_libero_norm_stats, path: /bigdata/sejain/hs2-cache/openpi/openpi-assets/checkpoints/pi0_fast_libero/assets/physical-intelligence/libero/norm_stats.json,
+     sha256: 4ece6c43f425c3769b85819a7a4bb025d214dc263a13a6dbeb02cd36dc2cee5e, license: "Apache-2.0 (openpi assets); byte-identical copy in hs_band_guard/assets"}
+operators: []
+# Every scalar is frozen here (critic C1) before any scored screen episode. The band/saturation edges are copies of the
+# pi0_fast_libero checkpoint's norm_stats (index 3 = rx; the op refuses any value that differs from the pinned asset);
+# margin 0.02 is the single development-chosen scalar; gate_rows 5 = profile execute_horizon (critic C2).
+params:
+  dim: 3
+  state_q01: 1.5003631114959717
+  state_q99: 3.2705323696136475
+  action_q01: -3.306384325027466
+  action_q99: -1.4915390014648438
+  margin: 0.02
+  gate_rows: 5
+  zero_chunk_tol: 0.0001
+  norm_stats: assets/pi0_fast_libero_norm_stats.json
+  norm_stats_sha256: 4ece6c43f425c3769b85819a7a4bb025d214dc263a13a6dbeb02cd36dc2cee5e
+  state_key: states
+  correction: signctrl
+disclosures:
+  - "CONTROL, not a candidate: an exploratory development probe run by the evaluator with hs eval on init 30-37 dev scenes only (critic C3), for falsifier F3 ((P1 net) - (signctrl net) <= +2 on hard48). The gate is evaluated in its own closed-loop rollout; at each gated decision the correction magnitude |s_rx - clip(s_rx)| is applied with sign coin * (restoring), coin = +1 if the low bit of sha256(sha256(first public states float64 bytes) || decision counter as uint64 LE)[0] is 0 else -1 (public inputs only; no case key, seed or episode index). coin +1 executes exactly band-guard's a'_rx = m_rx + clip(s_rx); coin -1 executes a_rx + (s_rx - clip(s_rx)). Per-decision coin and per-episode coin_plus/coin_minus counts are in the action_op diagnostics."
+  - "Original RoboMetaHarness method (run rtcfpp-20261101, proposal r1g-p1 by agent acd380ee23582d182, approved with conditions by critic a8623158c27233d0a); not a port of any paper. Novelty is stated only as: not found in the local knowledge catalog or the 2026-11-01 literature delta."
+  - "Algebraically it is a gated AbsoluteActions(clip(s)) on rx: openpi pi0_fast_libero (LeRobotLiberoDataConfig extra_delta_transform=True, openpi 981483d) outputs m = a - s on dims 0-5 and AbsoluteActions (after Unnormalize) adds the decision-time state back. The op replaces s_rx by clip(s_rx, state q01, state q99) in that reconstruction when s_rx is outside the checkpoint's state band AND the policy output over rows[:5] is pinned at its training extreme on that side. It targets an out-of-support artifact of the extra-delta parameterization and transfers only to checkpoints with delta-to-state output reconstruction. The baseline (and the RTCF reference) executes the official openpi output as served; the baseline is not mis-served."
+  - "Borrowed ideas only: FAST tokenizer / pi0-FAST (arXiv:2501.09747v1) decode behaviour (an openpi zero-fill decode-failure chunk is a no-op here); deterministic execution authority that bounds/substitutes commands (local catalog card dynaharness_fast_contract; arXiv version not resolved)."
+  - "Correction is applied to every row of the 10-row chunk (DC shift on rx); the candidate executes rows[:5] (profile execute_horizon). Only rx (action/state index 3) is touched; ry, rz, position and gripper are bitwise native."
+  - "Decision-time state = obs['states'] passed to the action_op (ctx.observe() at decision start, the observation the policy received). No-op (input returned unchanged) when 'states' is absent, has < 6 entries, the chunk is not [H, 7], anything is non-finite, or the chunk is the openpi zero chunk (every row identical, dims 0-5 = actions mean + state, gripper = actions mean, tol 1e-4); the zero-chunk test is inert for the gate (actions mean rx -2.97 lies strictly inside the saturation edges) but is kept per critic C2."
+  - "Development evidence (permitted dev scenes only): CPU replay on the identity dev traces init 30-37 (state[d-1] alignment) reproduces the scientist's trigger counts (scripts/replay_dev.py; runs/rtcfpp-20261101/implementation/band-guard/implementation-report.json)."
+original:
+  repo: "none (original method)"
+  commit: ""
+  reported: "none; predictions in runs/rtcfpp-20261101/ideation/r1-general.json (hard48 net +5, range +3..+8)"
+description: "DEVELOPMENT-ONLY sign control of band-guard: at decisions where band-guard's gate fires in this arm's own rollout (rx outside the checkpoint state band and the extra-delta output pinned at its training extreme on that side), shift rx by the same magnitude |s_rx - clip(s_rx)| with a public-coin sign (+1 = band-guard's restoring correction, -1 = the opposite); otherwise bitwise native."
+tier1: {instruction: "pick up the block and place it in the bowl", horizon: 40, chunk_len: 10}
+changelog:
+  - "v1.0 (2026-11-01): first implementation of the sign control together with band-guard v1.0 (task implement-band-guard, coder ac34ce3a7d6d80e7d) of r1g-p1 under critic conditions C1-C10; frozen before any screen episode."

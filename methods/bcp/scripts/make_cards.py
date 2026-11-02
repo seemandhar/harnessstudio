@@ -1,0 +1,84 @@
+"""Write the three H1-BCP paper cards (bcp, bcp-switch, bcp-switch-dot) from one template. CPU only.
+
+    harnessstudio/.venv/bin/python harnessstudio/methods/bcp/scripts/make_cards.py
+"""
+from __future__ import annotations
+
+from pathlib import Path
+
+import yaml
+
+PKG = Path(__file__).resolve().parents[1] / "hs_bcp"
+COMMON_PARAMS = {"window_decisions": 10, "exec_rows": 5, "state_key": "states", "hold_steps": 15,
+                 "width_min": 0.003, "settle_rows": 10, "gripper_dim": 6, "width_dims": [6, 7], "log_rows": False}
+ENTRIES = {
+    "bcp": {"mode": "shadow_probe", "policy_calls": 130,
+            "role": "K1 shadow kill test (review r8 K1-c1..K1-c6): run ONLY as the null arm (hs eval bcp --arms null); "
+                    "native actions executed; clause and ' .' control decoded and discarded for 10 decisions after the "
+                    "first custody boundary",
+            "description": "H1-BCP K1 shadow probe: native actions; for 10 decisions after the first public custody "
+                           "boundary also decode the remaining-clause prompt and a surface-control prompt (original + "
+                           "' .') and log their token/chunk differences against the native decode."},
+    "bcp-switch": {"mode": "switch", "policy_calls": 110,
+                   "role": "K2 candidate (conditional on a K1 pass and the K2-c1 review; NOT run now)",
+                   "description": "H1-BCP K2 candidate: after the first public custody boundary every decision uses "
+                                  "the remaining clause of the conjunctive instruction (pronoun resolved)."},
+    "bcp-switch-dot": {"mode": "switch_control", "policy_calls": 110,
+                       "role": "K2 churn control (review r8 K2-c2; conditional; NOT run now)",
+                       "description": "H1-BCP K2 churn control: after the first public custody boundary every "
+                                      "decision uses the original instruction + ' .' (non-semantic surface edit)."},
+}
+
+
+def card(name: str, spec: dict) -> dict:
+    return {
+        "name": name,
+        "version": "1.0",
+        "paper": {"id": "rmh:rtcfpp-20261101/h1-bcp",
+                  "title": "H1-BCP Boundary Clause Prompt (rtcfpp-20261101 round 8 domain hypothesis; composition of "
+                           "Inner Monologue clause sequencing and an MPVI-style proprio trigger; not a reproduction)",
+                  "venue": "none (internal)"},
+        "categories": {"primary": "language_alignment",
+                       "secondary": ["agentic_orchestration", "execution_monitoring"]},
+        "fidelity": "tf_variant",
+        "substitutions": [
+            "Inner Monologue (arXiv 2207.05608v1) LLM-planned subtask sequence -> fixed text rule: split at ' and VERB' "
+            "(put/close/open/turn/pick/place/push), 'it' resolved to the last in/on/into object of clause 1, object "
+            "pronouns refused",
+            "MPVI (arXiv 2606.00985v1) VLM completion check at a proprio trigger -> public custody boundary (executed "
+            "gripper-close run >= 15 steps, settled finger width >= 0.003 m, then an executed open); no VLM",
+            "VLS (arXiv 2602.03973v1) stage reward -> none (stage advance once, at the custody event)",
+        ],
+        "requires": {"capabilities": ["act", "chunk", "seeded_sampling"]},
+        "budgets": {"policy_calls": spec["policy_calls"], "llm_calls": 0, "tool_calls": 0, "max_tokens": 0},
+        "null": "shadow",
+        "artifacts": [],
+        "operators": [],
+        "original": {"repo": "none (internal hypothesis)",
+                     "commit": "ideation/r8-task.json sha256 15fe20bc77892bc2a377b2c330b9c56385700e99d80ba6be7242d2b9af7374d0",
+                     "reported": "none; approval runs/rtcfpp-20261101/reviews/r8-review.json sha256 "
+                                 "cef32941d090695245989605f2ce0e75cacb9eaab37b292490ea4635f166aa35"},
+        "description": spec["description"],
+        "role": spec["role"],
+        "development_only": True,
+        "frozen_scalars_provenance": "hold 15 steps (analysis/r8/linger.py custody length), width >= 0.003 m (between "
+                                     "the identity dev80 empty-close max 0.0022 m and the t3 bowl min 0.0034 m; "
+                                     "in-sample development scalar disclosed in r8-task.json), window 10 decisions, verb "
+                                     "list and pronoun rule; frozen before any GPU run, no sweep (K1-c5)",
+        "tier1": {"instruction": "turn on the stove and put the moka pot on it", "horizon": 40, "chunk_len": 5},
+        "params": {"mode": spec["mode"], **COMMON_PARAMS},
+        "changelog": ["1.0 (2026-11-01): initial K1/K2 implementation, rmh_coder task implement-bcp-k1"],
+    }
+
+
+def main() -> None:
+    for name, spec in ENTRIES.items():
+        path = PKG / f"paper_{name}.yaml"
+        text = (f"# GENERATED by scripts/make_cards.py (hs-bcp 1.0); edit the generator, not this file.\n"
+                + yaml.safe_dump(card(name, spec), sort_keys=False, width=120))
+        path.write_text(text)
+        print(path)
+
+
+if __name__ == "__main__":
+    main()

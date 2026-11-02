@@ -1,0 +1,1036 @@
+{
+ "format": "success-tube-v1",
+ "source": "runs/rtcf-20261031/eval/s2 (init 10-29, seed 7, identity-equivalent collect mode)",
+ "convention": "decision-time state (obs before chunk); z = third column of R(axis-angle state[3:6]); world frame",
+ "episodes": [
+  {
+   "key": "t0_i10",
+   "task": 0,
+   "init": 10,
+   "instruction": "put both the alphabet soup and the tomato sauce in the basket",
+   "decisions": 56,
+   "trace_sha256": "edcb9fc52deb79b77dd132f2e0b2fa563510b3bf42b82673643094697658f404"
+  },
+  {
+   "key": "t0_i11",
+   "task": 0,
+   "init": 11,
+   "instruction": "put both the alphabet soup and the tomato sauce in the basket",
+   "decisions": 53,
+   "trace_sha256": "84dd399af455044ef4ac61ea51ad6a17d14f33a239256470d70db6440aa40cc2"
+  },
+  {
+   "key": "t0_i12",
+   "task": 0,
+   "init": 12,
+   "instruction": "put both the alphabet soup and the tomato sauce in the basket",
+   "decisions": 52,
+   "trace_sha256": "593f30b92ab1a16942806102c92f5f1e14bfb53ceea257a30f6288a060b66f05"
+  },
+  {
+   "key": "t0_i13",
+   "task": 0,
+   "init": 13,
+   "instruction": "put both the alphabet soup and the tomato sauce in the basket",
+   "decisions": 54,
+   "trace_sha256": "56b36a64c869fea340f1fb74c3c52b6f7b9cb74ff8d0ab37fe20a8c1453153a8"
+  },
+  {
+   "key": "t0_i14",
+   "task": 0,
+   "init": 14,
+   "instruction": "put both the alphabet soup and the tomato sauce in the basket",
+   "decisions": 57,
+   "trace_sha256": "3a030d9561399ea515d19ddaa2a4e35685b82ceca7de5364b90393be8e3498a0"
+  },
+  {
+   "key": "t0_i15",
+   "task": 0,
+   "init": 15,
+   "instruction": "put both the alphabet soup and the tomato sauce in the basket",
+   "decisions": 48,
+   "trace_sha256": "fc0f322d36c123654b1d0a278389217b85cf0965a01cd35557dd1b65585ad210"
+  },
+  {
+   "key": "t0_i16",
+   "task": 0,
+   "init": 16,
+   "instruction": "put both the alphabet soup and the tomato sauce in the basket",
+   "decisions": 55,
+   "trace_sha256": "9553527c30a855b28ac43e65249de44adc3de8163f8ab6953c0aa6646f1d55a0"
+  },
+  {
+   "key": "t0_i17",
+   "task": 0,
+   "init": 17,
+   "instruction": "put both the alphabet soup and the tomato sauce in the basket",
+   "decisions": 53,
+   "trace_sha256": "9920bff38a52b1d521a7f542beefdc026bad728c4a9d5ae81ffe215c1364edb4"
+  },
+  {
+   "key": "t0_i18",
+   "task": 0,
+   "init": 18,
+   "instruction": "put both the alphabet soup and the tomato sauce in the basket",
+   "decisions": 91,
+   "trace_sha256": "6fd541357aee97ca40ba50f6904e3e56c41c555f33eb0c9f71f15c275bf1becc"
+  },
+  {
+   "key": "t0_i20",
+   "task": 0,
+   "init": 20,
+   "instruction": "put both the alphabet soup and the tomato sauce in the basket",
+   "decisions": 50,
+   "trace_sha256": "70e0ba6bd1a492829052cc3e2b27b631da29bcdc945e911a098d0c5331b9445a"
+  },
+  {
+   "key": "t0_i21",
+   "task": 0,
+   "init": 21,
+   "instruction": "put both the alphabet soup and the tomato sauce in the basket",
+   "decisions": 52,
+   "trace_sha256": "6207a832b043bad44f02bad0c0ae65b0f818a423325882305333ef00e591880a"
+  },
+  {
+   "key": "t0_i22",
+   "task": 0,
+   "init": 22,
+   "instruction": "put both the alphabet soup and the tomato sauce in the basket",
+   "decisions": 49,
+   "trace_sha256": "55a0061a5101e8c8021b920b2a9a186abb5fc67635eaa1de7adf562e95b09a62"
+  },
+  {
+   "key": "t0_i23",
+   "task": 0,
+   "init": 23,
+   "instruction": "put both the alphabet soup and the tomato sauce in the basket",
+   "decisions": 66,
+   "trace_sha256": "29feaf5d10e0b6f4e4db7345cb2f7357ff11ddf2af5b57ef311ede1997ca31dc"
+  },
+  {
+   "key": "t0_i24",
+   "task": 0,
+   "init": 24,
+   "instruction": "put both the alphabet soup and the tomato sauce in the basket",
+   "decisions": 74,
+   "trace_sha256": "53a59b4f3e37f9019330a70b3af934340971a80c5eaea0c5b1e23db5bc8e55aa"
+  },
+  {
+   "key": "t0_i25",
+   "task": 0,
+   "init": 25,
+   "instruction": "put both the alphabet soup and the tomato sauce in the basket",
+   "decisions": 48,
+   "trace_sha256": "6f2b0aab3448914aa2d985bfeb733e51ab927210901b91c5af5599bc51a15fff"
+  },
+  {
+   "key": "t0_i26",
+   "task": 0,
+   "init": 26,
+   "instruction": "put both the alphabet soup and the tomato sauce in the basket",
+   "decisions": 49,
+   "trace_sha256": "c79f10b5cabcce480935c950d4a0d9b2c0e7d92a5133e5cacb6b0e306dfb2837"
+  },
+  {
+   "key": "t0_i27",
+   "task": 0,
+   "init": 27,
+   "instruction": "put both the alphabet soup and the tomato sauce in the basket",
+   "decisions": 53,
+   "trace_sha256": "33f8941bd1908132d0393adfb830a39cb77a0dbd91aadc77f8f4029ba3b2ad6e"
+  },
+  {
+   "key": "t0_i28",
+   "task": 0,
+   "init": 28,
+   "instruction": "put both the alphabet soup and the tomato sauce in the basket",
+   "decisions": 52,
+   "trace_sha256": "06738b42302f7d755162f8c3d8358efb3f06e4b798a957ada2a5ecdc70b71c33"
+  },
+  {
+   "key": "t0_i29",
+   "task": 0,
+   "init": 29,
+   "instruction": "put both the alphabet soup and the tomato sauce in the basket",
+   "decisions": 52,
+   "trace_sha256": "5b7c6dc6f0fd5840d0af194fd4cfe7bf729b762c2c32fb16f697b5c6e3e0b468"
+  },
+  {
+   "key": "t1_i10",
+   "task": 1,
+   "init": 10,
+   "instruction": "put both the cream cheese box and the butter in the basket",
+   "decisions": 48,
+   "trace_sha256": "fa2e2f3279c5e3d4c55df3210095d7ed2da60d84ab5d319f80f7adc567b584c7"
+  },
+  {
+   "key": "t1_i11",
+   "task": 1,
+   "init": 11,
+   "instruction": "put both the cream cheese box and the butter in the basket",
+   "decisions": 51,
+   "trace_sha256": "abf520fc563a05cf91a893fd5c544acd9ae1045bda5020989c01326725431688"
+  },
+  {
+   "key": "t1_i12",
+   "task": 1,
+   "init": 12,
+   "instruction": "put both the cream cheese box and the butter in the basket",
+   "decisions": 47,
+   "trace_sha256": "f9357b8bb8095b387726b8ca748f0e87e6c78896ce285e7db93a7b26bf90dea4"
+  },
+  {
+   "key": "t1_i13",
+   "task": 1,
+   "init": 13,
+   "instruction": "put both the cream cheese box and the butter in the basket",
+   "decisions": 48,
+   "trace_sha256": "378b546b6ab25f8658daf361932b0f1d5201fc9d4e40367dd671119b66acac6b"
+  },
+  {
+   "key": "t1_i14",
+   "task": 1,
+   "init": 14,
+   "instruction": "put both the cream cheese box and the butter in the basket",
+   "decisions": 52,
+   "trace_sha256": "3bb7cb485c8187d318d71af902876f052757af472e446ee2e43b488cf7d11aea"
+  },
+  {
+   "key": "t1_i15",
+   "task": 1,
+   "init": 15,
+   "instruction": "put both the cream cheese box and the butter in the basket",
+   "decisions": 49,
+   "trace_sha256": "4afe57fe2b531ef90bca511936604c778472f76da0dc5c72e2c890b4a20a1a12"
+  },
+  {
+   "key": "t1_i16",
+   "task": 1,
+   "init": 16,
+   "instruction": "put both the cream cheese box and the butter in the basket",
+   "decisions": 47,
+   "trace_sha256": "c5b22b5052c2c6fdf3ec00680393005ad7bf0c1f2325181c5890e57085102b1a"
+  },
+  {
+   "key": "t1_i17",
+   "task": 1,
+   "init": 17,
+   "instruction": "put both the cream cheese box and the butter in the basket",
+   "decisions": 49,
+   "trace_sha256": "e3b5de3ead80a0db2f72126557e8d798be2d671d69c14544809a66b6b1a9d6a2"
+  },
+  {
+   "key": "t1_i18",
+   "task": 1,
+   "init": 18,
+   "instruction": "put both the cream cheese box and the butter in the basket",
+   "decisions": 53,
+   "trace_sha256": "321963507fe2bf8cec11e39d489348eb7166eb08de91c2ae3c4189c55504f08c"
+  },
+  {
+   "key": "t1_i19",
+   "task": 1,
+   "init": 19,
+   "instruction": "put both the cream cheese box and the butter in the basket",
+   "decisions": 52,
+   "trace_sha256": "081998f005eb53ab8f5fe3baa73192ebe46e612749601e3b12a202ba03e45361"
+  },
+  {
+   "key": "t1_i20",
+   "task": 1,
+   "init": 20,
+   "instruction": "put both the cream cheese box and the butter in the basket",
+   "decisions": 49,
+   "trace_sha256": "5b6d9a7632b0dca9589ec88a56b3c9cee6dedea2d985943ae91b7e267d2d8ee6"
+  },
+  {
+   "key": "t1_i21",
+   "task": 1,
+   "init": 21,
+   "instruction": "put both the cream cheese box and the butter in the basket",
+   "decisions": 49,
+   "trace_sha256": "c81fc2896fe519f81cdba797015803c3d3ae03a8adfbba5433fd6b1b878240df"
+  },
+  {
+   "key": "t1_i22",
+   "task": 1,
+   "init": 22,
+   "instruction": "put both the cream cheese box and the butter in the basket",
+   "decisions": 72,
+   "trace_sha256": "7802931e8df61c165a2764a9c3590fb91bf3732521d96e0928940f14661865d9"
+  },
+  {
+   "key": "t1_i23",
+   "task": 1,
+   "init": 23,
+   "instruction": "put both the cream cheese box and the butter in the basket",
+   "decisions": 46,
+   "trace_sha256": "33bf731cc1d32bff7613a7fed2e02a2809b824db07d19b86ddceae9c2d24143c"
+  },
+  {
+   "key": "t1_i24",
+   "task": 1,
+   "init": 24,
+   "instruction": "put both the cream cheese box and the butter in the basket",
+   "decisions": 48,
+   "trace_sha256": "e23d95615cf24e0e1c9a4ab82a0825f82ae6fc1a63878a847f466b213279fed1"
+  },
+  {
+   "key": "t1_i25",
+   "task": 1,
+   "init": 25,
+   "instruction": "put both the cream cheese box and the butter in the basket",
+   "decisions": 49,
+   "trace_sha256": "f4cf98eaa6dc1fd08cfdbd673aeea468a800c54e9bdb24164931db4540dbe8e3"
+  },
+  {
+   "key": "t1_i26",
+   "task": 1,
+   "init": 26,
+   "instruction": "put both the cream cheese box and the butter in the basket",
+   "decisions": 49,
+   "trace_sha256": "207669f7db27d4dcb95c4d1d351a5b7bf1a912ab7163b806113b500a6aa31250"
+  },
+  {
+   "key": "t1_i27",
+   "task": 1,
+   "init": 27,
+   "instruction": "put both the cream cheese box and the butter in the basket",
+   "decisions": 50,
+   "trace_sha256": "ddfd7bbc9813edc20f8d6cf53a89878b32707a9d0f129646c5e19e2de7ff27ea"
+  },
+  {
+   "key": "t1_i28",
+   "task": 1,
+   "init": 28,
+   "instruction": "put both the cream cheese box and the butter in the basket",
+   "decisions": 48,
+   "trace_sha256": "3be4b47339d5d0e1eb0b4fb071bd5bb825b7249b11bcfbce57aa8f3c8306186e"
+  },
+  {
+   "key": "t1_i29",
+   "task": 1,
+   "init": 29,
+   "instruction": "put both the cream cheese box and the butter in the basket",
+   "decisions": 51,
+   "trace_sha256": "9c334f115091748b80303465a410624615b48ebd2b28bf79f78a8c8cea8a6e11"
+  },
+  {
+   "key": "t2_i10",
+   "task": 2,
+   "init": 10,
+   "instruction": "turn on the stove and put the moka pot on it",
+   "decisions": 43,
+   "trace_sha256": "56430f70addb9e8f90504bc07c4c8c6e3157a07f66b70aed604303546763a098"
+  },
+  {
+   "key": "t2_i14",
+   "task": 2,
+   "init": 14,
+   "instruction": "turn on the stove and put the moka pot on it",
+   "decisions": 48,
+   "trace_sha256": "8aea909e1f27761ac1a1faae08cb68593f7c68ef1eb3f11eda8f01c204d0e983"
+  },
+  {
+   "key": "t2_i18",
+   "task": 2,
+   "init": 18,
+   "instruction": "turn on the stove and put the moka pot on it",
+   "decisions": 55,
+   "trace_sha256": "ab6f0a21d3244971350da635fcdf7c976b33a814c076ba0a61a23aa7bfc143b2"
+  },
+  {
+   "key": "t2_i19",
+   "task": 2,
+   "init": 19,
+   "instruction": "turn on the stove and put the moka pot on it",
+   "decisions": 44,
+   "trace_sha256": "5c390115fb75d9c3cabb59a826abb876e185faba1bf62c29e845c582fd180527"
+  },
+  {
+   "key": "t2_i23",
+   "task": 2,
+   "init": 23,
+   "instruction": "turn on the stove and put the moka pot on it",
+   "decisions": 51,
+   "trace_sha256": "5493bf5873aa27c895fd0330a42ce92d7cfa79a20c9d9134b854df92f7130777"
+  },
+  {
+   "key": "t2_i24",
+   "task": 2,
+   "init": 24,
+   "instruction": "turn on the stove and put the moka pot on it",
+   "decisions": 47,
+   "trace_sha256": "8eabfefa214782f2acd351644423b4117b31703e1b528b89604e100133a1da33"
+  },
+  {
+   "key": "t2_i26",
+   "task": 2,
+   "init": 26,
+   "instruction": "turn on the stove and put the moka pot on it",
+   "decisions": 49,
+   "trace_sha256": "7de7c7f4596c39c5b670895d8e58b301a9f2f7ed0e7c13a780d85cdbb9f88552"
+  },
+  {
+   "key": "t2_i28",
+   "task": 2,
+   "init": 28,
+   "instruction": "turn on the stove and put the moka pot on it",
+   "decisions": 51,
+   "trace_sha256": "4341aaccf6ed9f72e433e0ba43196faf4bef23361259f0c5c6a78dcc17815508"
+  },
+  {
+   "key": "t3_i13",
+   "task": 3,
+   "init": 13,
+   "instruction": "put the black bowl in the bottom drawer of the cabinet and close it",
+   "decisions": 49,
+   "trace_sha256": "2177741b215229cf3831fd0959bc3f1dd348152e0e40e4fbebb9237f8d7ae975"
+  },
+  {
+   "key": "t3_i14",
+   "task": 3,
+   "init": 14,
+   "instruction": "put the black bowl in the bottom drawer of the cabinet and close it",
+   "decisions": 42,
+   "trace_sha256": "13b7fc905e2c52e4daa5638ff65a7d7be8dcd438a4311e7dbcd13d1b66bba4d4"
+  },
+  {
+   "key": "t3_i18",
+   "task": 3,
+   "init": 18,
+   "instruction": "put the black bowl in the bottom drawer of the cabinet and close it",
+   "decisions": 43,
+   "trace_sha256": "36051df938b4da6da944b64b794bd51ebb151bba3b8956736911934cc4b2eef0"
+  },
+  {
+   "key": "t3_i19",
+   "task": 3,
+   "init": 19,
+   "instruction": "put the black bowl in the bottom drawer of the cabinet and close it",
+   "decisions": 44,
+   "trace_sha256": "89faa2037913ff8499a468c9de14565d38d50df6a2c96a17a79a475ce59e7a89"
+  },
+  {
+   "key": "t3_i21",
+   "task": 3,
+   "init": 21,
+   "instruction": "put the black bowl in the bottom drawer of the cabinet and close it",
+   "decisions": 40,
+   "trace_sha256": "ef4631445a4820f5a663dcb69ed3baa0d13acd04422aa2c1ad3d3113931d7b21"
+  },
+  {
+   "key": "t3_i23",
+   "task": 3,
+   "init": 23,
+   "instruction": "put the black bowl in the bottom drawer of the cabinet and close it",
+   "decisions": 46,
+   "trace_sha256": "1475654f0ee5043b7cd48a9557c3186987c429ae5e2d315c19aee686641ee7b0"
+  },
+  {
+   "key": "t3_i27",
+   "task": 3,
+   "init": 27,
+   "instruction": "put the black bowl in the bottom drawer of the cabinet and close it",
+   "decisions": 46,
+   "trace_sha256": "171d4c7c6e35ab87a105afa943332637ba3a5c16c6d23732911a03d6eb63cdbe"
+  },
+  {
+   "key": "t4_i10",
+   "task": 4,
+   "init": 10,
+   "instruction": "put the white mug on the left plate and put the yellow and white mug on the right plate",
+   "decisions": 55,
+   "trace_sha256": "7aa863c3606de3b3796c90d77b202c512c0b40bebf15a06f53ca0c269cfe2bbb"
+  },
+  {
+   "key": "t4_i12",
+   "task": 4,
+   "init": 12,
+   "instruction": "put the white mug on the left plate and put the yellow and white mug on the right plate",
+   "decisions": 52,
+   "trace_sha256": "79439efebb296bf4b582b3ad09cae60bbf840a879a6c51b1b4dfae102623949c"
+  },
+  {
+   "key": "t4_i13",
+   "task": 4,
+   "init": 13,
+   "instruction": "put the white mug on the left plate and put the yellow and white mug on the right plate",
+   "decisions": 43,
+   "trace_sha256": "4b4a469bfb9f37c6490e27a1de1628a0909a1f4c28c1491e44ea45692d815af4"
+  },
+  {
+   "key": "t4_i14",
+   "task": 4,
+   "init": 14,
+   "instruction": "put the white mug on the left plate and put the yellow and white mug on the right plate",
+   "decisions": 45,
+   "trace_sha256": "e3e1695731a2b65351795075ae850fef3fd20b237b83bc92c8037f6e75eaf854"
+  },
+  {
+   "key": "t4_i15",
+   "task": 4,
+   "init": 15,
+   "instruction": "put the white mug on the left plate and put the yellow and white mug on the right plate",
+   "decisions": 47,
+   "trace_sha256": "7e9f2a0cc666e2d7c3c918eebe5cd058906dc85355f32eae905e984eff837785"
+  },
+  {
+   "key": "t4_i16",
+   "task": 4,
+   "init": 16,
+   "instruction": "put the white mug on the left plate and put the yellow and white mug on the right plate",
+   "decisions": 43,
+   "trace_sha256": "f3436c4342fc650de0a370136431997e8ce169826352e54e21d7028e574027db"
+  },
+  {
+   "key": "t4_i17",
+   "task": 4,
+   "init": 17,
+   "instruction": "put the white mug on the left plate and put the yellow and white mug on the right plate",
+   "decisions": 43,
+   "trace_sha256": "550b83ff62c66787b5f82fb33dd28dfa238a1b0c0f27dcc459174506f99292ac"
+  },
+  {
+   "key": "t4_i19",
+   "task": 4,
+   "init": 19,
+   "instruction": "put the white mug on the left plate and put the yellow and white mug on the right plate",
+   "decisions": 44,
+   "trace_sha256": "576c17c245a4eee87eaf20186fa9a887003e116453979767d9eef85f844b966a"
+  },
+  {
+   "key": "t4_i20",
+   "task": 4,
+   "init": 20,
+   "instruction": "put the white mug on the left plate and put the yellow and white mug on the right plate",
+   "decisions": 48,
+   "trace_sha256": "134022dbb4cdaac140d8063ff84b09a494256b2c865b2fd05848aa1e8071280f"
+  },
+  {
+   "key": "t4_i21",
+   "task": 4,
+   "init": 21,
+   "instruction": "put the white mug on the left plate and put the yellow and white mug on the right plate",
+   "decisions": 42,
+   "trace_sha256": "adc300b26f93d197ea9711748b979042658713301f57cea079286a2bc14a421d"
+  },
+  {
+   "key": "t4_i22",
+   "task": 4,
+   "init": 22,
+   "instruction": "put the white mug on the left plate and put the yellow and white mug on the right plate",
+   "decisions": 46,
+   "trace_sha256": "9fc56782c3607ca2831181ef3cddcd386f2d24e7e08eaa52c8f0dbdbce2b108d"
+  },
+  {
+   "key": "t4_i23",
+   "task": 4,
+   "init": 23,
+   "instruction": "put the white mug on the left plate and put the yellow and white mug on the right plate",
+   "decisions": 45,
+   "trace_sha256": "066adc3c24a4ae9d0e1c0327f4ddb0a486166109dde475def20b5ad730e36bb0"
+  },
+  {
+   "key": "t4_i24",
+   "task": 4,
+   "init": 24,
+   "instruction": "put the white mug on the left plate and put the yellow and white mug on the right plate",
+   "decisions": 69,
+   "trace_sha256": "614f27a22bcf25c22eb7d5b4bf1a19b6aeb407dd4d3a69054b54b05fe97f43b6"
+  },
+  {
+   "key": "t4_i25",
+   "task": 4,
+   "init": 25,
+   "instruction": "put the white mug on the left plate and put the yellow and white mug on the right plate",
+   "decisions": 45,
+   "trace_sha256": "cc80e09c72880747781050f579c302c91366408983f5256d7785c36c58f5f51b"
+  },
+  {
+   "key": "t4_i26",
+   "task": 4,
+   "init": 26,
+   "instruction": "put the white mug on the left plate and put the yellow and white mug on the right plate",
+   "decisions": 49,
+   "trace_sha256": "cacf1330a92a865ce502c6778267754bc06f2c2752cd23138ab87ee93522af15"
+  },
+  {
+   "key": "t4_i27",
+   "task": 4,
+   "init": 27,
+   "instruction": "put the white mug on the left plate and put the yellow and white mug on the right plate",
+   "decisions": 51,
+   "trace_sha256": "ef15a389088c1d4097d15fa5002db655c975b23c03c83753db8c696f9c7484bf"
+  },
+  {
+   "key": "t4_i29",
+   "task": 4,
+   "init": 29,
+   "instruction": "put the white mug on the left plate and put the yellow and white mug on the right plate",
+   "decisions": 49,
+   "trace_sha256": "f0515c636fef91b0a6707fc7e1f8a578fe50fa547a1e599f28e5bb2dc1300ef8"
+  },
+  {
+   "key": "t5_i10",
+   "task": 5,
+   "init": 10,
+   "instruction": "pick up the book and place it in the back compartment of the caddy",
+   "decisions": 43,
+   "trace_sha256": "bc8e2bac61f93889c4de3ce33a3601139a4c2571acfc5d1e9f2085ca8286571d"
+  },
+  {
+   "key": "t5_i11",
+   "task": 5,
+   "init": 11,
+   "instruction": "pick up the book and place it in the back compartment of the caddy",
+   "decisions": 41,
+   "trace_sha256": "9cbe20de15a20632b3a75a05f6bfa7f55110f0708279ef54fdc3fd766fed6e43"
+  },
+  {
+   "key": "t5_i12",
+   "task": 5,
+   "init": 12,
+   "instruction": "pick up the book and place it in the back compartment of the caddy",
+   "decisions": 42,
+   "trace_sha256": "52c150ba63e0c872b5ad855d5c7b571b4e0b6100655e9cf420597dc78cb699e2"
+  },
+  {
+   "key": "t5_i13",
+   "task": 5,
+   "init": 13,
+   "instruction": "pick up the book and place it in the back compartment of the caddy",
+   "decisions": 30,
+   "trace_sha256": "943106b6f4b73053f2facaece17c1352ede781f9c496d49cfd52534470ee602f"
+  },
+  {
+   "key": "t5_i14",
+   "task": 5,
+   "init": 14,
+   "instruction": "pick up the book and place it in the back compartment of the caddy",
+   "decisions": 35,
+   "trace_sha256": "a30cf1b7c3f1cc010cba83dc211539232e6b496f5554cdb181e446c6f91a1087"
+  },
+  {
+   "key": "t5_i15",
+   "task": 5,
+   "init": 15,
+   "instruction": "pick up the book and place it in the back compartment of the caddy",
+   "decisions": 40,
+   "trace_sha256": "dfe673af0d81fb91f56113d84c181b5a578815ae737074e0951adba20fc9960e"
+  },
+  {
+   "key": "t5_i16",
+   "task": 5,
+   "init": 16,
+   "instruction": "pick up the book and place it in the back compartment of the caddy",
+   "decisions": 36,
+   "trace_sha256": "cf3047dd49e62b4f3dd0dab1944de94471b776ad21967dcb40d7269390c29c96"
+  },
+  {
+   "key": "t5_i17",
+   "task": 5,
+   "init": 17,
+   "instruction": "pick up the book and place it in the back compartment of the caddy",
+   "decisions": 32,
+   "trace_sha256": "7044610f35385fc5ecda42363e027e9f9c937d3aa9424e9a01da65551a0f3edc"
+  },
+  {
+   "key": "t5_i18",
+   "task": 5,
+   "init": 18,
+   "instruction": "pick up the book and place it in the back compartment of the caddy",
+   "decisions": 32,
+   "trace_sha256": "6fee6c58b9eb4df9151c13815ed608db46516e0260d1d5b83e610b26b85e4e94"
+  },
+  {
+   "key": "t5_i19",
+   "task": 5,
+   "init": 19,
+   "instruction": "pick up the book and place it in the back compartment of the caddy",
+   "decisions": 38,
+   "trace_sha256": "14f2805b99733bbb7f85224bbc905b1fe6077568d9a21115e9aa71395217bc76"
+  },
+  {
+   "key": "t5_i21",
+   "task": 5,
+   "init": 21,
+   "instruction": "pick up the book and place it in the back compartment of the caddy",
+   "decisions": 34,
+   "trace_sha256": "eb6a951f77a97fdfa3a0a665c96251ba3cf6281657ea001d037802b3d152baab"
+  },
+  {
+   "key": "t5_i22",
+   "task": 5,
+   "init": 22,
+   "instruction": "pick up the book and place it in the back compartment of the caddy",
+   "decisions": 31,
+   "trace_sha256": "8bd73f6198919004d609428b1f81246c0800dbee5a436a1aa93f4d8126e61030"
+  },
+  {
+   "key": "t5_i23",
+   "task": 5,
+   "init": 23,
+   "instruction": "pick up the book and place it in the back compartment of the caddy",
+   "decisions": 27,
+   "trace_sha256": "aa00bc1e0002a5bc970a4fe7a3f7f12e1c1d2b98e115651a103afa6970c008bb"
+  },
+  {
+   "key": "t5_i24",
+   "task": 5,
+   "init": 24,
+   "instruction": "pick up the book and place it in the back compartment of the caddy",
+   "decisions": 33,
+   "trace_sha256": "4d4fc817b247bcd92604b693a2ba51c7cc89694d0c5cef40d81d96e7e8bdbc5f"
+  },
+  {
+   "key": "t5_i25",
+   "task": 5,
+   "init": 25,
+   "instruction": "pick up the book and place it in the back compartment of the caddy",
+   "decisions": 35,
+   "trace_sha256": "5493416c1530f81689996811f6445b1991efc9103da0ed8e7a206d1f83985d30"
+  },
+  {
+   "key": "t6_i10",
+   "task": 6,
+   "init": 10,
+   "instruction": "put the white mug on the plate and put the chocolate pudding to the right of the plate",
+   "decisions": 45,
+   "trace_sha256": "d053472584482efbe693c4c64003d51556831fa89beeac28a1ba8df595fbc88c"
+  },
+  {
+   "key": "t6_i11",
+   "task": 6,
+   "init": 11,
+   "instruction": "put the white mug on the plate and put the chocolate pudding to the right of the plate",
+   "decisions": 41,
+   "trace_sha256": "3923a3af8df1bb572eb390541d07879c37e609990e575ff4e9dabe27f4591d1c"
+  },
+  {
+   "key": "t6_i12",
+   "task": 6,
+   "init": 12,
+   "instruction": "put the white mug on the plate and put the chocolate pudding to the right of the plate",
+   "decisions": 58,
+   "trace_sha256": "d28e32c1cfc5b99f50fbed9d6fd76ce3243433264221b1b73be3f62dcf57b8c1"
+  },
+  {
+   "key": "t6_i13",
+   "task": 6,
+   "init": 13,
+   "instruction": "put the white mug on the plate and put the chocolate pudding to the right of the plate",
+   "decisions": 40,
+   "trace_sha256": "81a4a55b7ed417a0a86c92bb258d1693f8378969545a95e9ecc6daa06c780aa2"
+  },
+  {
+   "key": "t6_i14",
+   "task": 6,
+   "init": 14,
+   "instruction": "put the white mug on the plate and put the chocolate pudding to the right of the plate",
+   "decisions": 67,
+   "trace_sha256": "c3efb8caad797d63501a054a6d08f6ea4ad82bd05dbb579756e1a6dc9d9dd984"
+  },
+  {
+   "key": "t6_i15",
+   "task": 6,
+   "init": 15,
+   "instruction": "put the white mug on the plate and put the chocolate pudding to the right of the plate",
+   "decisions": 42,
+   "trace_sha256": "7daa9c5a2bd69bc69408b7d949c7fa1de885c6b8a6ab4e9fce14412fb97b4833"
+  },
+  {
+   "key": "t6_i16",
+   "task": 6,
+   "init": 16,
+   "instruction": "put the white mug on the plate and put the chocolate pudding to the right of the plate",
+   "decisions": 47,
+   "trace_sha256": "6aba40937db4903cb31bd909f38a82a43c5fdfe1fadabf53b035fc8d8e5960f5"
+  },
+  {
+   "key": "t6_i17",
+   "task": 6,
+   "init": 17,
+   "instruction": "put the white mug on the plate and put the chocolate pudding to the right of the plate",
+   "decisions": 42,
+   "trace_sha256": "a80a6e941de4a5aa4359d8f27559b5ab2eef3a79d2320ea7823951239d596b1f"
+  },
+  {
+   "key": "t6_i18",
+   "task": 6,
+   "init": 18,
+   "instruction": "put the white mug on the plate and put the chocolate pudding to the right of the plate",
+   "decisions": 47,
+   "trace_sha256": "0c627caf2af6db98fe2a6a1affe7e89817e52083b88d6fad471b825ac8852c86"
+  },
+  {
+   "key": "t6_i20",
+   "task": 6,
+   "init": 20,
+   "instruction": "put the white mug on the plate and put the chocolate pudding to the right of the plate",
+   "decisions": 43,
+   "trace_sha256": "0c4cfa324be9a3cf2c07749b2cf0cccf44ec224877caa6e12528d86a97db4edc"
+  },
+  {
+   "key": "t6_i22",
+   "task": 6,
+   "init": 22,
+   "instruction": "put the white mug on the plate and put the chocolate pudding to the right of the plate",
+   "decisions": 46,
+   "trace_sha256": "aec644f61867297130470fc25e53c6a8ecffdcec88aff1f46170367b1019f6a6"
+  },
+  {
+   "key": "t6_i25",
+   "task": 6,
+   "init": 25,
+   "instruction": "put the white mug on the plate and put the chocolate pudding to the right of the plate",
+   "decisions": 54,
+   "trace_sha256": "989d953e7634039e79b0da81290da642541ee4604967cdaa2964e22667717ed1"
+  },
+  {
+   "key": "t6_i27",
+   "task": 6,
+   "init": 27,
+   "instruction": "put the white mug on the plate and put the chocolate pudding to the right of the plate",
+   "decisions": 64,
+   "trace_sha256": "3e94fe094773cf6eed051852afeff0a3c71e72cdfd47eb9f8709ec3fe37f8ef6"
+  },
+  {
+   "key": "t6_i28",
+   "task": 6,
+   "init": 28,
+   "instruction": "put the white mug on the plate and put the chocolate pudding to the right of the plate",
+   "decisions": 58,
+   "trace_sha256": "7e2534a2bcf58958db30cdf9ea54bb6056439f6d7991f224441a838e896fdcb6"
+  },
+  {
+   "key": "t6_i29",
+   "task": 6,
+   "init": 29,
+   "instruction": "put the white mug on the plate and put the chocolate pudding to the right of the plate",
+   "decisions": 41,
+   "trace_sha256": "a0d705afc6b7740abd7fb74c87bc33a0a466af243e08dd981a8dbbeecf0d8eda"
+  },
+  {
+   "key": "t7_i10",
+   "task": 7,
+   "init": 10,
+   "instruction": "put both the alphabet soup and the cream cheese box in the basket",
+   "decisions": 56,
+   "trace_sha256": "4dd90580976883989c5f7b94fe3761f84dbcc13015c95f648b578497c7b27061"
+  },
+  {
+   "key": "t7_i11",
+   "task": 7,
+   "init": 11,
+   "instruction": "put both the alphabet soup and the cream cheese box in the basket",
+   "decisions": 52,
+   "trace_sha256": "cde1201e9e5825c255902b7a18c5b399a6998ddaf79b94c705fd3cd91616b630"
+  },
+  {
+   "key": "t7_i12",
+   "task": 7,
+   "init": 12,
+   "instruction": "put both the alphabet soup and the cream cheese box in the basket",
+   "decisions": 48,
+   "trace_sha256": "85303e3c9e179a5ca4db0af9fb4e78e34e38f88271f9f2012e5a04868fc1eb84"
+  },
+  {
+   "key": "t7_i13",
+   "task": 7,
+   "init": 13,
+   "instruction": "put both the alphabet soup and the cream cheese box in the basket",
+   "decisions": 47,
+   "trace_sha256": "db98aecd0356ad1efda808d717b732e39bf02f58bf54d5b20788d548a1bb2826"
+  },
+  {
+   "key": "t7_i14",
+   "task": 7,
+   "init": 14,
+   "instruction": "put both the alphabet soup and the cream cheese box in the basket",
+   "decisions": 56,
+   "trace_sha256": "f3d4b7bcb55d374da3a856f609c77dc376001902ccf7e33041c80c7e71a8873f"
+  },
+  {
+   "key": "t7_i15",
+   "task": 7,
+   "init": 15,
+   "instruction": "put both the alphabet soup and the cream cheese box in the basket",
+   "decisions": 44,
+   "trace_sha256": "adc0064428592e38b48edf147236152a43fdd8743aa08f96a3734ff95c475da3"
+  },
+  {
+   "key": "t7_i16",
+   "task": 7,
+   "init": 16,
+   "instruction": "put both the alphabet soup and the cream cheese box in the basket",
+   "decisions": 50,
+   "trace_sha256": "b39e0b32b5279fd5b3b33005643939a3a234d2153b67c6a81028a25aed0e83cd"
+  },
+  {
+   "key": "t7_i17",
+   "task": 7,
+   "init": 17,
+   "instruction": "put both the alphabet soup and the cream cheese box in the basket",
+   "decisions": 46,
+   "trace_sha256": "cbd36ec912c760926cfcbf105d620fea7d850f0f201b9ca6707455dd9873ad16"
+  },
+  {
+   "key": "t7_i18",
+   "task": 7,
+   "init": 18,
+   "instruction": "put both the alphabet soup and the cream cheese box in the basket",
+   "decisions": 48,
+   "trace_sha256": "a66915cb928e2675aaea37feb76c959561e5be1e6fca9609c9e9c6de63a5741e"
+  },
+  {
+   "key": "t7_i19",
+   "task": 7,
+   "init": 19,
+   "instruction": "put both the alphabet soup and the cream cheese box in the basket",
+   "decisions": 66,
+   "trace_sha256": "80bf54099b2b293fefe8a86fa73c6e0f8ec368338ba7bb7d1c160a5ee0483013"
+  },
+  {
+   "key": "t7_i20",
+   "task": 7,
+   "init": 20,
+   "instruction": "put both the alphabet soup and the cream cheese box in the basket",
+   "decisions": 49,
+   "trace_sha256": "a1e8e614fd09ed47386e4177ed183ad829b2b6f5ee164e3f53154b51f65f376e"
+  },
+  {
+   "key": "t7_i21",
+   "task": 7,
+   "init": 21,
+   "instruction": "put both the alphabet soup and the cream cheese box in the basket",
+   "decisions": 47,
+   "trace_sha256": "ba12e0afa6a388aa6abc0b6ff3ee09c2f3ec042bffc89d4be73684e89b3d18bd"
+  },
+  {
+   "key": "t7_i22",
+   "task": 7,
+   "init": 22,
+   "instruction": "put both the alphabet soup and the cream cheese box in the basket",
+   "decisions": 51,
+   "trace_sha256": "18bd5c78ac0624f745101d75c0d5e1678407a57b632880dd0707e05926c5daeb"
+  },
+  {
+   "key": "t7_i24",
+   "task": 7,
+   "init": 24,
+   "instruction": "put both the alphabet soup and the cream cheese box in the basket",
+   "decisions": 52,
+   "trace_sha256": "d0c726388bffc69b71b17486f4bc1f36fa78082f2676d25bdd3c11ed4316c17d"
+  },
+  {
+   "key": "t7_i25",
+   "task": 7,
+   "init": 25,
+   "instruction": "put both the alphabet soup and the cream cheese box in the basket",
+   "decisions": 60,
+   "trace_sha256": "00c06f1ae92b7a6527e09353de3094792593c0a894f7e1d7e96efba2f067e181"
+  },
+  {
+   "key": "t7_i26",
+   "task": 7,
+   "init": 26,
+   "instruction": "put both the alphabet soup and the cream cheese box in the basket",
+   "decisions": 53,
+   "trace_sha256": "6ad3c600deb2245c36b2fff21ddf9f74a69b34b2fe36ba5698e8b94f805910cd"
+  },
+  {
+   "key": "t7_i27",
+   "task": 7,
+   "init": 27,
+   "instruction": "put both the alphabet soup and the cream cheese box in the basket",
+   "decisions": 53,
+   "trace_sha256": "aad4fffc36c00a209e1bbafbb4945b8fee7f933a860ddc6f73730c27db8efd81"
+  },
+  {
+   "key": "t7_i28",
+   "task": 7,
+   "init": 28,
+   "instruction": "put both the alphabet soup and the cream cheese box in the basket",
+   "decisions": 48,
+   "trace_sha256": "75a129ae303f1adf32088cf5cc09a1e8110d7ee5bd79df5b383475f21304d5cc"
+  },
+  {
+   "key": "t7_i29",
+   "task": 7,
+   "init": 29,
+   "instruction": "put both the alphabet soup and the cream cheese box in the basket",
+   "decisions": 50,
+   "trace_sha256": "a90e7fc2ec9571aff9b068fd6fd44901f4683fd2c0b825a748fb6762ab80d39c"
+  },
+  {
+   "key": "t9_i14",
+   "task": 9,
+   "init": 14,
+   "instruction": "put the yellow and white mug in the microwave and close it",
+   "decisions": 47,
+   "trace_sha256": "3a1514a9df7f61213b59f183e72c237f5ef4452d605f426faa4c844bf72e7d88"
+  },
+  {
+   "key": "t9_i18",
+   "task": 9,
+   "init": 18,
+   "instruction": "put the yellow and white mug in the microwave and close it",
+   "decisions": 50,
+   "trace_sha256": "1858d13af546b9a88b1ac012221be7f0fadc23d3b66f85eb6491b2bb5153b195"
+  },
+  {
+   "key": "t9_i20",
+   "task": 9,
+   "init": 20,
+   "instruction": "put the yellow and white mug in the microwave and close it",
+   "decisions": 48,
+   "trace_sha256": "a632947c98a9ad2f88d46ec574cbb2a8b6b40186adb2a2fcc70c7b035fc8c852"
+  },
+  {
+   "key": "t9_i21",
+   "task": 9,
+   "init": 21,
+   "instruction": "put the yellow and white mug in the microwave and close it",
+   "decisions": 47,
+   "trace_sha256": "753cf257afed7351d166dd518b756cfa7eba1faad1d1d991c3545f52fdd95b5e"
+  },
+  {
+   "key": "t9_i25",
+   "task": 9,
+   "init": 25,
+   "instruction": "put the yellow and white mug in the microwave and close it",
+   "decisions": 45,
+   "trace_sha256": "a65913db2a8c58cbf0e40774bbee53fe15bc0de58c53a803d664788ffad199a3"
+  },
+  {
+   "key": "t9_i27",
+   "task": 9,
+   "init": 27,
+   "instruction": "put the yellow and white mug in the microwave and close it",
+   "decisions": 53,
+   "trace_sha256": "c30a618de2a39d6a3420b9df898066b40a5848492e3e8fedc85b9c6bbc4b97f1"
+  },
+  {
+   "key": "t9_i28",
+   "task": 9,
+   "init": 28,
+   "instruction": "put the yellow and white mug in the microwave and close it",
+   "decisions": 61,
+   "trace_sha256": "443b54d86aed01a8e129cbb60a874fe53e1be81f10766856b0b46bfb9f15f8c3"
+  }
+ ],
+ "npz_sha256": "fcf8338306294cace8979ede718d2ede7d8b287198144fbf07e21604a5677f0a",
+ "per_task_counts": {
+  "0": 19,
+  "1": 20,
+  "2": 8,
+  "3": 7,
+  "4": 17,
+  "5": 15,
+  "6": 15,
+  "7": 19,
+  "8": 0,
+  "9": 7
+ }
+}

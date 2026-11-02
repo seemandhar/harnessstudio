@@ -1,0 +1,910 @@
+{
+ "chunk_shape": [
+  10,
+  7
+ ],
+ "decode_failed_positions": 8,
+ "decode_failure_rule": "openpi zero-chunk exact signature",
+ "development_records": 200,
+ "development_successes": 127,
+ "encoder": "google/siglip-so400m-patch14-224@d04cf29fca7b6374f74d8bea1969314492266b5e:pooler_output",
+ "format": "rtcf-memory-v1",
+ "memories": [
+  {
+   "benchmark": "libero",
+   "episode_idx": 10,
+   "length": 43,
+   "success": true,
+   "task": "libero_10/pick up the book and place it in the back compartment of the caddy#5"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 11,
+   "length": 41,
+   "success": true,
+   "task": "libero_10/pick up the book and place it in the back compartment of the caddy#5"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 12,
+   "length": 42,
+   "success": true,
+   "task": "libero_10/pick up the book and place it in the back compartment of the caddy#5"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 13,
+   "length": 30,
+   "success": true,
+   "task": "libero_10/pick up the book and place it in the back compartment of the caddy#5"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 14,
+   "length": 35,
+   "success": true,
+   "task": "libero_10/pick up the book and place it in the back compartment of the caddy#5"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 15,
+   "length": 40,
+   "success": true,
+   "task": "libero_10/pick up the book and place it in the back compartment of the caddy#5"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 16,
+   "length": 36,
+   "success": true,
+   "task": "libero_10/pick up the book and place it in the back compartment of the caddy#5"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 17,
+   "length": 32,
+   "success": true,
+   "task": "libero_10/pick up the book and place it in the back compartment of the caddy#5"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 18,
+   "length": 32,
+   "success": true,
+   "task": "libero_10/pick up the book and place it in the back compartment of the caddy#5"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 19,
+   "length": 38,
+   "success": true,
+   "task": "libero_10/pick up the book and place it in the back compartment of the caddy#5"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 21,
+   "length": 34,
+   "success": true,
+   "task": "libero_10/pick up the book and place it in the back compartment of the caddy#5"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 22,
+   "length": 31,
+   "success": true,
+   "task": "libero_10/pick up the book and place it in the back compartment of the caddy#5"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 23,
+   "length": 27,
+   "success": true,
+   "task": "libero_10/pick up the book and place it in the back compartment of the caddy#5"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 24,
+   "length": 33,
+   "success": true,
+   "task": "libero_10/pick up the book and place it in the back compartment of the caddy#5"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 25,
+   "length": 35,
+   "success": true,
+   "task": "libero_10/pick up the book and place it in the back compartment of the caddy#5"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 10,
+   "length": 56,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the cream cheese box in the basket#7"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 11,
+   "length": 52,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the cream cheese box in the basket#7"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 12,
+   "length": 48,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the cream cheese box in the basket#7"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 13,
+   "length": 47,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the cream cheese box in the basket#7"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 14,
+   "length": 56,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the cream cheese box in the basket#7"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 15,
+   "length": 44,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the cream cheese box in the basket#7"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 16,
+   "length": 50,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the cream cheese box in the basket#7"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 17,
+   "length": 46,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the cream cheese box in the basket#7"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 18,
+   "length": 48,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the cream cheese box in the basket#7"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 19,
+   "length": 66,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the cream cheese box in the basket#7"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 20,
+   "length": 49,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the cream cheese box in the basket#7"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 21,
+   "length": 47,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the cream cheese box in the basket#7"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 22,
+   "length": 51,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the cream cheese box in the basket#7"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 24,
+   "length": 52,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the cream cheese box in the basket#7"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 25,
+   "length": 60,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the cream cheese box in the basket#7"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 26,
+   "length": 53,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the cream cheese box in the basket#7"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 27,
+   "length": 53,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the cream cheese box in the basket#7"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 28,
+   "length": 48,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the cream cheese box in the basket#7"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 29,
+   "length": 50,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the cream cheese box in the basket#7"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 10,
+   "length": 56,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the tomato sauce in the basket#0"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 11,
+   "length": 53,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the tomato sauce in the basket#0"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 12,
+   "length": 52,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the tomato sauce in the basket#0"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 13,
+   "length": 54,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the tomato sauce in the basket#0"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 14,
+   "length": 57,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the tomato sauce in the basket#0"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 15,
+   "length": 48,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the tomato sauce in the basket#0"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 16,
+   "length": 55,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the tomato sauce in the basket#0"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 17,
+   "length": 53,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the tomato sauce in the basket#0"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 18,
+   "length": 91,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the tomato sauce in the basket#0"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 20,
+   "length": 50,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the tomato sauce in the basket#0"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 21,
+   "length": 52,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the tomato sauce in the basket#0"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 22,
+   "length": 49,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the tomato sauce in the basket#0"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 23,
+   "length": 66,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the tomato sauce in the basket#0"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 24,
+   "length": 74,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the tomato sauce in the basket#0"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 25,
+   "length": 48,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the tomato sauce in the basket#0"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 26,
+   "length": 49,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the tomato sauce in the basket#0"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 27,
+   "length": 53,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the tomato sauce in the basket#0"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 28,
+   "length": 52,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the tomato sauce in the basket#0"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 29,
+   "length": 52,
+   "success": true,
+   "task": "libero_10/put both the alphabet soup and the tomato sauce in the basket#0"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 10,
+   "length": 48,
+   "success": true,
+   "task": "libero_10/put both the cream cheese box and the butter in the basket#1"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 11,
+   "length": 51,
+   "success": true,
+   "task": "libero_10/put both the cream cheese box and the butter in the basket#1"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 12,
+   "length": 47,
+   "success": true,
+   "task": "libero_10/put both the cream cheese box and the butter in the basket#1"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 13,
+   "length": 48,
+   "success": true,
+   "task": "libero_10/put both the cream cheese box and the butter in the basket#1"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 14,
+   "length": 52,
+   "success": true,
+   "task": "libero_10/put both the cream cheese box and the butter in the basket#1"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 15,
+   "length": 49,
+   "success": true,
+   "task": "libero_10/put both the cream cheese box and the butter in the basket#1"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 16,
+   "length": 47,
+   "success": true,
+   "task": "libero_10/put both the cream cheese box and the butter in the basket#1"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 17,
+   "length": 49,
+   "success": true,
+   "task": "libero_10/put both the cream cheese box and the butter in the basket#1"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 18,
+   "length": 53,
+   "success": true,
+   "task": "libero_10/put both the cream cheese box and the butter in the basket#1"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 19,
+   "length": 52,
+   "success": true,
+   "task": "libero_10/put both the cream cheese box and the butter in the basket#1"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 20,
+   "length": 49,
+   "success": true,
+   "task": "libero_10/put both the cream cheese box and the butter in the basket#1"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 21,
+   "length": 49,
+   "success": true,
+   "task": "libero_10/put both the cream cheese box and the butter in the basket#1"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 22,
+   "length": 72,
+   "success": true,
+   "task": "libero_10/put both the cream cheese box and the butter in the basket#1"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 23,
+   "length": 46,
+   "success": true,
+   "task": "libero_10/put both the cream cheese box and the butter in the basket#1"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 24,
+   "length": 48,
+   "success": true,
+   "task": "libero_10/put both the cream cheese box and the butter in the basket#1"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 25,
+   "length": 49,
+   "success": true,
+   "task": "libero_10/put both the cream cheese box and the butter in the basket#1"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 26,
+   "length": 49,
+   "success": true,
+   "task": "libero_10/put both the cream cheese box and the butter in the basket#1"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 27,
+   "length": 50,
+   "success": true,
+   "task": "libero_10/put both the cream cheese box and the butter in the basket#1"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 28,
+   "length": 48,
+   "success": true,
+   "task": "libero_10/put both the cream cheese box and the butter in the basket#1"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 29,
+   "length": 51,
+   "success": true,
+   "task": "libero_10/put both the cream cheese box and the butter in the basket#1"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 13,
+   "length": 49,
+   "success": true,
+   "task": "libero_10/put the black bowl in the bottom drawer of the cabinet and close it#3"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 14,
+   "length": 42,
+   "success": true,
+   "task": "libero_10/put the black bowl in the bottom drawer of the cabinet and close it#3"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 18,
+   "length": 43,
+   "success": true,
+   "task": "libero_10/put the black bowl in the bottom drawer of the cabinet and close it#3"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 19,
+   "length": 44,
+   "success": true,
+   "task": "libero_10/put the black bowl in the bottom drawer of the cabinet and close it#3"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 21,
+   "length": 40,
+   "success": true,
+   "task": "libero_10/put the black bowl in the bottom drawer of the cabinet and close it#3"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 23,
+   "length": 46,
+   "success": true,
+   "task": "libero_10/put the black bowl in the bottom drawer of the cabinet and close it#3"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 27,
+   "length": 46,
+   "success": true,
+   "task": "libero_10/put the black bowl in the bottom drawer of the cabinet and close it#3"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 10,
+   "length": 55,
+   "success": true,
+   "task": "libero_10/put the white mug on the left plate and put the yellow and white mug on the right plate#4"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 12,
+   "length": 52,
+   "success": true,
+   "task": "libero_10/put the white mug on the left plate and put the yellow and white mug on the right plate#4"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 13,
+   "length": 43,
+   "success": true,
+   "task": "libero_10/put the white mug on the left plate and put the yellow and white mug on the right plate#4"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 14,
+   "length": 45,
+   "success": true,
+   "task": "libero_10/put the white mug on the left plate and put the yellow and white mug on the right plate#4"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 15,
+   "length": 47,
+   "success": true,
+   "task": "libero_10/put the white mug on the left plate and put the yellow and white mug on the right plate#4"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 16,
+   "length": 43,
+   "success": true,
+   "task": "libero_10/put the white mug on the left plate and put the yellow and white mug on the right plate#4"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 17,
+   "length": 43,
+   "success": true,
+   "task": "libero_10/put the white mug on the left plate and put the yellow and white mug on the right plate#4"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 19,
+   "length": 44,
+   "success": true,
+   "task": "libero_10/put the white mug on the left plate and put the yellow and white mug on the right plate#4"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 20,
+   "length": 48,
+   "success": true,
+   "task": "libero_10/put the white mug on the left plate and put the yellow and white mug on the right plate#4"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 21,
+   "length": 42,
+   "success": true,
+   "task": "libero_10/put the white mug on the left plate and put the yellow and white mug on the right plate#4"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 22,
+   "length": 46,
+   "success": true,
+   "task": "libero_10/put the white mug on the left plate and put the yellow and white mug on the right plate#4"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 23,
+   "length": 45,
+   "success": true,
+   "task": "libero_10/put the white mug on the left plate and put the yellow and white mug on the right plate#4"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 24,
+   "length": 69,
+   "success": true,
+   "task": "libero_10/put the white mug on the left plate and put the yellow and white mug on the right plate#4"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 25,
+   "length": 45,
+   "success": true,
+   "task": "libero_10/put the white mug on the left plate and put the yellow and white mug on the right plate#4"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 26,
+   "length": 49,
+   "success": true,
+   "task": "libero_10/put the white mug on the left plate and put the yellow and white mug on the right plate#4"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 27,
+   "length": 51,
+   "success": true,
+   "task": "libero_10/put the white mug on the left plate and put the yellow and white mug on the right plate#4"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 29,
+   "length": 49,
+   "success": true,
+   "task": "libero_10/put the white mug on the left plate and put the yellow and white mug on the right plate#4"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 10,
+   "length": 45,
+   "success": true,
+   "task": "libero_10/put the white mug on the plate and put the chocolate pudding to the right of the plate#6"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 11,
+   "length": 41,
+   "success": true,
+   "task": "libero_10/put the white mug on the plate and put the chocolate pudding to the right of the plate#6"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 12,
+   "length": 58,
+   "success": true,
+   "task": "libero_10/put the white mug on the plate and put the chocolate pudding to the right of the plate#6"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 13,
+   "length": 40,
+   "success": true,
+   "task": "libero_10/put the white mug on the plate and put the chocolate pudding to the right of the plate#6"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 14,
+   "length": 67,
+   "success": true,
+   "task": "libero_10/put the white mug on the plate and put the chocolate pudding to the right of the plate#6"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 15,
+   "length": 42,
+   "success": true,
+   "task": "libero_10/put the white mug on the plate and put the chocolate pudding to the right of the plate#6"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 16,
+   "length": 47,
+   "success": true,
+   "task": "libero_10/put the white mug on the plate and put the chocolate pudding to the right of the plate#6"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 17,
+   "length": 42,
+   "success": true,
+   "task": "libero_10/put the white mug on the plate and put the chocolate pudding to the right of the plate#6"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 18,
+   "length": 47,
+   "success": true,
+   "task": "libero_10/put the white mug on the plate and put the chocolate pudding to the right of the plate#6"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 20,
+   "length": 43,
+   "success": true,
+   "task": "libero_10/put the white mug on the plate and put the chocolate pudding to the right of the plate#6"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 22,
+   "length": 46,
+   "success": true,
+   "task": "libero_10/put the white mug on the plate and put the chocolate pudding to the right of the plate#6"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 25,
+   "length": 54,
+   "success": true,
+   "task": "libero_10/put the white mug on the plate and put the chocolate pudding to the right of the plate#6"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 27,
+   "length": 64,
+   "success": true,
+   "task": "libero_10/put the white mug on the plate and put the chocolate pudding to the right of the plate#6"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 28,
+   "length": 58,
+   "success": true,
+   "task": "libero_10/put the white mug on the plate and put the chocolate pudding to the right of the plate#6"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 29,
+   "length": 41,
+   "success": true,
+   "task": "libero_10/put the white mug on the plate and put the chocolate pudding to the right of the plate#6"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 14,
+   "length": 47,
+   "success": true,
+   "task": "libero_10/put the yellow and white mug in the microwave and close it#9"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 18,
+   "length": 50,
+   "success": true,
+   "task": "libero_10/put the yellow and white mug in the microwave and close it#9"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 20,
+   "length": 48,
+   "success": true,
+   "task": "libero_10/put the yellow and white mug in the microwave and close it#9"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 21,
+   "length": 47,
+   "success": true,
+   "task": "libero_10/put the yellow and white mug in the microwave and close it#9"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 25,
+   "length": 45,
+   "success": true,
+   "task": "libero_10/put the yellow and white mug in the microwave and close it#9"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 27,
+   "length": 53,
+   "success": true,
+   "task": "libero_10/put the yellow and white mug in the microwave and close it#9"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 28,
+   "length": 61,
+   "success": true,
+   "task": "libero_10/put the yellow and white mug in the microwave and close it#9"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 10,
+   "length": 43,
+   "success": true,
+   "task": "libero_10/turn on the stove and put the moka pot on it#2"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 14,
+   "length": 48,
+   "success": true,
+   "task": "libero_10/turn on the stove and put the moka pot on it#2"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 18,
+   "length": 55,
+   "success": true,
+   "task": "libero_10/turn on the stove and put the moka pot on it#2"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 19,
+   "length": 44,
+   "success": true,
+   "task": "libero_10/turn on the stove and put the moka pot on it#2"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 23,
+   "length": 51,
+   "success": true,
+   "task": "libero_10/turn on the stove and put the moka pot on it#2"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 24,
+   "length": 47,
+   "success": true,
+   "task": "libero_10/turn on the stove and put the moka pot on it#2"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 26,
+   "length": 49,
+   "success": true,
+   "task": "libero_10/turn on the stove and put the moka pot on it#2"
+  },
+  {
+   "benchmark": "libero",
+   "episode_idx": 28,
+   "length": 51,
+   "success": true,
+   "task": "libero_10/turn on the stove and put the moka pot on it#2"
+  }
+ ],
+ "norm_mode": "zscore",
+ "norm_stats_sha256": "4ece6c43f425c3769b85819a7a4bb025d214dc263a13a6dbeb02cd36dc2cee5e",
+ "num_memories": 127,
+ "num_positions": 6176,
+ "only_success": true,
+ "positions_without_state": 0,
+ "token_scale": 10.0
+}

@@ -127,6 +127,16 @@ fallback).
 | `fast-harness` | FastHarness, arXiv:2610.31427 (gpt-6.1-sol reviewer) | adapted | uncertainty_compute | T0 + chunk, LLM (`robodojo-pi05-hs`) |
 | `rtcf` | RTCF, arXiv:2608.04527v2 (withdrawn v3): PMA retrieval over a frozen success memory + low-frequency DCT residual; PCA omitted | tf_variant | memory_retrieval | T1 + chunk, `hs prepare` memory, SigLIP service (pi0-FAST z-score, exec 5) |
 | `first-sample` | example plugin (`examples/plugin_method`) | faithful | proposal_selection | T1 |
+| `u5z-t` | none (RTCF++ discovery, `runs/rtcfpp-20261101`): success-tube orientation steering (T, memory from reserved init 10-29) + zero-chunk substitution before T's first arming (Z); admitted under a user waiver, docs/results/u5z.md | tf_variant | memory_retrieval | T1 + chunk (pi0-FAST z-score, exec 5) |
+| `tube-steer`, `tube-steer-ortho` | T alone (U5+Z component); **negative as a unit** (Campaign-30 net 0) | tf_variant | memory_retrieval | T1 + chunk |
+| `tilt-guard-v12-*` | tilt envelope B without G; source of U5+Z's Z; **negative** (B hard48 0/0) | tf_variant | execution_monitoring | T1 + chunk |
+| `band-guard`, `band-guard-signctrl` | rx saturation band guard; **negative** (hard48 0/0) | faithful | execution_monitoring | T1 + chunk |
+| `tilt-guard-*`, `tilt-guard-v11-*` | G/B tilt guards (v1.1 adds Bsat); **negative** (G+B hard48 0/0; Bsat not screened) | tf_variant | execution_monitoring | T1 + chunk |
+| `redecode`, `redecode-b` | re-query zero chunks with a +-1-bin state shift; **negative** (hard48 +1/-0, -1 vs its z control) | component | uncertainty_compute | T1 + chunk |
+| `tube-steer-vfb`, `tube-steer-vfb-ortho` | T with a SigLIP visual-retrieval fallback for task 8; **negative** (t8 0/8); needs the uncommitted `visual_memory.npz` | tf_variant | memory_retrieval | T1 + chunk, SigLIP service |
+| `prr-*`, `prr-v11-*` | pose restore and re-decide controller; **negative / blocked** (restoration 0/8; 1.1.0 re-run blocked) | tf_variant | execution_monitoring | T1 + chunk |
+| `bcp`, `bcp-switch`, `bcp-switch-dot` | boundary clause prompt (shadow kill test K1); **blocked, not scored** | tf_variant | language_alignment | T1 + chunk |
+| `vlm-rehome-*` | VLM-flagged re-home (NRP qwen3-vl); **negative** (VLM qualification failed), partial controller, not installed | faithful | execution_monitoring | T0 + chunk, LLM |
 
 All pass tier 0 and tier 1. Ported v1 methods agree with v1 decision for decision on randomized cases
 (medoid-bon, chunk-interrupt: 300 each; AAC: bitwise against the authors' code on 600 cases;
@@ -181,6 +191,7 @@ announced in the HELLO action-spec description and so recorded in every run mani
 | SCALE | LIBERO-10, 60 cases (OpenVLA) | 29/60 (48%) | **38/60 (63%)**, p = 0.093 | 52.7 -> 63.3 |
 | FastHarness | RoboDojo build_tower / stack_bowls | - | token savings not reproduced on held-out layouts | -57% reviewer tokens |
 | RTCF (withdrawn paper), disjoint dev memory (init 10-29), cadence 5, z-score serving | LIBERO-Long, complete seeds 101, 102, 103, 104, 105, 500 paired cases (pi0-FAST) | 319/500 (63.8%) | 311/500 (62.2%), 49/57, p = 0.5, delta -1.6 pp [-7.27, 4.07] | 61.6 -> 68.6 (withdrawn v2, n = 500) |
+| U5+Z (`u5z-t`, new harness, RTCF++ run; admitted under a post-result user waiver of 3 A7 rules) | LIBERO-Long final test init 0-9 x seeds 101-105, 500 paired cases (pi0-FAST; prior exposure via the RTCF run) | fresh 320/500 (64.0%); RTCF recorded 311/500 | **355/500 (71.0%)**, vs baseline 44/9 p = 1.2e-6, vs RTCF 78/34 p = 3.9e-5; validation 81/120 vs 72/120, p = 0.0117; run criterion >= 359 NOT met | - (no paper) |
 
 All with null vs baseline 0 X. Caveat for Harness VLA: the original prompt tells the planner the goal is not yet
 reached (LIBERO ends episodes on success, an oracle a real robot lacks); the no-cue row is the fair number. Details, disclosures and an independent compliance audit: `docs/results/`

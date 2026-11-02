@@ -1,0 +1,18 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hs-prr"
+version = "1.0.0"
+description = "PRR: pose-restore-and-redecide recovery controller for pi0_fast_libero (original RoboMetaHarness method, rtcfpp-20261101 round-6 RECOVERY P1) as a HarnessStudio v2 method"
+requires-python = ">=3.10"
+dependencies = ["harnessstudio", "numpy"]
+
+[project.entry-points."harnessstudio.methods"]
+prr = "hs_prr:config"
+prr-hold = "hs_prr:config_hold"
+prr-ortho = "hs_prr:config_ortho"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hs_prr"]

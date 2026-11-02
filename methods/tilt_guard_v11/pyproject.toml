@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hs-tilt-guard-v11"
+version = "1.1.0"
+description = "tilt-guard v1.1: tilt-guard v1.0 (Z -> G -> B) plus the r2 saturation-arming flag for B, for pi0_fast_libero (original RoboMetaHarness method rtcfpp-20261101) as a HarnessStudio v2 method"
+requires-python = ">=3.10"
+dependencies = ["harnessstudio", "numpy", "hs-band-guard==1.0.0"]
+
+[project.entry-points."harnessstudio.methods"]
+tilt-guard-v11-gb = "hs_tilt_guard_v11:config_gb"
+tilt-guard-v11-gyaw = "hs_tilt_guard_v11:config_gyaw"
+tilt-guard-v11-gbz = "hs_tilt_guard_v11:config_gbz"
+tilt-guard-v11-gz = "hs_tilt_guard_v11:config_gz"
+tilt-guard-v11-gbzsign = "hs_tilt_guard_v11:config_gbzsign"
+tilt-guard-v11-gzsign = "hs_tilt_guard_v11:config_gzsign"
+tilt-guard-v11-z = "hs_tilt_guard_v11:config_z"
+tilt-guard-v11-zsign = "hs_tilt_guard_v11:config_zsign"
+tilt-guard-v11-gbsatz = "hs_tilt_guard_v11:config_gbsatz"
+tilt-guard-v11-gbsat = "hs_tilt_guard_v11:config_gbsat"
+tilt-guard-v11-gbsatz-yaw = "hs_tilt_guard_v11:config_gbsatz_yaw"
+tilt-guard-v11-gbsat-yaw = "hs_tilt_guard_v11:config_gbsat_yaw"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hs_tilt_guard_v11"]

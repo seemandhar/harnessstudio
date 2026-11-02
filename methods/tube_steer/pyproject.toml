@@ -1,0 +1,17 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hs-tube-steer"
+version = "1.0.0"
+description = "tube-steer: gated success-tube orientation steering from a frozen development success memory, for pi0_fast_libero (original RoboMetaHarness method rtcfpp-20261101 round 5) as a HarnessStudio v2 method"
+requires-python = ">=3.10"
+dependencies = ["harnessstudio", "numpy"]
+
+[project.entry-points."harnessstudio.methods"]
+tube-steer = "hs_tube_steer:config"
+tube-steer-ortho = "hs_tube_steer:config_ortho"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hs_tube_steer"]
