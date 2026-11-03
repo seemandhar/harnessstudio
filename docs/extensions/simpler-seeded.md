@@ -4,8 +4,9 @@
 > (`runs/pcd-port-20261103/reports/critic-simpler-ext.review.json`, verdict approve_with_edits) required S-1..S-8. They are
 > applied below, each marked **[S#]**; section 10 lists every required edit and advisory with pointers and supersedes
 > any conflicting text above. Built in worktree `../hs2-ext-simpler-seeded`, branch `ext2/simpler-seeded`, stacked on
-> `ext2/openvla-contrast`: cut from `1fc5b10`, then REBASED onto its new head `da817ba` (tests-only openvla-contrast
-> change, review E1; coordinator request 2026-11-03 ~12:25Z); commits `e088fd2`, `8feef86` and the closing commit; build report `runs/pcd-port-20261103/reports/simpler_build.md`
+> `ext2/openvla-contrast`: cut from `1fc5b10`, rebased onto `da817ba` (12:25Z) and, as the last step of the review
+> fixes, onto `adc271a` (tests-only openvla-contrast changes, reviews E1 and critic-simpler-diff edit 2); the exact
+> commit under test is pinned in `runs/pcd-port-20261103/reports/fixes_3.md` [fix-4]; build report `runs/pcd-port-20261103/reports/simpler_build.md`
 > (CPU tests, regress before/after, integrity, the evaluator's GPU plan); fixes after the diff review
 > (`runs/pcd-port-20261103/reports/critic-simpler-diff.review.json`, 7 required edits) in
 > `runs/pcd-port-20261103/reports/fixes_3.md`, marked **[fix-N]**. GPU evidence counts only for the exact commit pinned
@@ -27,10 +28,10 @@
     here is re-derived and cited by file:line.
 - **Base:**
   - `harnessstudio` `main` `e4ae8b8` for the benchmark and contract;
-  - branch `ext2/openvla-contrast` @ `da817ba` (worktree `../hs2-ext-openvla-contrast`, not merged) for the server
-    subclass. **[S-7e]** The branch is cut from `ext2/openvla-contrast` (`1fc5b10`, rebased onto `da817ba`), not from `main`: a disclosed deviation from EVOLUTION
+  - branch `ext2/openvla-contrast` @ `adc271a` (worktree `../hs2-ext-openvla-contrast`, not merged) for the server
+    subclass. **[S-7e]** The branch is cut from `ext2/openvla-contrast` (`1fc5b10`, rebased onto `da817ba`, then `adc271a`), not from `main`: a disclosed deviation from EVOLUTION
     step 3 (`-b ext2/EXT_ID main`), because the server subclass imports the unmerged `openvla_logits_hs.py`. The diff
-    review covers only the simpler-seeded commits (`git diff da817ba..ext2/simpler-seeded`).
+    review covers only the simpler-seeded commits (`git diff adc271a..ext2/simpler-seeded`).
 - **Paths:**
   - Paths without a prefix are relative to `harnessstudio/harnessstudio/`.
   - `vla_eval/...` means `/home/sejain/research/cvpr27/vla-eval-v0.8.0/src/vla_eval/...` (tag v0.8.0, `41bd8a44`). It
@@ -500,7 +501,7 @@ Nothing else changes: no core, context, policy_ext, eval, server or other policy
 ## 6. Regress gate (CPU)
 
 The same procedure as openvla-contrast section 7, with its R5/R6 prerequisites:
-1. **Before any edit:** run `regress.py` on the new worktree at its base commit (`1fc5b10`; the after-regress runs on the rebased branch on `da817ba`, see the build report) and keep it as the
+1. **Before any edit:** run `regress.py` on the new worktree at its base commit (`1fc5b10`; later before/after pairs on the rebased branch: see the build report and fixes_3.md) and keep it as the
    "before" report. Copy the untracked method assets, sha-checked and not committed (at least
    `methods/tube_steer_vfb/hs_tube_steer_vfb/assets/visual_memory.npz`).
 2. **After the build:**
@@ -551,13 +552,13 @@ package.
 
 ## 8. Merge order and COORDINATION rule 2 [S-7]
 
-1. **openvla-contrast first.** It is built and committed (`6cb581f`, `1fc5b10`, `da817ba`); its GPU checks G1-G9 and its diff
-   review are pending. This branch sits on its head `da817ba` [S-7e]; if openvla-contrast changes before it merges,
+1. **openvla-contrast first.** It is built and committed (`6cb581f`, `1fc5b10`, `da817ba`, `adc271a`); its GPU checks G1-G9 and its diff
+   review are pending. This branch sits on its head `adc271a` [S-7e]; if openvla-contrast changes before it merges,
    rebase and re-run S1-S3 and the regress gate.
 2. **If ksample, or any edit to `openvla_hs.py`, lands first** (the openvla-contrast R8 situation): new review, new S1
    pins, and S6-S9 re-run.
 3. **Merge `ext2/simpler-seeded` into `main` only when all hold:**
-   - its independent diff review (scope: `git diff da817ba..ext2/simpler-seeded`) is closed with no open objection;
+   - its independent diff review (scope: `git diff adc271a..ext2/simpler-seeded`) is closed with no open objection;
    - `python3 harnessstudio/scripts/regress.py --inflight` is empty;
    - **[S-7b]** COORDINATION rule 2 in full: no frozen non-terminal Campaign idea in **Run C**
      (`runs/scaleagent-20261103`), **Run X** (`runs/scaleagent-codex-20261103`) **or this run** (authority-amendment-1
