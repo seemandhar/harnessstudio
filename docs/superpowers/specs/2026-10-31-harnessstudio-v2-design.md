@@ -158,6 +158,7 @@ harness server from the policy config.
 | GR00T N1.5 | `model_servers/robocasa365_groot.py` | T0-T3 | Port v1's seeded sampling, velocity readout (ChunkTrust) and attention readout (`ext/attn`). Check that it loads v1's Human300 checkpoint-120000. |
 | π0.5 | openpi server (`model_servers/pi0.py`) | T0-T1 | Port v1's seeding and `--xla_gpu_autotune_level=0` determinism fix; the flow loop is jitted, so no T2 in v2.0. |
 | Any other allenai policy | as shipped | T0 | Includes the LeRobot bridge (π0.5, GR00T N1.7, MolmoAct2, FastWAM, VLA-JEPA). |
+| OpenVLA (LIBERO fine-tunes) | `model_servers/openvla.py` | T0-T3 | `policies/openvla_hs.py` (seeded greedy, `decoding_hooks`); `policies/openvla_logits_hs.py` adds the first `logits_readout` implementation: raw per-position logits of the native greedy decode (EXT openvla-contrast, `docs/extensions/openvla-contrast.md`; status in that file). |
 
 Determinism requirement for T1+: the same request with the same seeds returns bitwise-identical
 actions across server processes. Tier 2 checks it.
