@@ -267,7 +267,12 @@ authors' code as written.
   - **Env identity:** we used the vla-eval SIMPLER image, not the vendored copy; no behavioral difference was found.
   - **SAM2 `_C`:** absent on our side; the authors' state is unknown.
   - **The authors' 300-trial protocol:** it is not reconstructible. The code runs 100 seeds.
-- **Baselines** sit on either side of the paper's: coke 15.6% vs 18.0%, drawer 53.1% vs 47.3%. Both are consistent.
+- **Baselines** sit on either side of the paper's: coke 15.6% vs 18.0%, drawer 53.1% vs 47.3%.
+  - **Predeclared rule:** both are consistent, because our exact CIs, [0.053, 0.328] and [0.347, 0.709], contain 18.0%
+    and 47.3%.
+  - **The paper's own CIs:** Table 1 (v3+) gives 95% CIs of 18.0±4.3 and 47.3±5.6. Our coke baseline (15.6%) lies inside
+    its band, [13.7, 22.3]. Our drawer baseline (53.1%) lies just above its band, [41.7, 52.9].
+  - Sources: `runs/pcd-port-20261103/reports/critic-v28.review.json`; `reports/pcd_audit.md`:13 and :103.
 
 ## What was ported
 
