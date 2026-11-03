@@ -226,14 +226,32 @@ def _old_default_profile(config):            # tier1.default_profile on main e4a
     return "fake-t2"
 
 
+def _servable_by_old_profiles(config) -> bool:
+    return any(set(config.required) <= set(load_profile(n).capabilities) for n in ("fake-t0", "fake-t1", "fake-t2"))
+
+
+def _expected_new_profile(config) -> str:
+    """Invariance where the old code could serve the method; logits_readout methods it could not serve -> fake-t3."""
+    if _servable_by_old_profiles(config):
+        return _old_default_profile(config)
+    if set(config.required) <= set(load_profile("fake-t3").capabilities):
+        return "fake-t3"
+    return _old_default_profile(config)        # still unservable: the unchanged fallback
+
+
 def test_tier1_profile_choice_unchanged_for_installed_methods():
+    """Review E1 (critic-contrast-method): independent of which methods are installed (e.g. hs_pcd after the merge)."""
     checked = 0
     for name in sorted(discover()):
         try:
             config = load(name)
         except Exception:  # noqa: BLE001  (a method that cannot load fails its own tier 0 in regress)
             continue
-        assert tier1.default_profile(config) == _old_default_profile(config), name
+        assert tier1.default_profile(config) == _expected_new_profile(config), name
+        checked += 1
+    for config in (toy_mod.toy(), toy_mod.toy_alpha0()):   # a logits_readout method is always covered
+        assert not _servable_by_old_profiles(config)
+        assert _old_default_profile(config) == "fake-t2" and tier1.default_profile(config) == "fake-t3"
         checked += 1
     assert checked > 0
 
