@@ -128,6 +128,16 @@ actions (decodes per step: baseline 1, candidate 2, null 3). Budget `policy_call
 the `logits` readout run `openvla_hs.py` unchanged; `logits` with a sampler or with another readout is refused. Tier 1
 uses `fake-t3` (synthetic logits that depend on the observation only; chunks never depend on the readout).
 
+**SIMPLER with the PCD authors' protocol** (EXT `docs/extensions/simpler-seeded.md`). Benchmark
+`harnessstudio.benchmarks.simpler_seeded:SimplerSeededBenchmark` (one case per seed, task id `seed<S>`,
+`env.reset(seed=S)`, no early stop, metrics `success` = any step and `final_success` = last step), contract
+`contracts/simpler_seeded.yaml` (public: `images`, `task_description`), profile `openvla-simpler-logits`, server
+`policies/openvla_simpler_hs.py` (mode `simpler_pcd_authors`). Actions on this stack are the RAW OpenVLA action
+`[x, y, z, roll, pitch, yaw, open_gripper]` (position delta, Euler, raw gripper bin centre; the benchmark applies
+the authors' axis-angle conversion and relative sticky gripper), and the `logits_bin_actions` table is in that raw
+space (float64 on the server; the wire is float32). The server refuses samplers (no `decoding_hooks` in this
+mode); the `logits` readout works as above.
+
 Any component can define `diagnostics() -> dict` (JSON); it is written to the trace after every
 decision, in every arm. Any component can define `bind(embodiment)`. It receives `Embodiment.action_layout`
 (`name -> (start, end)` from the policy's action spec, e.g. `position (0,3)`, `rotation (3,6)`,
