@@ -53,10 +53,38 @@ def test_openvla_hs_is_byte_identical():
     assert hashlib.sha256(Path(H.__file__).read_bytes()).hexdigest() == OPENVLA_HS_SHA256
 
 
+EXT_BRANCH = "ext2/openvla-contrast"
+
+
+def _git(*args):
+    return subprocess.run(["git", "-C", str(ROOT), *args], capture_output=True, text=True)
+
+
+def _scope_check_applies() -> tuple:
+    """(applies, reason). The diff-scope check is about THIS extension's own, unmerged commit range (review
+    critic-simpler-diff edit 2): it applies only while HEAD is on the extension branch (or detached at a commit of
+    it) and HEAD is not yet contained in main. After the merge, on main and its later commits, and on every other
+    branch (including stacked extensions) it does not apply; those diffs belong to other changes."""
+    if _git("rev-parse", "--verify", "-q", "main").returncode:
+        return False, "no local main to compare with"
+    if _git("merge-base", "--is-ancestor", "HEAD", "main").returncode == 0:
+        return False, "HEAD is contained in main (after the merge, or main itself): no unmerged extension commits to scope"
+    branch = _git("symbolic-ref", "-q", "--short", "HEAD").stdout.strip()
+    if branch:
+        if branch != EXT_BRANCH:
+            return False, f"on branch {branch!r}, not {EXT_BRANCH!r}: another change's diff"
+        return True, ""
+    if _git("merge-base", "--is-ancestor", "HEAD", EXT_BRANCH).returncode == 0:
+        return True, ""                                 # detached at a commit of the extension branch
+    return False, f"detached HEAD not on {EXT_BRANCH!r}"
+
+
 def test_branch_touches_only_the_extension_files():
-    base = subprocess.run(["git", "-C", str(ROOT), "merge-base", "HEAD", "main"], capture_output=True, text=True)
-    if base.returncode:
-        pytest.skip("no git main to compare with")
+    applies, reason = _scope_check_applies()
+    if not applies:
+        pytest.skip(reason)
+    base = _git("merge-base", "HEAD", "main")
+    assert base.returncode == 0, base.stderr
     changed = subprocess.run(["git", "-C", str(ROOT), "diff", "--name-only", base.stdout.strip()],
                              capture_output=True, text=True, check=True).stdout.split()
     assert set(changed) <= EXT_FILES, sorted(set(changed) - EXT_FILES)
