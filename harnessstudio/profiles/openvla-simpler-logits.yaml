@@ -1,0 +1,7 @@
+# harnessstudio.policies.openvla_simpler_hs (EXT simpler-seeded): OpenVLA-7B base in mode simpler_pcd_authors (the PCD
+# authors' SimplerEnv inputs: raw instruction + 29871, cv2 INTER_AREA 224, eager attention, generate without the
+# processor attention mask, float64 raw actions with the raw gripper). Native greedy requests and the 'logits'
+# readout of openvla-libero-logits; no decoding hooks (samplers are refused in this mode).
+capabilities: [act, chunk, seeded_sampling, isolated_streams, logits_readout]
+chunking: harness
+execute_horizon: 1

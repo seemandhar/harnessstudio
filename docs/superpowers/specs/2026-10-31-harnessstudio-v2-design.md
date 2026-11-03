@@ -159,6 +159,7 @@ harness server from the policy config.
 | π0.5 | openpi server (`model_servers/pi0.py`) | T0-T1 | Port v1's seeding and `--xla_gpu_autotune_level=0` determinism fix; the flow loop is jitted, so no T2 in v2.0. |
 | Any other allenai policy | as shipped | T0 | Includes the LeRobot bridge (π0.5, GR00T N1.7, MolmoAct2, FastWAM, VLA-JEPA). |
 | OpenVLA (LIBERO fine-tunes) | `model_servers/openvla.py` | T0-T3 | `policies/openvla_hs.py` (seeded greedy, `decoding_hooks`); `policies/openvla_logits_hs.py` adds the first `logits_readout` implementation: raw per-position logits of the native greedy decode (EXT openvla-contrast, `docs/extensions/openvla-contrast.md`; status in that file). |
+| OpenVLA-7B base (SIMPLER Google Robot) | `model_servers/openvla.py` | T0, T3 (`logits_readout`) | `policies/openvla_simpler_hs.py`, mode `simpler_pcd_authors` (PCD authors' inputs: raw instruction, cv2 INTER_AREA, eager attention, no-mask generate, float64 raw actions); with `benchmarks/simpler_seeded.py` + `contracts/simpler_seeded.yaml` (EXT simpler-seeded, `docs/extensions/simpler-seeded.md`; status in that file). |
 
 Determinism requirement for T1+: the same request with the same seeds returns bitwise-identical
 actions across server processes. Tier 2 checks it.
@@ -471,6 +472,10 @@ These override earlier sections where they conflict.
     benchmark already has; LIBERO, LIBERO-Pro and RoboCasa365 expose no depth or calibration. M4 adds
     them through HarnessStudio-owned subclasses of the allenai benchmark classes, referenced by import
     string in the eval config, with the package mounted in the benchmark container.
+    EXT simpler-seeded (2026-11-03) admits a second kind of HarnessStudio-owned subclass: *protocol*
+    subclasses that reproduce a published evaluation protocol (case definition / reset, action
+    post-processing, success metrics) on top of an allenai benchmark, e.g. `benchmarks/simpler_seeded.py`.
+    Neither kind may give the policy or a method simulator object state, reward or success.
 
 ## 17. Implementation status (2026-10-31, end of the first build session)
 

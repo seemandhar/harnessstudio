@@ -1,0 +1,24 @@
+# EXT simpler-seeded (prototype; lands as harnessstudio/contracts/simpler_seeded.yaml).
+# Benchmark: harnessstudio.benchmarks.simpler_seeded:SimplerSeededBenchmark (vla-eval 0.8.0 SimplerEnvBenchmark
+# subclass, PCD authors' seeded protocol, Koorye/PCD@31b027e). One case per seed: task name = SimplerEnv task,
+# task_id = "seed<S>", episode_idx 0.
+# Observation (SimplerEnvBenchmark.make_obs): images = {primary: overhead_camera RGB uint8 512x640x3 (measured)},
+#   task_description = env.get_language_instruction(). task_name is not public.
+# Action: the RAW un-normalized OpenVLA action [x, y, z, roll, pitch, yaw, open_gripper] (float64; fractal
+#   q01/q99; gripper = bin centre, 1 open / 0 closed). The benchmark applies euler2axangle and the Google relative
+#   15-step sticky gripper (openvla_model.py:128-169). Horizons = ManiSkill2_real2sim TimeLimit (no early stop).
+name: simpler_seeded
+public_keys: [images, task_description]
+instruction_key: task_description
+image_key: images
+action_dim: 7
+control_mode: eef_delta
+horizons:
+  google_robot_pick_coke_can: 80
+  google_robot_move_near: 80
+  google_robot_open_drawer: 113
+  google_robot_close_drawer: 113
+default_horizon: 113
+action_layout: {position: [0, 3], rotation: [3, 6], gripper: [6, 7]}
+gripper_open: 1.0
+gripper_close: 0.0
