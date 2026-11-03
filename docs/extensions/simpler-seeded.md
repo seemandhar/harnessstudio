@@ -402,6 +402,7 @@ the obs set; the choice is recorded in the method card.
 |---|---|
 | `harnessstudio/benchmarks/simpler_seeded.py` | NEW (section 3.1) |
 | `harnessstudio/benchmarks/__init__.py` | docstring: admits protocol subclasses [S-8a] |
+| `tests/test_openvla_logits.py` (openvla-contrast's test, on this branch only) | declared: its diff-scope allowlist `EXT_FILES` is extended by this branch's files, because a stacked branch's diff against `main` contains both extensions (found by the after-regress, `simpler_ext/build/regress-after-attempt1-8cb5ddb.json`); this branch's own scope is pinned by `tests/test_simpler_seeded.py::test_simpler_branch_touches_only_its_files` (diff against `1fc5b10`) |
 | `harnessstudio/contracts/simpler_seeded.yaml` | NEW (section 3.2) |
 | `harnessstudio/policies/openvla_simpler_hs.py` | NEW (section 3.6) |
 | `harnessstudio/profiles/openvla-simpler-logits.yaml` | NEW (section 3.6) |

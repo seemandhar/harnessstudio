@@ -337,3 +337,23 @@ class TestRenderIsolation(unittest.TestCase):
             asyncio.run(b.start_episode(b.get_tasks()[0]))
         self.assertEqual(m.call_count, 1)
         self.assertEqual(b.get_metadata()["render_isolation"], {"ok": 1})
+
+
+SIMPLER_FILES = {
+    "harnessstudio/benchmarks/simpler_seeded.py", "harnessstudio/benchmarks/__init__.py",
+    "harnessstudio/contracts/simpler_seeded.yaml", "harnessstudio/policies/openvla_simpler_hs.py",
+    "harnessstudio/profiles/openvla-simpler-logits.yaml", "tests/test_simpler_seeded.py",
+    "tests/test_openvla_simpler_server.py", "tests/test_openvla_logits.py", "docs/extensions/simpler-seeded.md",
+    "docs/extensions/README.md", "docs/writing-a-method.md", "docs/superpowers/specs/2026-10-31-harnessstudio-v2-design.md",
+}
+BASE = "1fc5b10"   # ext2/openvla-contrast head this branch was cut from
+
+
+def test_simpler_branch_touches_only_its_files():
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    ok = subprocess.run(["git", "-C", root, "merge-base", "--is-ancestor", BASE, "HEAD"], capture_output=True)
+    if ok.returncode:
+        raise unittest.SkipTest(f"{BASE} is not an ancestor of HEAD (merged or rebased): scope is pinned by review")
+    changed = subprocess.run(["git", "-C", root, "diff", "--name-only", BASE], capture_output=True, text=True,
+                             check=True).stdout.split()
+    assert set(changed) <= SIMPLER_FILES, sorted(set(changed) - SIMPLER_FILES)
