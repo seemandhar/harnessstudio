@@ -1,0 +1,4 @@
+# harnessstudio.policy_ext.fake.FakePolicyServer(seeded=True): fake-t2 plus a synthetic 'logits' readout
+# (deterministic in the observation only, like a greedy decode; EXT openvla-contrast). Chunks never depend on it.
+capabilities: [act, chunk, seeded_sampling, isolated_streams, velocity_readout, decoding_hooks, logits_readout]
+chunking: harness

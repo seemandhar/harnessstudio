@@ -111,6 +111,23 @@ Readouts: a proposer may set `readouts = ("velocity",)` (needs capability `veloc
 proposal's extras then hold `velocity` and companion keys such as `velocity_timesteps`. Nothing else
 from the server reaches methods (seeds are stripped).
 
+**Per-token logits of the native OpenVLA decode** (readout `logits`, capability `logits_readout`, profile
+`openvla-libero-logits`, server `policies/openvla_logits_hs.py`; EXT `docs/extensions/openvla-contrast.md`).
+`await ctx.policy.sample(1, readouts=["logits"])` (sampler None, `logits` alone) returns the native greedy action
+plus `logits` (float32 `[T, 32064]`, the raw scores the greedy argmax saw at each generated position; T = 7 unless
+EOS came early), `logits_tokens` (the generated tokens), `logits_bin_actions` (float32 `[256, 7]`), `logits_token_end`
+(32000) and `logits_n_bins` (256). Execute your own tokens `t` as
+`table[clip(token_end - t - 1, 0, n_bins - 1), d]`, which equals the server's de-tokenization bitwise (the native
+clip is at bin 254; row 255 == row 254, and every token <= 31745, token 0 included, maps to the top bin). A
+counterfactual decode is a second request with a public-key override, e.g.
+`ctx.policy.sample(1, obs={"images": {**obs["images"], first_key: cf}}, readouts=["logits"])` (OpenVLA reads only the
+FIRST image). Contrastive-decoding recipe: a `null: shadow` controller sends both requests, combines the logits in the
+method (the formula is the method's; evaluate it in a fixed float32 order, e.g. PCD's `(1 + a) * s - a * c`), and
+executes the table action; the null pays both requests on its shadow session while the framework executes native
+actions (decodes per step: baseline 1, candidate 2, null 3). Budget `policy_calls >= 2 x horizon`. Requests without
+the `logits` readout run `openvla_hs.py` unchanged; `logits` with a sampler or with another readout is refused. Tier 1
+uses `fake-t3` (synthetic logits that depend on the observation only; chunks never depend on the readout).
+
 Any component can define `diagnostics() -> dict` (JSON); it is written to the trace after every
 decision, in every arm. Any component can define `bind(embodiment)`. It receives `Embodiment.action_layout`
 (`name -> (start, end)` from the policy's action spec, e.g. `position (0,3)`, `rotation (3,6)`,

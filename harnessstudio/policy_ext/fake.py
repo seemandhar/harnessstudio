@@ -34,6 +34,18 @@ def _digest32(obs: Mapping[str, Any]) -> int:
     return int(fingerprint(obs)[:8], 16)
 
 
+# Synthetic `logits` readout (EXT openvla-contrast), shaped like OpenVLA's: V_logits > token_end, n_bins action tokens.
+FAKE_LOGITS_WIDTH, FAKE_TOKEN_END, FAKE_N_BINS = 384, 320, 256
+
+
+def fake_logits(obs: Mapping[str, Any], action_dim: int) -> dict:
+    """Greedy-like: a function of the observation only (no seed); the bin->action table is constant."""
+    logits = np.random.default_rng([_digest32(obs), 2]).normal(0.0, 1.0, (action_dim, FAKE_LOGITS_WIDTH)).astype(np.float32)
+    table = np.random.default_rng(3).uniform(-1.0, 1.0, (FAKE_N_BINS, action_dim)).astype(np.float32)
+    return {"logits": logits, "logits_tokens": logits.argmax(-1).astype(np.int32), "logits_bin_actions": table,
+            "logits_token_end": FAKE_TOKEN_END, "logits_n_bins": FAKE_N_BINS}
+
+
 class _FakeNative(ModelServer):
     def __init__(self, action_dim: int = 7, chunk_len: int = 6, chunking: str = "harness") -> None:
         if chunking not in ("server", "harness"):
@@ -81,7 +93,8 @@ class FakePolicyServer(HarnessPolicyMixin, _FakeNative):
         super().__init__(*args, **kwargs)
         self.seeded = seeded
         self.harness_capabilities = (frozenset({"act", "chunk", "seeded_sampling", "isolated_streams",
-                                                "velocity_readout"}) if seeded else frozenset({"act", "chunk"}))
+                                                "velocity_readout", "logits_readout"})
+                                     if seeded else frozenset({"act", "chunk"}))
 
     async def on_observation(self, obs, ctx) -> None:  # type: ignore[override]
         if "harnessstudio" in obs:
@@ -100,5 +113,7 @@ class FakePolicyServer(HarnessPolicyMixin, _FakeNative):
                 rng = np.random.default_rng([seed, _digest32(obs), 1])
                 extras["velocity"] = rng.normal(0.0, 1.0, (4, self.chunk_len, self.action_dim)).astype(np.float32)
                 extras["velocity_timesteps"] = [0, 250, 500, 750]
+            if "logits" in readouts:    # never changes the chunk (EXT openvla-contrast)
+                extras.update(fake_logits(obs, self.action_dim))
             out.append((chunk, extras))
         return out

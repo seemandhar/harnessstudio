@@ -65,7 +65,7 @@ def _by_case(records: list[dict]) -> dict:
 
 
 def default_profile(config: MethodConfig) -> str:
-    for name in ("fake-t0", "fake-t1", "fake-t2"):
+    for name in ("fake-t0", "fake-t1", "fake-t2", "fake-t3"):   # first match wins: t0-t2 choices never change
         if set(config.required) <= set(load_profile(name).capabilities):
             return name
     return "fake-t2"

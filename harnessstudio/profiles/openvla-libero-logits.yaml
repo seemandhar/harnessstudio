@@ -1,0 +1,8 @@
+# harnessstudio.policies.openvla_logits_hs (HarnessOpenVLAServer + the native-decode 'logits' readout, EXT
+# openvla-contrast): everything of openvla-libero-hs, plus seeded sampler-off requests with readouts ["logits"]
+# return the native greedy action together with the raw float32 logits of every generated position, the generated
+# tokens and the bin->action table (docs/extensions/openvla-contrast.md). Requests without that readout run
+# openvla_hs.py's code unchanged.
+capabilities: [act, chunk, seeded_sampling, isolated_streams, decoding_hooks, logits_readout]
+chunking: harness
+execute_horizon: 1
