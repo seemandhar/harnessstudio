@@ -107,10 +107,26 @@ episode). P1 required at least 2 rescues. Result (`eval/r2-pilot/verdict.json`, 
 - **GPU:**
   - x-r1: tier 2, first pilot, and the re-pilot (13:56-14:20Z, 4 servers).
   - x-r2: pilot wave 16:25:36-16:42:12Z (4 servers).
-  - Per-run totals: **pending** (`runs/scaleagent-codex-20261103/eval/final_costs.json` not yet written).
-- **Codex:** all calls used the ChatGPT login, so paid API cost was $0.
-  - Pilot calls are counted in the reports above: 17 (x-r1 re-pilot) and 21 (x-r2 pilot).
-  - Coder contract checks and replays: 2 + 10 + 1 calls.
+  - Run total: **26.88 GPU-h** of the 96 GPU-h cap, counted as held-server wall time
+    (`runs/scaleagent-codex-20261103/eval/final_costs.json`):
+
+    | Item | GPU-h |
+    |---|---|
+    | identity + setup | 0.48 |
+    | instruction-following probe | 5.58 |
+    | x-r1 pilot (tier 2, bitwise, rescue pilot) | 7.13 |
+    | trigger precision (seed 9) | 2.23 |
+    | x-r1 fix2b re-pilot | 1.93 |
+    | sealed-arm precheck | 0.73 |
+    | sealed SCALE final arm | 7.46 |
+    | x-r2 pilot | 1.33 |
+
+  - **546 complete valid episodes**, including the 250 of the sealed arm (unread).
+- **Codex:** all calls used the ChatGPT login (gpt-6.1-sol only), so paid API cost was $0 and there were 0 Astra calls.
+  - In-episode planner calls: 139, all ok (97 at medium effort, 42 at low).
+  - Offline operator smoke and concurrency tests: 214 calls.
+  - Effort qualification: 162 calls.
+  - Coder packet replays: 10 calls; the 3 coder contract checks (2 + 1 calls) are not in these totals.
 - **Training:** no model was trained or fitted (trainable parameters 0).
 
 ## 5. Why both failed (summary)
