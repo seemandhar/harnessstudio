@@ -35,8 +35,9 @@ Declared differences from the parents (pinned by tests/test_openvla_simpler_serv
   [c] actions: float64 de-tokenization + q01/q99 un-normalization, the same formula as openvla_model.py:209-218.
       No -sign(2g-1) gripper map (the SimplerSeededBenchmark applies the authors' relative sticky gripper). The
       transport still casts to float32 (policy_ext/protocol.py:61), which is disclosed.
-  [S-4] optional float64 pre-cast action log (``action_log`` = a run-local JSONL path). It records the request
-      sequence number, the (session, episode) ids, the path, the tokens and the float64 bytes. It is behaviour-free.
+  [S-4] optional float64 pre-cast action log (``action_log`` = a run-local JSONL path that must NOT exist yet: one
+      fresh log per server launch). It records the request sequence number, the (session, episode) ids, the path, the
+      tokens and the float64 bytes. It is behaviour-free.
   [S-5a] action spec: POSITION_DELTA, ROTATION_EULER (raw roll/pitch/yaw), GRIPPER_RAW; observation params {}.
   [A-7] fewer generated tokens than action dims (EOS) raises SimplerDecodeShort, an infrastructure event; the
       authors' baseline would crash on it as well.
@@ -122,6 +123,10 @@ class HarnessOpenVLASimplerServer(HarnessOpenVLALogitsServer):
         self._log_seq = 0
         self._log_ctx = threading.local()
         if self._action_log is not None:
+            # one fresh log per server launch: seq restarts at 1 in every process, so appending to an earlier
+            # launch's file would make (seq, session, episode) ambiguous (review critic-simpler-diff edit 6)
+            if self._action_log.exists():
+                raise FileExistsError(f"mode {MODE}: action_log {self._action_log} exists; use a fresh path per launch")
             self._action_log.parent.mkdir(parents=True, exist_ok=True)
 
     def _log_action(self, path: str, tokens: np.ndarray, action: np.ndarray) -> None:

@@ -6,7 +6,10 @@
 > any conflicting text above. Built in worktree `../hs2-ext-simpler-seeded`, branch `ext2/simpler-seeded`, stacked on
 > `ext2/openvla-contrast`: cut from `1fc5b10`, then REBASED onto its new head `da817ba` (tests-only openvla-contrast
 > change, review E1; coordinator request 2026-11-03 ~12:25Z); commits `e088fd2`, `8feef86` and the closing commit; build report `runs/pcd-port-20261103/reports/simpler_build.md`
-> (CPU tests, regress before/after, integrity, the evaluator's GPU plan). GPU checks, diff review and merge pending.
+> (CPU tests, regress before/after, integrity, the evaluator's GPU plan); fixes after the diff review
+> (`runs/pcd-port-20261103/reports/critic-simpler-diff.review.json`, 7 required edits) in
+> `runs/pcd-port-20261103/reports/fixes_3.md`, marked **[fix-N]**. GPU evidence counts only for the exact commit pinned
+> there [fix-4]. GPU checks and merge pending.
 
 - **Author:** converter tasks `conv-simpler-ext` (proposal) and `conv-simpler-build` (edits + build), run `pcd-port-20261103`. The agent ref is in the supervisor ledger
   `runs/pcd-port-20261103/control/research/supervision`.
@@ -77,8 +80,12 @@
 - **One framework-level numeric difference cannot be removed without touching core files.**
   - HS v2's protocol casts proposal actions to float32 (`policy_ext/protocol.py:61`), and so does vla-eval's
     `PredictModelServer` (`vla_eval/model_servers/predict.py:241`). The authors stay in float64.
-  - Measured effect on the env action: at most 6e-8 absolute, and zero sticky-state differences over 11,300 steps.
-  - It is disclosed and checked on the GPU (B7). Section 9 explains why no core change is proposed.
+  - **[fix-7]** Effect on the env action, computed on SYNTHETIC token sequences over all bin centres (SETTING E-1; not
+    recorded sequences): at most 6e-8 absolute per step, and zero sticky-state differences over 11,300 synthetic steps.
+    Through contact dynamics this can still change trajectories: the GPU-plan CPU dry run (tooling check, lavapipe, one SYNTHETIC 80-step coke sequence, `runs/pcd-port-20261103/simpler_ext/build/gpu/cpu-dryrun/b7.json`) already shows trajectory-level divergence: rotation 4.85e-5 rad, TCP position L2 1.07e-5 m (per-axis 8.94e-6 m), 71/80 obs hashes, with identical success and sticky sequences.
+  - **The Setting A label is pending GPU check B7** (SETTING Addendum 2 E-2): a rule violation makes it "adapted
+    (float32 action wire)". The wire is identical in all three arms, so it cannot bias the paired comparison; it bounds
+    only the comparison with the paper's absolute numbers. Section 9 explains why no core change is proposed.
 
 ## 1. The mechanism needed (the authors' protocol, SETTING.md items a-f)
 
@@ -293,7 +300,7 @@ AST check of the module: no call to `predict_action`, exactly one `generate` cal
 - **The wire is still float32.** HS `make_response` casts proposals to float32 (`policy_ext/protocol.py:61`), and
   vla-eval's `PredictModelServer._normalize_result` does the same (`model_servers/predict.py:241`). The server computes
   in float64 like the authors, and the transport rounds.
-  - Measured on 11,300 synthetic steps: max abs env-action difference 6e-8 (dims 0-6: 6.5e-9, 7.4e-9, 7.4e-9, 3.0e-8,
+  - Computed on 11,300 SYNTHETIC steps [fix-7]: max abs env-action difference 6e-8 (dims 0-6: 6.5e-9, 7.4e-9, 7.4e-9, 3.0e-8,
     2.0e-8, 1.9e-8, 5.9e-8); sticky decisions never differ
     (`simpler_ext/results/authors_post_parity_image.json`, `float32_transport_effect`).
   - Disclosed; B7 checks its effect on the simulator.
@@ -375,8 +382,9 @@ uv pip install --python /home/sejain/research/cvpr27/RoboMetaHarness-claude/runs
 - their GPU model and cuDNN/cuBLAS builds are unknown;
 - the server runs in a separate process over a websocket (float32 transport, section 3.6).
 
-None of these can be pinned from their repository. They are disclosed, and the label stays "protocol-matched,
-numerics close-matched".
+None of these can be pinned from their repository. They are disclosed. **[fix-7]** The Setting A label is decided only
+after GPU check B7 (float32 wire, SETTING Addendum 2 E-2) and the numerics checks: "protocol-matched, numerics
+close-matched" if B7 shows no behavioral difference, otherwise "adapted (float32 action wire)".
 
 **Fallback:** the current env (`~/.cache/uv/environments-v2/openvla-hs-73218eaab6c13068`, transformers 4.40.1, torch
 2.10.0, numpy 2.4.2). It has no opencv, so the fallback needs a sibling copy with `opencv-python-headless` under
@@ -403,7 +411,7 @@ the obs set; the choice is recorded in the method card.
 |---|---|
 | `harnessstudio/benchmarks/simpler_seeded.py` | NEW (section 3.1) |
 | `harnessstudio/benchmarks/__init__.py` | docstring: admits protocol subclasses [S-8a] |
-| `tests/test_openvla_logits.py` (openvla-contrast's test, on this branch only) | declared: its diff-scope allowlist `EXT_FILES` is extended by this branch's files, because a stacked branch's diff against `main` contains both extensions (found by the after-regress, `simpler_ext/build/regress-after-attempt1-8cb5ddb.json`); this branch's own scope is pinned by `tests/test_simpler_seeded.py::test_simpler_branch_touches_only_its_files` (diff against `da817ba`) |
+| (`tests/test_openvla_logits.py`) | **no longer touched [fix-2]**: openvla-contrast's own scope test is branch-scoped since `adc271a` (it applies only on `ext2/openvla-contrast` while unmerged), so this branch's earlier declared `EXT_FILES` extension was removed. This branch's scope is pinned by `tests/test_simpler_seeded.py::test_simpler_branch_touches_only_its_files`, branch-scoped the same way: it applies only on `ext2/simpler-seeded` (or detached on it) while HEAD is not in `main`, against the merge-base with `ext2/openvla-contrast` (or `main` once that branch is gone); it skips after the merge, on later commits of `main` and on other branches |
 | `harnessstudio/contracts/simpler_seeded.yaml` | NEW (section 3.2) |
 | `harnessstudio/policies/openvla_simpler_hs.py` | NEW (section 3.6) |
 | `harnessstudio/profiles/openvla-simpler-logits.yaml` | NEW (section 3.6) |
@@ -424,9 +432,11 @@ Nothing else changes: no core, context, policy_ext, eval, server or other policy
    - The new profile adds no capability name: `logits_readout` comes from openvla-contrast.
    - `tier1.default_profile` keeps first-match order.
    - `regress.py` must show per-method results equal before and after (section 6).
-4. **The authors' post-processing is bitwise equal** given the same raw action: 22,600 steps, 0 mismatches. A known
-   float32 transport rounding of at most 6e-8 remains. The claim is "protocol-matched with one disclosed numeric
-   transport difference", not "bitwise identical to the authors' run".
+4. **The authors' post-processing is bitwise equal** given the same raw action: 22,600 steps, 0 mismatches. The
+   float32 transport rounding remains (at most 6e-8 per step on SYNTHETIC sequences, SETTING E-1). **[fix-7] No label is
+   claimed here:** under SETTING Addendum 2 E-2 the label is decided by GPU check B7, and the GPU-plan CPU dry run (tooling check, lavapipe, one SYNTHETIC 80-step coke sequence, `runs/pcd-port-20261103/simpler_ext/build/gpu/cpu-dryrun/b7.json`) already shows trajectory-level divergence: rotation 4.85e-5 rad, TCP position L2 1.07e-5 m (per-axis 8.94e-6 m), 71/80 obs hashes, with identical success and sticky sequences. That is predictive
+   tooling evidence only; if the GPU B7 confirms it, the label is "adapted (float32 action wire)". Never "bitwise
+   identical to the authors' run".
 5. **No privileged information reaches the policy or methods.**
    - `public_keys` holds only the camera image and the instruction.
    - The seed is in the case key only, which is evaluator-side.
@@ -532,8 +542,8 @@ package.
 | B4 | one complete seeded baseline episode through `hs eval identity --arms baseline` with the new server and contract (SETTING milestone) | valid record; 80/113 steps; metrics have success, final_success, first_success_step and steps; inspect frames, actions and timing |
 | B5 | null vs baseline (shadow null of the PCD method) on two development cases | M (or R then M on one re-pair); X blocks |
 | B6 | timing and memory | per-step policy, perception and render seconds; peak memory; renders per step on GPU |
-| B7 | float32 transport effect **[S-4]** (rule fixed by SETTING Addendum 2 E-2) | replay open-loop, in separate container launches, the float64 raw-action sequences of the smoke episodes from the server's pre-cast log (at least the smoke baseline episode plus one predeclared non-subset drawer episode), once as float64 and once float32-cast, same seed. PASS ("no behavioral difference") = identical per-step success flags, identical gripper (sticky) state sequence, and max TCP position diff <= 1e-5 m and max TCP orientation diff <= 1e-5 rad over the episode. Any violation makes the Setting A label "adapted (float32 action wire)" |
-| S6 | authors-path equivalence on the obs set (the 64 GPU obs0 frames plus the frames of the seed-99 smoke and B4 episodes, never subset seeds; A-6): load the authors' `OpenVLAInference` by source in the same env, own process after the server, same weights, eager attention, and call its `reset(instruction, seed=s)` as `parallel_inference.py:181` does [S-2] | tokens equal; raw action float64 bitwise equal to the server's pre-cast log entry [S-4] |
+| B7 | float32 transport effect **[S-4]** (rule fixed by SETTING Addendum 2 E-2); a LABEL step, not a stop gate [fix-3] | inputs bound to their B4 episodes [fix-6]: a fresh action log per server launch (the server refuses an existing file), one B4 episode per launch, and `b7_extract.py` binds exactly one (session, episode) group whose row count equals the record's steps and whose float32-cast rows have the record's action fingerprints. Replay open-loop in separate launches, float64 and float32-cast, same seed (the coke and drawer seed-99 B4 episodes, later the smoke baseline). VALIDITY: the float32 replay must reproduce the B4 episode (same steps, per-step HS obs/action fingerprints equal to the record, equal success / final_success / first_success_step); otherwise INVALID, routed to repair, no label. RULE (valid only): identical per-step success flags and sticky state sequence, max over steps of the Euclidean norm of the TCP position difference <= 1e-5 m [fix-1] and max rotation <= 1e-5 rad. A violation sets the label "adapted (float32 action wire)" and the plan continues |
+| S6 | authors-path equivalence [fix-5]: S6a on the 64 GPU obs0 frames (Phase 1) and S6b on the B4 episodes' frames (saved by the VALID float32 B7 replays, which equal the episodes' frames); never other subset-seed frames; A-6: the authors' `OpenVLAInference` loaded by source in the same env, own process after the server, same weights, eager attention, `reset(instruction, seed=s)` as `parallel_inference.py:181` does [S-2]; the server side runs both `predict` (native) and `sample_chunks(obs, [0], None, (), ctx)` (native_seeded, the baseline-arm path); rows matched by frame index | for every frame and both server paths: the authors' tokens (captured `scores.argmax` of their own `generate`) equal the server's, and the float64 raw action bytes equal the server's pre-cast log entry [S-4] |
 | S7 | logits path in the new mode | the openvla-contrast G2/G3/G3b analogues pass, with raw-prompt rows (`logits_tokens` = native tokens) |
 | S8 | startup probe | a fresh `startup_probe_sha16`, recorded in the run-local policy JSON |
 | S9 | loaded libraries | `/proc/PID/maps` shows the env's bundled cuBLAS 12.1, no `/usr/local/cuda-12.6` |
@@ -571,8 +581,9 @@ package.
 
 1. **float32 transport (rejected alternative: preserve float64 on the wire).** Changing
    `policy_ext/protocol.py:61` and vla-eval's `predict.py:241` would touch a core file every running method imports,
-   plus an external package. The measured effect is at most 6e-8 with no gripper-state change. Disclose it and measure
-   it (B7); do not change the core.
+   plus an external package. The per-step effect is at most 6e-8 on SYNTHETIC sequences [fix-7] with no gripper-state
+   change, but the GPU-plan CPU dry run (tooling check, lavapipe, one SYNTHETIC 80-step coke sequence, `runs/pcd-port-20261103/simpler_ext/build/gpu/cpu-dryrun/b7.json`) already shows trajectory-level divergence: rotation 4.85e-5 rad, TCP position L2 1.07e-5 m (per-axis 8.94e-6 m), 71/80 obs hashes, with identical success and sticky sequences. Disclose it and decide the label by B7; do not change the core (inadmissible while Run X's frozen
+   idea imports it, and never as a reaction to Setting A outcomes).
 2. **Rejected: sending tokens instead of actions,** with the benchmark de-tokenizing in float64. That would be exact,
    but it changes the meaning of "action" for every HS mechanism (embodiment, eef deltas, analytic skills) and puts
    the policy's normalization statistics into the benchmark.

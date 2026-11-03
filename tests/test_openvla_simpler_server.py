@@ -302,6 +302,11 @@ class TestLogSpecsAttention(unittest.TestCase):
             self.assertEqual((rows[1]["session"], rows[1]["episode"]), ("sess", "ep1"))
         srv = make_server(log=None)
         srv.predict(obs(8), None)       # no log, no error
+        with tempfile.TemporaryDirectory() as d:     # edit 6: an existing log (an earlier launch) is refused
+            path = os.path.join(d, "actions.jsonl")
+            open(path, "w").close()
+            with self.assertRaises(FileExistsError):
+                make_server(log=path)
 
     def test_s5_specs_and_eager_assertion(self):
         srv = make_server()

@@ -343,17 +343,49 @@ SIMPLER_FILES = {
     "harnessstudio/benchmarks/simpler_seeded.py", "harnessstudio/benchmarks/__init__.py",
     "harnessstudio/contracts/simpler_seeded.yaml", "harnessstudio/policies/openvla_simpler_hs.py",
     "harnessstudio/profiles/openvla-simpler-logits.yaml", "tests/test_simpler_seeded.py",
-    "tests/test_openvla_simpler_server.py", "tests/test_openvla_logits.py", "docs/extensions/simpler-seeded.md",
+    "tests/test_openvla_simpler_server.py", "docs/extensions/simpler-seeded.md",
     "docs/extensions/README.md", "docs/writing-a-method.md", "docs/superpowers/specs/2026-10-31-harnessstudio-v2-design.md",
 }
-BASE = "da817ba"   # ext2/openvla-contrast head this branch sits on (cut from 1fc5b10, rebased)
+EXT_BRANCH = "ext2/simpler-seeded"
+PARENT_BRANCH = "ext2/openvla-contrast"   # the unmerged extension this branch is stacked on
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _git(*args):
+    return subprocess.run(["git", "-C", ROOT, *args], capture_output=True, text=True)
+
+
+def _scope_check_applies():
+    """(applies, reason). Same rule as ext2/openvla-contrast adc271a (review critic-simpler-diff edit 2): the check is
+    about THIS extension's own unmerged commit range, so it applies only while HEAD is on ext2/simpler-seeded (or
+    detached at one of its commits) and HEAD is not contained in main. After the merge, on main's later commits and on
+    every other branch it does not apply; those diffs belong to other changes."""
+    if _git("rev-parse", "--verify", "-q", "main").returncode:
+        return False, "no local main to compare with"
+    if _git("merge-base", "--is-ancestor", "HEAD", "main").returncode == 0:
+        return False, "HEAD is contained in main (after the merge, or main itself): no unmerged extension commits"
+    branch = _git("symbolic-ref", "-q", "--short", "HEAD").stdout.strip()
+    if branch:
+        if branch != EXT_BRANCH:
+            return False, f"on branch {branch!r}, not {EXT_BRANCH!r}: another change's diff"
+        return True, ""
+    if _git("merge-base", "--is-ancestor", "HEAD", EXT_BRANCH).returncode == 0:
+        return True, ""                                   # detached at a commit of the extension branch
+    return False, f"detached HEAD not on {EXT_BRANCH!r}"
+
+
+def _scope_base():
+    """The commit this branch's own range starts at: merge-base with the stacked parent ext2/openvla-contrast while
+    that branch exists (also correct if the parent later gains commits HEAD lacks, or was merged), else with main."""
+    ref = PARENT_BRANCH if _git("rev-parse", "--verify", "-q", PARENT_BRANCH).returncode == 0 else "main"
+    mb = _git("merge-base", "HEAD", ref)
+    assert mb.returncode == 0, mb.stderr
+    return mb.stdout.strip()
 
 
 def test_simpler_branch_touches_only_its_files():
-    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    ok = subprocess.run(["git", "-C", root, "merge-base", "--is-ancestor", BASE, "HEAD"], capture_output=True)
-    if ok.returncode:
-        raise unittest.SkipTest(f"{BASE} is not an ancestor of HEAD (merged or rebased): scope is pinned by review")
-    changed = subprocess.run(["git", "-C", root, "diff", "--name-only", BASE], capture_output=True, text=True,
-                             check=True).stdout.split()
+    applies, reason = _scope_check_applies()
+    if not applies:
+        raise unittest.SkipTest(reason)
+    changed = _git("diff", "--name-only", _scope_base()).stdout.split()
     assert set(changed) <= SIMPLER_FILES, sorted(set(changed) - SIMPLER_FILES)

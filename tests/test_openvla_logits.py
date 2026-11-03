@@ -46,15 +46,6 @@ EXT_FILES = {
     "docs/writing-a-method.md", "docs/extensions/README.md", "docs/extensions/openvla-contrast.md",
     "docs/superpowers/specs/2026-10-31-harnessstudio-v2-design.md",
 }
-# Stacked branch ext2/simpler-seeded (cut from this branch at 1fc5b10, rebased onto da817ba; declared in docs/extensions/simpler-seeded.md 3.8):
-# its own files are part of the diff against main until openvla-contrast merges. Its scope is pinned separately by
-# tests/test_simpler_seeded.py::test_simpler_branch_touches_only_its_files (diff against da817ba).
-EXT_FILES |= {
-    "harnessstudio/benchmarks/simpler_seeded.py", "harnessstudio/benchmarks/__init__.py",
-    "harnessstudio/contracts/simpler_seeded.yaml", "harnessstudio/policies/openvla_simpler_hs.py",
-    "harnessstudio/profiles/openvla-simpler-logits.yaml", "tests/test_simpler_seeded.py",
-    "tests/test_openvla_simpler_server.py", "docs/extensions/simpler-seeded.md",
-}
 
 
 # ---- U1: source pins ------------------------------------------------------------------------------------------
