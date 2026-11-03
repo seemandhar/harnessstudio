@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hs-gpp"
+version = "1.0.0"
+description = "gpp: greedy OpenVLA base + public-proprio scripted primitives (deeper re-close, clamp-lift; optional freeze nudge and greedy-escape module), RoboMetaHarness scalepp-20261102, as a HarnessStudio v2 controller method"
+requires-python = ">=3.10"
+dependencies = ["harnessstudio", "numpy", "hs-greedy-escape==1.0.0"]
+
+[project.entry-points."harnessstudio.methods"]
+gpp-core = "hs_gpp:config_gpp_core"
+gpp-core-sham = "hs_gpp:config_gpp_core_sham"
+gpp-h2 = "hs_gpp:config_gpp_h2"
+gpp-h2-sham = "hs_gpp:config_gpp_h2_sham"
+ge-gpp-core = "hs_gpp:config_ge_gpp_core"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hs_gpp"]

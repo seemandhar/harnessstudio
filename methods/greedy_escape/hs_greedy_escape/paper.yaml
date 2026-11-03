@@ -1,0 +1,48 @@
+name: greedy-escape
+version: "1.0"
+paper:
+  id: "rmh:scalepp-20261102/greedy-escape"
+  title: "Greedy-anchored fixed-point/empty-loop escape: native greedy OpenVLA decoding until a public no-progress trigger, then a bounded SCALE-decoded escape window, then greedy again - new training-free mechanism (RoboMetaHarness run scalepp-20261102), not a reproduction of any cited paper"
+  venue: "none (internal)"
+  base: "SCALE arXiv:2602.04208v2 (escape operator, the faithful hs_scale decoder reused unchanged); trigger in the spirit of the legacy probeact / sentinel_stac public kinematic monitors"
+categories: {primary: execution_monitoring, secondary: [uncertainty_compute, sampler_guidance]}
+fidelity: tf_variant
+substitutions:
+  - "SCALE decodes every step -> SCALE decodes only inside triggered escape windows of 40 decisions; native greedy (OpenVLA do_sample=False predict_action) everywhere else"
+  - "SCALE per-episode uncertainty history (EMA/gamma state, kept by the policy server per session/episode/sampler) starts at the first window decision (gamma = 1), is not updated on greedy steps and persists across windows"
+requires: {capabilities: [act, chunk, seeded_sampling, isolated_streams, decoding_hooks]}
+# One sample per decision; horizon libero_10 = 520 steps = 520 decisions (the shadow null charges the same 520).
+budgets: {policy_calls: 520, llm_calls: 0, tool_calls: 0, max_tokens: 0}
+null: shadow
+artifacts: []
+operators: []
+# Frozen controller parameters (GE1, frozen 2026-11-02 before any greedy-escape episode; no change after any screen
+# outcome). eps 0.01 and empty_closes 3 were chosen on development-grid outcomes (disclosed, review G-F3): the init 4-9
+# confirmation (GE4) is mandatory before advancing.
+params:
+  fixed_point_steps: 15        # W: identical executed actions (all 7 dims, gripper discretized as LIBERO executes it)
+  fixed_point_eps: 0.01        # ... whose max |a[0:6]| < eps
+  empty_close_steps: 10        # empty close: close held >= 10 steps, width 10 steps after the close
+  empty_width_m: 0.004         # ... <= 4 mm (states[6] - states[7])
+  empty_closes: 3              # n_empty: the 3rd counted empty close since the last window fires
+  window_decisions: 40         # M
+  max_windows: 4
+  escape:                      # GE2: frozen escape operator (server-side decoding hook) = the SCALE map's sampler_ref
+    factory: "hs_scale.decoder:ScaleDecoder"
+    params: {T0: 1.0, epsilon: 1.0e-12, num_logits: 256, kappa: 2.0, alpha: 0.8, attn_sensitivity: 0.3}
+  state_key: states
+  finger_dims: [6, 7]
+original:
+  repo: "none (original method)"
+  commit: ""
+  reported: "none; predictions in runs/scalepp-20261102/ideation/idea-r1g.json and review GE7 (grid vs greedy net +3, vs SCALE about +1, windows in 10 +- 1 of 40 episodes)"
+description: "Native greedy OpenVLA with a public stall trigger (15 identical near-zero actions or 3 empty closes) that opens a 40-decision SCALE-decoded escape window; bitwise native greedy when nothing fires."
+disclosures:
+  - "Trigger inputs are public only: the executed action (gripper discretized like vla-eval LIBEROBenchmark.step) and the finger width states[6]-states[7] of the next observation. The OpenVLA server does not ask for state, so every greedy-escape run needs the benchmark param send_state: true (behaviour-neutral for OpenVLA, which reads only the agentview image and the instruction; tier 2 must show candidate == greedy record on untriggered scenes)."
+  - "Re-arming: the identical-action run restarts after a window; the empty-close count resets at each fire and counts only segments that start outside every window and after the last window ended. A segment classified inside a window is recorded but not counted. At most 4 windows; later fires are recorded as suppressed."
+  - "Null (shadow): the controller pays its greedy and window calls on the shadow session while native actions execute, so its windows fire on the native trajectory; inside windows the monitor sees the requested window action, not the executed native one. The null pays about 2 calls per step (>= the candidate's 1)."
+  - "Seeds: exactly one sample per decision, so window decision d uses crn_seed(ns, benchmark, task, episode, d, 0), the seed of the SCALE map record at d (review GE3); the decoder state differs (substitution 2)."
+  - "Tuned scalars: eps 0.01 and n_empty 3 were selected after the grid showed that 0.03 / 2 empties also fire on greedy successes t2i1 and t3i1. Grid retention is in-sample by construction (GE5). The scientist saw the frozen trigger fire on 3/54 greedy map successes at init 4-9 (t0i6@16, t2i5@42, t7i5@169) before the confirmation (GE4)."
+tier1: {instruction: "put both the alphabet soup and the tomato sauce in the basket", horizon: 60, chunk_len: 1}
+changelog:
+  - "v1.0 (2026-11-02): first implementation (task impl-greedy-escape) under review GE1-GE7; frozen before any greedy-escape episode."

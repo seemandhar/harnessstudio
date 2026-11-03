@@ -1,0 +1,37 @@
+name: fork30
+version: "1.0"
+paper:
+  id: "rmh:scalepp-20261102/fork30"
+  title: "fork30: greedy-anchored early decoder fork - native greedy OpenVLA, switch permanently to SCALE at decision 30 when the greedy prefix repeats an executed action >= 6 times (new training-free mechanism, RoboMetaHarness run scalepp-20261102 round 4), not a reproduction"
+  venue: "none (internal)"
+  base: "SCALE arXiv:2602.04208v2 (decoder reused unchanged, read-only, hs_scale 619d9b96)"
+categories: {primary: uncertainty_compute, secondary: [execution_monitoring, sampler_guidance]}
+fidelity: tf_variant
+substitutions:
+  - "SCALE decodes every step -> SCALE decodes only from decision 30 and only on the repeat cue; native greedy otherwise"
+  - "SCALE uncertainty/EMA state starts fresh at the fork (gamma = 1 at the first SCALE decision)"
+requires: {capabilities: [act, chunk, seeded_sampling, isolated_streams, decoding_hooks]}
+benchmark_params: {send_state: false}
+budgets: {policy_calls: 520, llm_calls: 0, tool_calls: 0, max_tokens: 0}
+null: shadow
+artifacts: []
+operators: []
+params:
+  fork_step: 30
+  min_repeats: 6
+  sampler:
+    factory: "hs_scale.decoder:ScaleDecoder"
+    params: {T0: 1.0, epsilon: 1.0e-12, num_logits: 256, kappa: 2.0, alpha: 0.8, attn_sensitivity: 0.3}
+original:
+  repo: "none (original method)"
+  commit: ""
+  reported: "none; analysis/fork-headroom.json (rep30_ge6: E_DeltaS +3.3..+4.1, honest centre +3, upper bound) and reviews/fork-r4-review.json"
+description: "Native greedy OpenVLA; at decision 30, if >= 6 executed actions in steps 1-29 exactly repeat their predecessor, decode with SCALE (paper defaults) for the rest of the episode; otherwise greedy."
+disclosures:
+  - "Cue (frozen, F1): R = #{k in 1..29 : executed a[k] == a[k-1], exact 7-D equality, gripper discretized as LIBERO executes it}; fork iff R >= 6. Feature, fork time and threshold were selected in-sample among 8 features x 3 fork times x thresholds on all 100 development scenes using greedy and SCALE-family outcomes (no untouched development slice; split-half CV chose 6 and 3; honest centre +3 and an upper bound). Admissible with disclosure (review); Campaign validation (init 15-24) is the first out-of-sample test; the Campaign development gate on init 0-3 is partly in-sample."
+  - "Exactly one policy call per decision, so post-fork decision d uses SCALE s0/s1's CRN seed at d; observations differ after divergence, so pairing with SCALE is outcome-level by scene only."
+  - "send_state: false (F2): the cue uses executed actions only, so observations equal the map greedy records' (obs0 is a valid scene witness)."
+  - "Null (shadow): the cue and post-fork SCALE calls run on the shadow session; native greedy actions execute (c_null about 2.0 on fired episodes). No sham (review: a decoder switch has no physical action to sham)."
+tier1: {instruction: "put both the alphabet soup and the tomato sauce in the basket", horizon: 60, chunk_len: 1}
+changelog:
+  - "v1.0 (2026-11-03): first implementation (task impl-fork30) under review fork-r4 F1-F4; frozen before any fork30 episode."

@@ -1,0 +1,45 @@
+name: scale-gtok
+version: "1"
+paper:
+  id: "rmh:scalepp-20261102/scale-gtok"
+  title: "SCALE with a deterministic mode-of-bins rule for the gripper token (argmax for action token 7; everything else SCALE) - RoboMetaHarness tf_variant of SCALE (arXiv:2602.04208v2), not a paper port"
+  venue: "none (internal; run scalepp-20261102)"
+  base_paper: "arXiv:2602.04208v2"
+  url: "https://arxiv.org/abs/2602.04208"
+# One candidate found independently by both round-1 scientists: GENERAL scale-gtok (ideation/idea-r1g.json) =
+# DOMAIN r1d-h1-gripmode-scale (ideation/idea-r1d.json, alias). Approved with required changes RC1-RC6 by
+# runs/scalepp-20261102/reviews/proposals-r1-review.json (DECISION_FIRST_scale_gtok).
+categories: {primary: sampler_guidance, secondary: [uncertainty_compute, contact_feedback]}
+fidelity: tf_variant
+substitutions:
+  - "SCALE Eq. 4-5 multinomial sampling of the 7th action token (gripper) -> masked argmax over the 256 action bins of the SAME logits (SCALE's own tau<1e-3 branch). The logits come from SCALE's forward pass (gamma-tempered vision attention, sampled motion-token prefix). Tokens 1-6, u_1..u_7, reported tau, gamma and the EMA state are unchanged."
+requires: {capabilities: [act, chunk, seeded_sampling, isolated_streams, decoding_hooks]}
+# K = 1: one sample per decision (hs_scale:SingleSample), the same forward pass as SCALE minus one multinomial.
+budgets: {policy_calls: null, llm_calls: 0, tool_calls: 0, max_tokens: 0}
+null: derived
+artifacts: []
+operators: []
+params:
+  K: 1
+  decoder: "hs_scale_gtok.decoder:ScaleGripperArgmax"
+  decoder_params: {T0: 1.0, epsilon: 1.0e-12, num_logits: 256, kappa: 2.0, alpha: 0.8, attn_sensitivity: 0.3}
+  gripper_token_position: "action_dim - 1 (OpenVLA LIBERO: the 7th of 7 action tokens)"
+  server_pin: "harnessstudio/harnessstudio/policies/openvla_hs.py sha256 e7c6a4c302fece60b338b9a6c14c7ac0cea4dea2057ff72b74c0abfa0aab174b (unmerged; the server that produced the eval/devbase map records)"
+  base_decoder_pin: "harnessstudio/methods/scale/hs_scale/decoder.py sha256 619d9b960bd84878a34825c1e35e7f182cade2515cc51721a01fa5fe14256d60"
+disclosures:
+  - "Original RoboMetaHarness method (run scalepp-20261102), a tf_variant of SCALE: it modifies SCALE's algorithm on one token, so it is not 'component'; it is not 'the native greedy gripper' either, because the gripper logits are conditioned on SCALE's sampled motion prefix and gamma-tempered vision attention. The rule (bin argmax) is the native OpenVLA rule; the logits are SCALE's."
+  - "Novelty, stated narrowly (review RC6a): a deterministic mode-of-bins rule for the gripper token inside SCALE's decoder at K = 1. It is NOT the K->infinity limit of a K-sample gripper majority vote: a majority over executed signs converges to the binary-class majority under the tempered distribution (the 'binary-mass' rule), which equals the bin argmax only when each class's mass sits on one bin. The server maps x -> -sign(2x-1) (openvla_hs.py line 250), so 'open' = bins with centres > 0.5 and 'close' = all other bins (review D-F4); the binary-mass rule is an untested ablation."
+  - "Qualifying development evidence the DOMAIN proposal omitted (review RC6b / D-F1, ideation/idea-r1d-evidence/blipdrop2.py): settled-hold blips (closed >= 10 steps, width >= 6 mm and stable) -> object drop: SCALE 1/135 (only t7i5), greedy 3/78, zero drops in any successful episode of either arm. The custody-chatter account is therefore narrowed to the grasp-onset window (before the grasp settles) and to narrow/handle grasps (width < 6 mm). The causal claim the screen tests is the onset-window account (E2)."
+  - "Prediction calibration (review D-F2): E2 per-attempt total loss rates are nearly equal (SCALE 35/519 = 6.7%, greedy 25/398 = 6.3%); SCALE's excess comes from a larger chattering share. The critic's central estimate for the 40-scene screen is net +1..+2 vs SCALE; the merged predeclared prediction is 27/40 (24-30), net +2..+3. The screen is a futility filter, not evidence of a gain."
+  - "Token-position counter (review RC2): reset in attention_temperature (called once per _decode before the token loop, openvla_hs.py e7c6a4c3 line 186); select_token raises before a reset or beyond action_dim calls since the last reset, so K > 1 and the unmerged openvla-ksample per_seed / batched (token-major) paths are refused. Re-verify against any merged server change before use."
+  - "Random stream (review RC3): the server seeds a fresh torch generator per (decision, seed) (line 185) and crn_seed = sha256([namespace, benchmark, task, episode, decision, sample]) carries no method identity (core/noise.py), so under case namespace '' every decision gets exactly the seed of the eval/devbase SCALE record, and skipping token 7's multinomial changes no other draw. Consequence: the candidate is bitwise SCALE until its first gripper override (mechanism witness RC4, scripts/witness.py)."
+  - "Per-token u/tau are forwarded by the server as sample extras but HarnessStudio v2 traces/records keep only seeds and action/obs hashes, so exposure steps (tau_7 >= 1e-3) are not countable from screen records. The approved activation metric is computed from executed actions instead: pooled executed-gripper short-run rate (interior runs <= 2 steps per 100 executed steps), divergence share and first-divergence step vs the CRN-matched SCALE record (scripts/witness.py)."
+  - "Compute: same forward pass as SCALE minus one multinomial; inference ratio vs native c ~ 1.0 (map policy s/step SCALE 0.739, greedy 0.756). No separate overhead null for the screen (review overhead_null_answer); Campaign phases still run the derived null."
+original:
+  repo: "none (original method on top of the SCALE port harnessstudio/methods/scale = github.com/snumprlab/scale b4ad2a6, MIT)"
+  commit: ""
+  reported: "none; predeclared screen prediction in runs/scalepp-20261102/reviews/proposals-r1-review.json (screen_spec)"
+description: "SCALE decoding (uncertainty-tempered token sampling and vision attention) on OpenVLA's six motion tokens, with the gripper token decoded by masked argmax over the same SCALE logits; u, tau, gamma and the EMA state stay SCALE's."
+tier1: {instruction: "put both the alphabet soup and the tomato sauce in the basket", horizon: 24, chunk_len: 1}
+changelog:
+  - "v1 (2026-11-02): first implementation (task impl-scale-gtok, rmh_coder) of the approved scale-gtok under RC1-RC6; no GPU episode run by the implementer."

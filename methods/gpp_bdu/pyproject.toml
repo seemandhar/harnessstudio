@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hs-gpp-bdu"
+version = "1.0.0"
+description = "gpp-bdu: frozen gpp v1.1 controller (read-only) + bdu blocked-descent unload, RoboMetaHarness scalepp-20261102 round 3, as HarnessStudio v2 controller methods"
+requires-python = ">=3.10"
+dependencies = ["harnessstudio", "numpy", "hs-gpp==1.0.0", "hs-greedy-escape==1.0.0"]
+
+[project.entry-points."harnessstudio.methods"]
+ge-gpp-bdu = "hs_gpp_bdu:config_ge_gpp_bdu"
+ge-gpp-bdusham = "hs_gpp_bdu:config_ge_gpp_bdusham"
+ge-bdu = "hs_gpp_bdu:config_ge_bdu"
+ge-bdusham = "hs_gpp_bdu:config_ge_bdusham"
+gpp-bdu = "hs_gpp_bdu:config_gpp_bdu"
+gpp-bdusham = "hs_gpp_bdu:config_gpp_bdusham"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hs_gpp_bdu"]
