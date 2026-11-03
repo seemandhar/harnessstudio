@@ -1,0 +1,60 @@
+{
+ "name": "libero_goal",
+ "version": 1,
+ "source": "public libero_goal task language strings (LIBERO benchmark, libero.libero.benchmark 'libero_goal', task order 0-9) as served by ghcr.io/allenai/vla-evaluation-harness/libero@sha256:d656fe8b7f8fce3ac16ced4f8bb4d51cd133df86deb394661381237ab8cce3cd",
+ "structure": "Koorye/PCD@31b027e contrast_utils/instruction_templates.py: literal rewrites, then the first matching regex (re.match, in order) gives the objects; groups stripped; no lowercasing; keep objects ['robot'] (contrast_image_generator.py:98); tracker id = classnames.index + 1 (mask_predictors.py:463)",
+ "instructions": [
+  "open the middle drawer of the cabinet",
+  "put the bowl on the stove",
+  "put the wine bottle on top of the cabinet",
+  "open the top drawer and put the bowl inside",
+  "put the bowl on top of the cabinet",
+  "push the plate to the front of the stove",
+  "put the cream cheese in the bowl",
+  "turn on the stove",
+  "put the bowl on the plate",
+  "put the wine bottle on the rack"
+ ],
+ "rewrites": [
+  [
+   "the ",
+   ""
+  ]
+ ],
+ "templates": [
+  "open (.+) and put (.+) inside",
+  "open (.+) of (.+)",
+  "put (.+) on top of (.+)",
+  "put (.+) on (.+)",
+  "put (.+) in (.+)",
+  "push (.+) to front of (.+)",
+  "turn on (.+)"
+ ],
+ "keep_objects": [
+  "robot"
+ ],
+ "classnames": [
+  "robot",
+  "bowl",
+  "plate",
+  "stove",
+  "cabinet",
+  "middle drawer",
+  "top drawer",
+  "wine bottle",
+  "cream cheese",
+  "rack"
+ ],
+ "aliases": {
+  "robot": "robot manipulator",
+  "cabinet": "black cabinet",
+  "middle drawer": "drawer"
+ },
+ "alias_notes": {
+  "robot": "authors' alias (mask_predictors.py:29)",
+  "cabinet": "literal 'cabinet' found 0/9 frames (tasks 2,4,0); predeclared candidate 'black cabinet' 9/9 on the cabinet (tiles)",
+  "middle drawer": "with the cabinet alias, literal 'middle drawer' grounded to the wine rack on init 11-12; predeclared candidate 'drawer' 3/3 on the cabinet (tiles)",
+  "not_aliased": "cream cheese (literal 0/3, candidate 'cream cheese box' hit the cabinet/rack: rejected), rack (literal 0/3, candidate 'wine rack' 0/3: rejected); all other objects literal 3/3 per frame"
+ },
+ "frozen_utc": "2026-11-03T13:03:05Z"
+}

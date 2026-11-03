@@ -1,0 +1,103 @@
+name: pcd
+version: "1.0"
+paper:
+  id: "arXiv:2505.13255v6"
+  title: "Policy Contrastive Decoding for Robotic Foundation Models (PCD), Wu, Luo, Zhang, Xie, Gao, Song, Shen; ICLR 2026"
+  venue: "ICLR 2026"
+  versions: "v3-v6 share the method (Eq. 2, Alg. 1, alpha); Table 1 with 300 trials per task from v3 (runs/pcd-port-20261103/reports/pcd_audit.md section 1)"
+categories: {primary: sampler_guidance, secondary: [observation_grounding]}
+# Card-level label. The per-setting labels below are decided by SETTING.md v2 (+ Addendum 1) before the first scored
+# episode and recorded here (changelog) at that time; until then the conservative label applies.
+fidelity: adapted
+settings:
+  A_simpler_seeded:
+    label: "adapted (substitutions: float32 action wire [B7 rule violated]; HarnessStudio transport; env identity [vla-eval SIMPLER image vs the authors' vendored copy]; unresolved: SAM2 _C). Decided at D1 (P-5, 2026-11-03) from reports/gpu_phase1.md and eval/decisions/numerics_env.json, before any primary episode."
+    policy: "openvla/openvla-7b (weights 31f090d, hash-pinned), bf16, greedy, unnorm fractal20220817_data"
+    profile: "the simpler-seeded extension's server mode simpler_pcd_authors (raw instruction + token 29871, cv2 INTER_AREA 224, eager attention) at ext2/simpler-seeded 9b2b714 on ext2/openvla-contrast adc271a (pinned worktree commits; P-4); frozen policy JSON eval/policies/policy-simpler-numerics.frozen.json, startup probe 8cd3b024770ffa2e on GPUs 4-7"
+    status_items:
+      a_prompt: "matched: S6a/S6b tokens and float64 raw actions byte-equal to the authors' OpenVLAInference (64 obs0 frames x 2 server paths; B4 frames 80 + 113)"
+      b_image: "matched: same S6a/S6b evidence (cv2 INTER_AREA 224, no JPEG/crop)"
+      c_actions: "matched: authors' post-processing parity 0 mismatches / 22,600 steps (simpler_ext/build/results/authors_post_parity_worktree_image.json); S6a/S6b actions byte-equal"
+      d_reset: "matched: B2/B1/B3 PASS, 64/64 distinct GPU obs0 hashes, no edit-5 replacement, case list frozen (cf405fe2), equal on GPUs 4-7"
+      e_termination: "matched: full TimeLimit (smokes ran 80 / 113 steps per arm), any-step and max-step success recorded"
+      f_env_identity: "substitution: vla-eval SIMPLER image sha256:f77449671884afee5c997f2b933d0d2db503debe86961d2f6c378d47276d10fe (SimplerEnv 4ab7178 / ManiSkill2_real2sim ef7a4d4) vs the authors' vendored copy at 31b027e; no behavioral difference found on coke / close drawer / move near (reports/simpler_readiness.md section 3); overlay PNG bytes unverifiable"
+      numerics: "authors' numerics env PRIMARY (transformers 4.44.2 / torch 2.3.1 / eager attention, bf16; runs/pcd-port-20261103/venvs/openvla-authors-numerics); S8/S9/S7/S6a/S6b PASS and smoke null bitwise M; fallback not selected (eval/decisions/numerics_env.json, decided 2026-11-03T17:30:41Z); S10 measurement 8/64 frames differ numerics vs fallback"
+      action_wire_B7: "VALID replays, rule violated -> 'adapted (float32 action wire)': coke99 TCP L2 2.36e-5 m / rotation 7.63e-5 rad; drawer99 L2 7.76e-3 m / rotation 2.85e-2 rad; success flags and sticky state identical (simpler_ext/build/gpu/run-g5/b7_{coke99,drawer99}.json)"
+      smoke: "VALID: coke seed 99 (80 steps, cf differs 80/80, target active 80/80, tokens changed on 62 steps, null M 1/0/0) and drawer seed 99 (113 steps, cf differs 113/113, target active 113/113, tokens changed on 40 steps, M 1/0/0); A4 smoke baseline bitwise equal to B4 coke99 across GPUs 5/7 (eval/smoke/smoke_validity_{pick_coke_can99,close_drawer99}-g7.json; reports/gpu_phase1.md section 2.4)"
+    sources: {gpu_phase1_md: "c9617fd7cef3b1197e8d4e65d7800a84fafe0932da697fabedd7fe9f43d06201", numerics_env_json: "b919242fc149e56761e45fe5bf50548e56b2dcc5a7684520bd79707d2b9a8118"}
+    unresolved: ["SAM2 _C absent in our perception service (the code's own no-extension fallback; the authors' state unknown, most likely also absent); reported next to every Setting A label; see unresolved_fidelity_items (SETTING.md Addendum 3)"]
+  B_libero_goal:
+    label: "adapted / tf_variant (no paper row; directional screen only; never 'reproduced' or 'matched')"
+    policy: "openvla/openvla-7b-finetuned-libero-goal @ fa5ae1e, profile openvla-libero-logits (EXT openvla-contrast)"
+substitutions:
+  - "Transport: the two decodes are HarnessStudio `logits`-readout requests to the EXT openvla-contrast server (HarnessOpenVLALogitsServer; native vla-eval predict + recording hooks), not two in-process vla.generate(output_scores) calls; the combine runs in the harness (numpy float32) on the rows sent over msgpack (raw float32 bytes, lossless), not on the GPU in torch: same expression and operation order, bitwise equal (scripts/check_parity.py)."
+  - "Execution: the combined tokens are executed through the server's bin->action table (bitwise == the server's de-tokenization, EXT R1a), i.e. the server's action post-processing for the selected profile; SIMPLER's euler2axangle / sticky gripper live in the simpler-seeded contract, not in this method."
+  - "Action wire (both settings): HS v2 protocol.py:61 and vla-eval predict.py:241 cast actions to float32 (authors: float64). SETTING Addendum 1: disclosed; label effect decided by GPU check B7."
+  - "Numerics env (Setting A): primary = the authors' transformers 4.44.2 / torch 2.3.1 / eager attention venv (runs/pcd-port-20261103/venvs/openvla-authors-numerics) if the evaluator's checks pass; fallback = the HS v2 OpenVLA env (transformers 4.40.1 / torch 2.10, eager attention), then 'adapted'. Setting B: the HS v2 OpenVLA env (transformers 4.40.1, torch 2.10.0, SDPA, cuBLASLt 12.6 pin, P-20261103-01). No token-level replication of the authors' decode is claimed (EXT R9c); G9 measures tie sensitivity."
+  - "Prompt (Setting B): the checkpoint's native template 'In: What action should the robot take to {instruction}?\\nOut:' (openvla_hs.py:173) in every arm, not the raw instruction; image LANCZOS 224 + jpeg_roundtrip + center_crop (the LIBERO fine-tune protocol), not cv2 INTER_AREA."
+  - "Perception (Setting B): the authors' SIMPLER regexes/aliases/class list do not cover LIBERO objects. B uses the service's frozen LIBERO-Goal parser + alias table service/pcd_perception/parsers/libero_goal.json sha256 eb67f16396877052eb17654b5a1fabe3ffa59cfd362dc9ece400981fc31724e8 (loader pin parsers/__init__.py 86d2121d2facc28b261949f893b24720254b109377d8149339015be86980e627; reports/libero_parser.md), built from the public instruction list and frozen before any B episode, selected by perception_parser: libero_goal (entry point pcd-libero-goal). Aliases: robot -> robot manipulator (the authors'), cabinet -> black cabinet, middle drawer -> drawer. Alias evidence: CPU (OSMesa) first frames of init 10-12 only (no policy, episode or Setting B outcome)."
+  - "Perception transport: the counterfactual frame comes from the method-local HTTP service (methods/pcd/service; GDINO-base fp32 0.25/0.3, SAM2.1-L camera predictor without re-detection, Big-LaMa every step; CPU parity 18/18 frames bitwise vs the authors' contrast_utils, reports/perception_service.md) as lossless .npy, at the input frame's resolution. The authors' extra generate() on the post-terminal frame (parallel_inference.py:223, output unused) is not called."
+  - "Episodes, seeds and success are the benchmark contract's (SIMPLER seeded contract for A, vla-eval LIBERO for B); the method never sees them."
+  - "Setting B policy (review M2): checkpoint openvla/openvla-7b-finetuned-libero-goal @ fa5ae1e instead of the paper's base openvla/openvla-7b (31f090d)."
+  - "Setting B benchmark (review M2): LIBERO-Goal (vla-eval 0.8.0 LIBERO, tasks 0-9 x init 0-2) instead of SIMPLER Google-robot visual matching; no paper row exists for it."
+  - "Setting B horizon (review M2): 300 steps (OpenVLA LIBERO-Goal max steps) instead of the SIMPLER TimeLimits 80 / 113."
+  - "Setting B success rule (review M2): vla-eval LIBERO terminate-on-success (the episode ends at the first success) instead of the authors' full-TimeLimit run with any-step success (Table 1) / last-step success (Table 9)."
+  - "Setting A env identity (review M2; SETTING.md v2 edit-1 (f), Addendum 1): the vla-eval SIMPLER image sha256:f77449671884afee5c997f2b933d0d2db503debe86961d2f6c378d47276d10fe (SimplerEnv 4ab7178, ManiSkill2_real2sim ef7a4d4) with vla-eval 0.8.0 src mounted and the GPU renderer, instead of the authors' vendored SimplerEnv / ManiSkill2_real2sim at Koorye/PCD 31b027e (= ef7a4d4 plus their edits). reports/simpler_readiness.md section 3: 9 ManiSkill2_real2sim files differ, all authors' additions (info keys, a second visualize camera, non-default light branches, variant envs); no behavioral difference found for Pick Coke Can / Close Drawer / Move Near under prepackaged default lighting; 274/275 tracked data files blob-identical (the differing one is WidowX-only); residual: the real_inpainting overlay PNG bytes cannot be verified against the authors' machine (not in their repo). Status item f_env_identity stays pending until the GPU-rendered obs0 checks."
+# Unresolved fidelity items: NOT substitutions (nothing was chosen against evidence); the item's true state in the
+# authors' runs is unknown. Each is recorded in every run.
+unresolved_fidelity_items:
+  - item: "SAM2 CUDA extension _C (8-pixel hole fill in fill_holes_in_mask_scores, sam2/utils/misc.py:312-338)"
+    ours: "not built: the service runs the code's own documented no-extension fallback (warning, hole fill skipped) in every arm; /health reports sam2_C (recorded per episode in the 'pcd_start' trace event)"
+    authors: "unknown; most likely absent: scripts/install_dependencies.sh:26 runs `pip install -e .` for grounded_sam_2 in an isolated build env without build flags, and third_party/grounded_sam_2/setup.py:67-72 allows build errors by default (SAM2_BUILD_ALLOW_ERRORS defaults to 1; Koorye/PCD 31b027e)"
+    basis: "SETTING.md Addendum 3 (2026-11-03 12:20 UTC); reports/perception_service_2.md; review critic-simpler-diff perception_addendum3"
+requires: {capabilities: [act, chunk, seeded_sampling, isolated_streams, logits_readout]}
+# Per step: 2 policy requests (real + counterfactual) and 1 perception /step (+1 /reset per episode). Longest horizon
+# any arm runs: libero_10 520 (EXT GPU checks) -> 1040 policy samples; SIMPLER <= 200 (apple drawer), libero_goal 300.
+budgets: {policy_calls: 1100, llm_calls: 0, tool_calls: 600, max_tokens: 0}
+null: shadow
+artifacts: []
+operators: []
+params:
+  alpha: 0.8                 # paper Sec. 4.3 best for OpenVLA; launch script contrast_openvla_inference.sh:5; frozen
+  perception_url: "http://127.0.0.1:8141"   # overridden by HS_PCD_PERCEPTION_URL (deployment detail)
+  perception_timeout: 600.0
+  image_key: null            # null = the first public image (the one OpenVLA reads)
+  instruction_source: observation
+  parser: service            # the perception service owns the frozen parser / alias table (SIMPLER: the authors')
+  tile_dir: null             # HS_PCD_TILE_DIR: the run's artifact directory (never under harnessstudio/)
+  tile_every: 10             # plus every first-detection step
+  require_tiles: true        # SETTING.md v2 edit 3 (ignored by the tier-1 stub)
+  action_dim: 7
+  perception_parser: simpler   # service /reset `parser`: simpler (Setting A, the authors' table) | libero_goal (Setting B; entry point pcd-libero-goal)
+  token_dim: null            # zero-fallback width = the observed logit width (32064 for OpenVLA, = openvla_contrast.py:9)
+original:
+  repo: "github.com/Koorye/PCD"
+  commit: "31b027ecf2a8b9a4e496aaa9478fb951e3d9270a (no licence: independent re-derivation citing file:line; nothing copied)"
+  companion: "github.com/Eres-lcy/PCD @ 00c4ac0301e8ef5b12f268f6bd1c29f90e8b875a (Apache-2.0; its OpenVLA PCD-Mask predict_action is functionally identical; no code taken; ICLR values kept: text_threshold 0.3, GDINO fp32)"
+  reported: >-
+    Table 1 (v3+), SIMPLER, OpenVLA-7B base, the authors' seeded prepackaged protocol, success at any step, published
+    percentages with n = 300 trials per task (2700 per arm for the 9-task average): 9-task average Base 16.8% ->
+    PCD-GDINO 25.3%; Pick Coke Can 18.0% -> 45.3%; Close Drawer 47.3% -> 73.3%; Open Drawer 23.3% -> 34.7%;
+    Move Near 58.7% -> 59.0%. Table 9 (max-step success, same runs, n = 300 per task): average 15.1% -> 21.9%;
+    Pick Coke Can 17.3% -> 39.7%; Close Drawer 47.3% -> 72.7%; Move Near 47.3% -> 41.3%. The paper reports
+    percentages only; integer success counts are not author-reported and are not restated here.
+    Author note (issue #7): results fluctuate with hardware/library versions/seeds. LIBERO: no OpenVLA row (the
+    miniVLA LIBERO-90 5-task table has no code and no stated episode count).
+description: "PCD for OpenVLA: per step, the real frame and an object-inpainted counterfactual (GDINO + SAM2 tracking + LaMa service) are decoded greedily as two native logits requests; motion tokens use (1+a)s - a c (a = 0.8), the gripper the real stream; executed through the server's bin table."
+disclosures:
+  - "Setting B counterfactual coverage (frozen libero_goal table; reports/libero_parser.md sections 2-3): tasks 6 (cream cheese not detected) and 9 (rack not detected) are only PARTIALLY masked; tasks 0 and 3 are whole-cabinet counterfactuals (the drawer prompt masks the entire cabinet, so they contrast against 'no cabinet', not 'no drawer'); tasks 0/2/4 share the cabinet region. The alias-rule amendment (a wrong-object hit counts as a miss; perception/libero_alias_candidates.amendment.txt, 12:50:37Z) was written AFTER observing the cabinet alias land 'middle drawer' on the wine rack and BEFORE the drawer candidate ran (12:53:41Z); it changed one decision (middle drawer -> drawer). Accepted with disclosure by review critic-readiness-1."
+  - "Null (shadow): perception, both logits requests and the combine run on the shadow session / the method's own perception session on the native trajectory; the framework executes the native action. Decodes per step: baseline 1, candidate 2, null 3 (2 shadow + 1 native replay); perception per step: candidate 1, null 1. PCD's overhead is reported from the candidate's measured cost only (EXT A1)."
+  - "Extra requests advance ctx's decision counter twice per step (CRN seeds shift); the OpenVLA sampler-off path ignores seeds, so no action changes (EXT section 5)."
+  - "A failed perception or policy call raises: the episode is invalid (infrastructure), never silently a baseline step. The tier-1 stub is used only on HarnessStudio's synthetic fake benchmark (contract control_mode 'fake')."
+  - "Detection failure (empty mask): the service returns cf == real frame and the method still decodes both streams and applies (1+a)s - a s, as the code does; such steps are counted (cf_differs false; G9 measures the tie flips)."
+  - "Evidence per step (trace event 'pcd') and per episode (accounting.extra.pcd): perception phase, per-target mask presence/area, first detection, tracker None, cf_differs, contrast skipped (B < 7 rows), stream-A fallback (A < 7 rows), per-dimension changed tokens vs native, non-action-vocabulary selections, top1-top2 gaps of s and of the combined scores, perception latency; tiles real|cf every tile_every steps and at first detection."
+tier1: {instruction: "pick coke can", horizon: 12, chunk_len: 6}
+changelog:
+  - "v1.0 (2026-11-03, conv-results-fill, after all GPU work; metadata only, no parameter or code changed): results in docs/results/pcd.md. Setting A primary (subset only: 2 of 9 tasks, 64 of 2700 paired trials): baseline 22/64 -> PCD 36/64, W 17 / L 3, exact two-sided McNemar p 0.00258, Newcombe hybrid (uncorrected phi) CI [+0.090, +0.335] containing the paper's +0.266: 'gain reproduced in direction; magnitude compatible'; null M 64/0/0; label adapted (as in settings.A_simpler_seeded). Move Near 19 -> 21 (W 4 / L 2, p 0.6875, descriptive); Setting B 23 -> 23 (W 3 / L 3, p 1.0, transfer screen). Sources: runs/pcd-port-20261103/reports/{primary.md, primary_addendum.md, optional_runs.md, gpu_phase1.md, critic-primary.review.json}. Note (critic-primary D3/A5): settings.A_simpler_seeded.sources binds gpu_phase1.md c9617fd7 as frozen at D1; the file is now 12f99275 after the R4 cost-line corrections only (the B7 and numerics rows the card cites did not change)."
+  - "v1.0 (2026-11-03, conv-card-d1, P-5 at D1, before any primary episode): Setting A status items filled from reports/gpu_phase1.md and eval/decisions/numerics_env.json; Setting A label = adapted (float32 action wire, HS transport, env identity; SAM2 _C unresolved); numerics = authors' env. Metadata only: no parameter or code changed."
+  - "v1.0 (2026-11-03, conv-docs-3, review critic-readiness-3 E5, before any episode): original.reported restated as the published percentages with n = 300 (and Table 9 per-task rows added from pcd_audit.md section 6); the audit-derived integer counts were removed. No parameter or code changed."
+  - "v1.0 (2026-11-03, conv-fixes-5, review critic-readiness-1 M-A/M-B, before any episode): Setting A carries the SAM2 _C unresolved item next to its label; the Setting B perception substitution names the frozen libero_goal table (sha256 eb67f163...) and aliases; Setting B coverage and alias-amendment disclosure added. No parameter or code changed."
+  - "v1.0 (2026-11-03, conv-fixes-2, SETTING.md Addendum 4, before any episode): new param perception_parser (default simpler = unchanged Setting A behaviour; libero_goal for Setting B via entry point pcd-libero-goal), sent at /reset as the service's `parser` field and checked against the service's echo (a mismatch, or no echo for a non-default mode, raises). Tier-1 Setting A trace identical before/after (method/fixes2)."
+  - "v1.0 (2026-11-03, conv-fixes-2, before any episode): SAM2 _C moved from the perception substitution to `unresolved_fidelity_items` (SETTING.md Addendum 3: the code's own fallback; the authors' install most likely lacked _C; their runs' state unknown). No parameter or code changed."
+  - "v1.0 (2026-11-03, conv-fixes-1, before any episode): review critic-contrast-method M1 (E-4 any-target activation: per-step any_target_present, per-episode target_active_steps and mechanism_inactive) and M2 (Setting B checkpoint / benchmark / horizon / success rule and Setting A env identity listed as substitutions). No parameter changed."
+  - "v1.0 (2026-11-03): first implementation (task conv-method, run pcd-port-20261103) on EXT openvla-contrast (branch ext2/openvla-contrast 1fc5b10, not merged); combine parity vs Koorye/PCD openvla_contrast.py (scripts/check_parity.py); fidelity labels pending the SETTING.md v2 / Addendum 1 checks."

@@ -1,0 +1,17 @@
+PCD perception service (HarnessStudio v2, run pcd-port-20261103)
+
+pcd_perception/ is an independent re-derivation of the PCD-Mask GroundingDINO path of Koorye/PCD
+(https://github.com/Koorye/PCD @ 31b027ecf2a8b9a4e496aaa9478fb951e3d9270a). That repository carries NO licence;
+no code was copied from it. Each rule cites the upstream file:line it re-derives. Data values (instruction regexes,
+alias table, class list, thresholds 0.25/0.3, dilation 5) are restated facts of the method.
+
+Vendored third-party code (Apache License 2.0, unmodified, git-blob identical to the named upstreams):
+- third_party/sam2_gsam2_5c6166f/sam2/            facebookresearch/sam2 via IDEA-Research/Grounded-SAM-2
+    @ 5c6166fb7e0d6ae42882d0d7d142162345240c4d (LICENSE; csrc/ removed: no compiled extension is built),
+    except sam2/sam2_camera_predictor.py from Gy920/segment-anything-2-real-time
+    @ 53eb82ae47632465b5a8f477f159227f021f78ec (git blob 9caed4ad7b7d19bc320567dd6428728af0ed2250; licence copy
+    LICENSE_segment-anything-2-real-time). Copyright (c) Meta Platforms, Inc. and affiliates.
+- third_party/lama_ia_3889cc7/lama/              advimman/lama via geekyutao/Inpaint-Anything
+    @ 3889cc72b1e4c8012849a2166047006abe10eee8 (lama/LICENSE). Copyright Samsung AI Center (LaMa authors).
+pcd_perception/sam2_device.py restates three methods of the camera predictor and its builder with a device
+argument (Apache-2.0 origin, see that file). pcd_perception/models.py restates pad_tensor_to_modulo (lama).
