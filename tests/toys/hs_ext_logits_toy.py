@@ -66,7 +66,8 @@ class LogitsContrastToy:
 
 def toy(alpha: float = 0.8) -> MethodConfig:
     # policy_calls: 2 requests per step over the longest horizon used (libero_10 520 steps -> 1040), plus margin (A2).
-    return MethodConfig(name=f"test-logits-contrast-toy-a{alpha:g}", version="1", paper="none",
+    name = "test-logits-contrast-toy" if alpha == 0.8 else f"test-logits-contrast-toy-alpha{alpha:g}".replace(".", "p")
+    return MethodConfig(name=name, version="1", paper="none",
                         fidelity=Fidelity.FAITHFUL, required=REQUIRED, null="shadow",
                         controller=ModuleRef(f"{__name__}:LogitsContrastToy", {"alpha": alpha}),
                         budgets=Budgets(policy_calls=1100))

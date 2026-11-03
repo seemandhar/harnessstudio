@@ -252,6 +252,7 @@ def test_new_profiles():
 def test_toy_tier0_and_tier1_pass():
     config = toy_mod.toy()
     assert tier0.check(config) == []
+    assert tier0.check(toy_mod.toy_alpha0()) == []          # the GPU G5 variant registers too
     assert tier1.default_profile(config) == "fake-t3"
     report = tier1.run(config)
     assert report.passed, "\n".join(report.lines())
