@@ -1,6 +1,8 @@
 # EXT openvla-contrast (proposal, 2026-11-03): per-token logits of native OpenVLA decodes, for policy contrastive decoding
 
-> **Status (2026-11-03): APPROVED WITH EDITS, BUILT, NOT MERGED.** The `rmh_critic` review
+> **Status (2026-11-03): MERGED into `main`** (run pcd-port-20261103 task conv-merge; branch head `adc271a`, the commit the
+> GPU checks G1-G9 (`runs/pcd-port-20261103/reports/gpu_phase1.md` 2.1) and the scored runs used). History below:
+> **APPROVED WITH EDITS, BUILT.** The `rmh_critic` review
 > (`runs/pcd-port-20261103/reports/critic-ext-proposal.review.json`, verdict approve_with_edits, rulings: design L;
 > alternative C rejected; the server file lives only in the worktree package until merge; the SIMPLER seeded protocol
 > is a SEPARATE later extension) required edits R1-R9. They are applied below, each marked **[R#]**, and section 12

@@ -1,16 +1,14 @@
 # EXT simpler-seeded (proposal, 2026-11-03): the PCD authors' seeded SIMPLER protocol, and an OpenVLA server mode that matches their inputs
 
-> **Status (2026-11-03): APPROVED WITH EDITS, BUILT, NOT MERGED.** The independent `rmh_critic` review
-> (`runs/pcd-port-20261103/reports/critic-simpler-ext.review.json`, verdict approve_with_edits) required S-1..S-8. They are
-> applied below, each marked **[S#]**; section 10 lists every required edit and advisory with pointers and supersedes
-> any conflicting text above. Built in worktree `../hs2-ext-simpler-seeded`, branch `ext2/simpler-seeded`, stacked on
-> `ext2/openvla-contrast`: cut from `1fc5b10`, rebased onto `da817ba` (12:25Z) and, as the last step of the review
-> fixes, onto `adc271a` (tests-only openvla-contrast changes, reviews E1 and critic-simpler-diff edit 2); the exact
-> commit under test is pinned in `runs/pcd-port-20261103/reports/fixes_3.md` [fix-4]; build report `runs/pcd-port-20261103/reports/simpler_build.md`
-> (CPU tests, regress before/after, integrity, the evaluator's GPU plan); fixes after the diff review
-> (`runs/pcd-port-20261103/reports/critic-simpler-diff.review.json`, 7 required edits) in
-> `runs/pcd-port-20261103/reports/fixes_3.md`, marked **[fix-N]**. GPU evidence counts only for the exact commit pinned
-> there [fix-4]. GPU checks and merge pending.
+> **Status (2026-11-03): MERGED into `main`** (merge commit after `ext2/openvla-contrast`; run pcd-port-20261103 task
+> conv-merge, logged in `runs/scaleagent-shared/COORDINATION.md`). Merged branch head: `ext2/simpler-seeded` @
+> `9b2b71445eb72cb58c1ed3d672aa2c67e93c1122` (stacked on `ext2/openvla-contrast` @ `adc271a`), the exact commit the GPU
+> evidence and the scored runs used (decision P-4; merge identity checked with `eval/verify_merge_identity.py`).
+> Reviews: `runs/pcd-port-20261103/reports/critic-simpler-ext.review.json` (S-1..S-8, marked **[S#]**; section 10 lists
+> them and supersedes conflicting text above), `critic-simpler-diff.review.json` (7 required edits, fixed in
+> `runs/pcd-port-20261103/reports/fixes_3.md`, marked **[fix-N]**) and `critic-readiness-2.review.json` (R1-R3, fixed in
+> `runs/pcd-port-20261103/reports/fixes_4.md`). Build report `runs/pcd-port-20261103/reports/simpler_build.md`; GPU
+> results `runs/pcd-port-20261103/reports/gpu_phase1.md` (B1-B7, S6-S10 on `9b2b714`).
 
 - **Author:** converter tasks `conv-simpler-ext` (proposal) and `conv-simpler-build` (edits + build), run `pcd-port-20261103`. The agent ref is in the supervisor ledger
   `runs/pcd-port-20261103/control/research/supervision`.
@@ -412,7 +410,7 @@ the obs set; the choice is recorded in the method card.
 |---|---|
 | `harnessstudio/benchmarks/simpler_seeded.py` | NEW (section 3.1) |
 | `harnessstudio/benchmarks/__init__.py` | docstring: admits protocol subclasses [S-8a] |
-| (`tests/test_openvla_logits.py`) | **no longer touched [fix-2]**: openvla-contrast's own scope test is branch-scoped since `adc271a` (it applies only on `ext2/openvla-contrast` while unmerged), so this branch's earlier declared `EXT_FILES` extension was removed. This branch's scope is pinned by `tests/test_simpler_seeded.py::test_simpler_branch_touches_only_its_files`, branch-scoped the same way: it applies only on `ext2/simpler-seeded` (or detached on it) while HEAD is not in `main`, against the merge-base with `ext2/openvla-contrast` (or `main` once that branch is gone); it skips after the merge, on later commits of `main` and on other branches |
+| (`tests/test_openvla_logits.py`) | **no longer touched [fix-2]**: openvla-contrast's own scope test is branch-scoped since `adc271a` (it applies only on `ext2/openvla-contrast` while unmerged), so this branch's earlier declared `EXT_FILES` extension was removed. This branch's scope is pinned by `tests/test_simpler_seeded.py::test_simpler_branch_touches_only_its_files`, branch-scoped the same way: it applies only on `ext2/simpler-seeded` (or detached on it) while HEAD is not in `main`, against the merge-base with `ext2/openvla-contrast` (or `main` once that branch is gone OR contained in `main`) [R3]; it skips after the merge, on later commits of `main` and on other branches |
 | `harnessstudio/contracts/simpler_seeded.yaml` | NEW (section 3.2) |
 | `harnessstudio/policies/openvla_simpler_hs.py` | NEW (section 3.6) |
 | `harnessstudio/profiles/openvla-simpler-logits.yaml` | NEW (section 3.6) |
@@ -501,7 +499,7 @@ Nothing else changes: no core, context, policy_ext, eval, server or other policy
 ## 6. Regress gate (CPU)
 
 The same procedure as openvla-contrast section 7, with its R5/R6 prerequisites:
-1. **Before any edit:** run `regress.py` on the new worktree at its base commit (`1fc5b10`; later before/after pairs on the rebased branch: see the build report and fixes_3.md) and keep it as the
+1. **Before any edit:** run `regress.py` on the new worktree at its base commit (`1fc5b10`; later before/after pairs on the rebased branch: see the build report, fixes_3.md and fixes_4.md (before `70391a3` / after `9b2b714`)) and keep it as the
    "before" report. Copy the untracked method assets, sha-checked and not committed (at least
    `methods/tube_steer_vfb/hs_tube_steer_vfb/assets/visual_memory.npz`).
 2. **After the build:**
@@ -535,6 +533,10 @@ These run only after Run X closes, or after a GPU handoff that the supervising s
 `runs/scaleagent-shared/COORDINATION.md`. Each runs on one leased, process-free GPU among 4-7, against the **worktree**
 package.
 
+**GPU tool pin [R2]:** the six run-local GPU tools are pinned by sha256 in
+`runs/pcd-port-20261103/simpler_ext/build/gpu/GPU_TOOLS.sha256` and verified at every phase (`sha256sum -c` appended to
+each `phase<N>-code.txt`); a changed tool needs a new review.
+
 | id | check | pass rule |
 |---|---|---|
 | B1 | GPU obs0 re-hash: reset-only on the 64 cases (render gpu) | all 64 `(instruction, obs0)` distinct. If a duplicate appears, apply the edit 5 replacement rule on the GPU hashes, before any policy episode. Record the hashes. The CPU hashes [R§7] are advisory |
@@ -543,8 +545,8 @@ package.
 | B4 | one complete seeded baseline episode through `hs eval identity --arms baseline` with the new server and contract (SETTING milestone) | valid record; 80/113 steps; metrics have success, final_success, first_success_step and steps; inspect frames, actions and timing |
 | B5 | null vs baseline (shadow null of the PCD method) on two development cases | M (or R then M on one re-pair); X blocks |
 | B6 | timing and memory | per-step policy, perception and render seconds; peak memory; renders per step on GPU |
-| B7 | float32 transport effect **[S-4]** (rule fixed by SETTING Addendum 2 E-2); a LABEL step, not a stop gate [fix-3] | inputs bound to their B4 episodes [fix-6]: a fresh action log per server launch (the server refuses an existing file), one B4 episode per launch, and `b7_extract.py` binds exactly one (session, episode) group whose row count equals the record's steps and whose float32-cast rows have the record's action fingerprints. Replay open-loop in separate launches, float64 and float32-cast, same seed (the coke and drawer seed-99 B4 episodes, later the smoke baseline). VALIDITY: the float32 replay must reproduce the B4 episode (same steps, per-step HS obs/action fingerprints equal to the record, equal success / final_success / first_success_step); otherwise INVALID, routed to repair, no label. RULE (valid only): identical per-step success flags and sticky state sequence, max over steps of the Euclidean norm of the TCP position difference <= 1e-5 m [fix-1] and max rotation <= 1e-5 rad. A violation sets the label "adapted (float32 action wire)" and the plan continues |
-| S6 | authors-path equivalence [fix-5]: S6a on the 64 GPU obs0 frames (Phase 1) and S6b on the B4 episodes' frames (saved by the VALID float32 B7 replays, which equal the episodes' frames); never other subset-seed frames; A-6: the authors' `OpenVLAInference` loaded by source in the same env, own process after the server, same weights, eager attention, `reset(instruction, seed=s)` as `parallel_inference.py:181` does [S-2]; the server side runs both `predict` (native) and `sample_chunks(obs, [0], None, (), ctx)` (native_seeded, the baseline-arm path); rows matched by frame index | for every frame and both server paths: the authors' tokens (captured `scores.argmax` of their own `generate`) equal the server's, and the float64 raw action bytes equal the server's pre-cast log entry [S-4] |
+| B7 | float32 transport effect **[S-4]** (rule fixed by SETTING Addendum 2 E-2); a LABEL step, not a stop gate [fix-3] | inputs bound to their B4 episodes [fix-6]: a fresh action log per server launch (the server refuses an existing file), one B4 episode per launch, and `b7_extract.py` binds exactly one (session, episode) group whose row count equals the record's steps and whose float32-cast rows have the record's action fingerprints. Replay open-loop in separate launches, float64 and float32-cast, same seed (the coke and drawer seed-99 B4 episodes, later the smoke baseline). VALIDITY: the float32 replay must reproduce the B4 episode (same steps, per-step HS obs/action fingerprints equal to the record, equal success / final_success / first_success_step); otherwise INVALID, routed to repair, no label. RULE (valid only): identical per-step success flags and sticky state sequence, max over steps of the Euclidean norm of the TCP position difference <= 1e-5 m [fix-1] and max rotation <= 1e-5 rad. A violation sets the label "adapted (float32 action wire)" and the plan continues. **After an INVALID or unrunnable B7 [R1]:** the label defaults to "adapted (float32 action wire)" until a VALID B7 exists on every listed sequence; record the failing check and its first step; an obs mismatch at t = 0 is a gate failure that stops before B5/smoke; an INVALID later lets B5 and the smoke proceed with the default |
+| S6 | authors-path equivalence [fix-5]: S6a on the 64 GPU obs0 frames (Phase 1) and S6b on the B4 episodes' frames (saved by the VALID float32 B7 replays, which equal the episodes' frames; if the B7 replay is INVALID or not run, S6b is BLOCKED and reported as not run, and the S6 claim is limited to S6a [R1b]); never other subset-seed frames; A-6: the authors' `OpenVLAInference` loaded by source in the same env, own process after the server, same weights, eager attention, `reset(instruction, seed=s)` as `parallel_inference.py:181` does [S-2]; the server side runs both `predict` (native) and `sample_chunks(obs, [0], None, (), ctx)` (native_seeded, the baseline-arm path); rows matched by frame index | for every frame and both server paths: the authors' tokens (captured `scores.argmax` of their own `generate`) equal the server's, and the float64 raw action bytes equal the server's pre-cast log entry [S-4] |
 | S7 | logits path in the new mode | the openvla-contrast G2/G3/G3b analogues pass, with raw-prompt rows (`logits_tokens` = native tokens) |
 | S8 | startup probe | a fresh `startup_probe_sha16`, recorded in the run-local policy JSON |
 | S9 | loaded libraries | `/proc/PID/maps` shows the env's bundled cuBLAS 12.1, no `/usr/local/cuda-12.6` |
@@ -618,3 +620,9 @@ process with smoke/B4 frames only; A-7 `SimplerDecodeShort`; A-8 INTER_AREA vers
 the GPU plan as a CPU side check (opencv 4.10.0.84 in both server envs vs 4.12.0.88 in the image; authors' version
 unknown); A-9 `test_a9_task_config_is_ignored`; A-10 left to the diff reviewer (S1 byte-identity + regress, or a 2-case
 native-equivalence check of one existing method on the worktree).
+
+**R1-R3 (critic-readiness-2; `runs/pcd-port-20261103/reports/fixes_4.md`):**
+- R1: INVALID/unrunnable-B7 routing and S6b blocking (section 7, B7 and S6 rows).
+- R2: GPU tool pin (section 7 preamble; `GPU_TOOLS.sha256`).
+- R3: `_scope_base` uses `main` once `ext2/openvla-contrast` is contained in main (section 3.8 scope-test row;
+  `tests/test_simpler_seeded.py`; scope_sim 16 cases in `runs/pcd-port-20261103/simpler_ext/fixes4/scope_sim.txt`).
