@@ -1,9 +1,14 @@
 # Run X (scaleagent-codex-20261103): NEGATIVE development results
 
 **Status: NEGATIVE. Both methods were dropped at their predeclared development pilots. Neither method ever
-entered a frozen Campaign phase, and no method was exposed to validation (seed 7 init 15-24) or final
-(seed 7 init 25-49) scenes.** These are valid negative development results, not infrastructure failures.
+entered a frozen Campaign phase, and neither candidate method (x-r1, x-r2) ran on validation (seed 7 init 15-24) or
+final (seed 7 init 25-49) scenes.** These are valid negative development results, not infrastructure failures.
 They are not a benchmark score and must not be cited as one.
+
+Held-out exposure, stated exactly:
+- A reference arm of the plain `scale` method DID run on all 250 final scenes (init 25-49, seed 7) as the shared
+  sealed SCALE arm. It is sealed and unread.
+- The SCALE++ bootstrap aggregate (126/250) was read to set the first Campaign's target.
 
 Setting: frozen OpenVLA `openvla-7b-finetuned-libero-10` (checkpoint 80970322) on LIBERO libero_10, official
 horizon 520. Benchmark: `libero_rgbd` contract through the adopted RGB-D benchmark (`libero_subtask_rgbd`, Docker
@@ -46,7 +51,11 @@ Result (`eval/r1-repilot/repilot_result.json`): **FAIL — 0 rescues in 10 scene
   - On t8i8, one moka pot was placed analytically, but the two-object task did not finish.
   - On t2, grasps did not keep custody.
   - On t2i7, the planner declined.
-- **Earlier pilot:** `eval/r1-pilot/`; analysis in `analysis/r1_pilot_analysis.json`.
+- **Earlier pilot (before fix2):** `eval/r1-pilot/`; analysis in `analysis/r1_pilot_analysis.json`.
+  - That pilot had **1 loss**: t3i4, a fired SCALE success lost to a late fire (151 steps left) and a wrong target (a
+    wine bottle labelled as the bowl), see `eval/r1-pilot/assessment.json`.
+  - fix2 followed: `min_steps_left` 170 and the measured-size cue in the witness prompt.
+  - The re-pilot had 0 losses.
 - **Decision:** `control/research/decision-drop-x-r1.json`.
 
 ## 2. reseat-reentry (x-r2) — `methods/reseat_reentry`, NEGATIVE
@@ -80,8 +89,7 @@ episode). P1 required at least 2 rescues. Result (`eval/r2-pilot/verdict.json`, 
     bitwise; the online first-fire step equalled the offline prediction; respondoff matched SCALE bitwise on 12/12.
   - P5: 5 re-seats were executed, all reached the hover pose, at most 39 primitive steps, 0 closes by the primitive.
   - Planner: 21 codex calls, all ok.
-- **Outcome:** the re-seat delivered the arm above the right object, but the language-blind policy did not
-  go on to grasp it.
+- **Outcome:** the re-seat delivered the arm above the right object, but the policy did not go on to grasp it.
 - **Decisions:** `control/research/decision-drop-x-r2-end-search.json`. Binding condition K10 (x-r2 was the last
   admissible hypothesis) ends hypothesis search for this run.
 
@@ -99,8 +107,14 @@ episode). P1 required at least 2 rescues. Result (`eval/r2-pilot/verdict.json`, 
 - **Sealed SCALE arm:** `runs/scaleagent-shared/scale-final` holds 250/250 episodes (SEAL.json 009f96dd…). It is
   **sealed and unread**, and was not used by Run X because no full phase ran. Future runs may use it under
   COORDINATION rule 4 with its key conditions.
-- **Instruction-following probe:** within a scene, the OpenVLA libero_10 fine-tune ignores its instruction
-  (language-blind). This is why subtask prompting was not pursued.
+- **Instruction-following probe** (`runs/scaleagent-codex-20261103/eval/probe/readouts.json`): a descriptive probe
+  with 34 complete scene triplets, wound down at 120/280 episodes.
+  - Within a scene, the OpenVLA libero_10 fine-tune did not follow sub-task or order instructions: S2 order
+    compliance was 1/34, against 4/34 under the original instruction.
+  - Changing the instruction did change and degrade outcomes: the full task succeeded in 18/34 under the original,
+    6/34 under S1 and 5/34 under S2.
+  - Instruction rewriting therefore perturbs this policy rather than steering it, which is why subtask prompting was
+    not pursued.
 
 ## 4. Costs
 
@@ -122,6 +136,9 @@ episode). P1 required at least 2 rescues. Result (`eval/r2-pilot/verdict.json`, 
     | x-r2 pilot | 1.33 |
 
   - **546 complete valid episodes**, including the 250 of the sealed arm (unread).
+  - Not counted: **31 episodes interrupted by our own planned stops**. 28 are from the probe wind-down; 3 are from
+    witnessed-rescue shards launched without `send_state`, which were stopped.
+  - The breakdown sums to 26.87 because of rounding.
 - **Codex:** all calls used the ChatGPT login (gpt-6.1-sol only), so paid API cost was $0 and there were 0 Astra calls.
   - In-episode planner calls: 139, all ok (97 at medium effort, 42 at low).
   - Offline operator smoke and concurrency tests: 214 calls.
@@ -131,9 +148,12 @@ episode). P1 required at least 2 rescues. Result (`eval/r2-pilot/verdict.json`, 
 
 ## 5. Why both failed (summary)
 
-The triggers were precise. They fired on 0/35 (x-r1) and 1/35 (x-r2) seed-9 SCALE successes, and both had low
-regression risk; every bitwise guard held. The responses never converted a SCALE failure:
+The triggers were precise: they fired on 0/35 (x-r1) and 1/35 (x-r2) seed-9 SCALE successes, and every bitwise guard
+held. The only loss was the t3i4 loss in the first x-r1 pilot, before fix2. The responses never converted a SCALE
+failure:
 - **x-r1:** the analytic grasp/place chain lacked custody or was blocked by enclosed destinations.
-- **x-r2:** the spatial re-seat did not make the language-blind policy pick up the remaining object.
+- **x-r2:** the spatial re-seat did not make the policy, which does not follow sub-task instructions, pick up the
+  remaining object.
 
-The predeclared pilots before freeze stopped both hypotheses before any Campaign GPU time or held-out exposure.
+The predeclared pilots before freeze stopped both hypotheses before any Campaign GPU time or any candidate's
+held-out exposure.
