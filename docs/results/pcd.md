@@ -205,6 +205,16 @@ authors' code as written.
 - **LLM and paid models:** 0 calls in every arm (`llm_calls: 0`), so the paid cost is $0. Perception runs on the
   local GDINO/SAM2/LaMa service over http, with p50 latency 389 ms/step on GPU (`gpu_phase1.md` 2.2).
 - **Leases:** all were released at the end. No foreign leases were touched, and GPUs 0-3 were never used.
+- **Where these costs come from (critic-final RE-P1):** the table is computed from **both** lease ledgers by
+  `runs/pcd-port-20261103/eval/cost_report_v2.py` (294d03b1).
+  - **In-place re-freeze:** at 20:13:04Z the bound `eval/manifests/eval_tools-D1.sha256` (fc2e2ef4) was re-frozen in
+    place to baeefef7, the list the optional plans pinned. After all GPU work, that list was preserved as
+    `eval_tools-optional.sha256` (baeefef7), and the D1 file was restored byte-exactly (fc2e2ef4). The optional runs'
+    provenance list is therefore `eval_tools-optional.sha256`, not the restored D1 file.
+  - **Ledger split:** the optional leases had been appended to the bound `eval/cost/lease_ledger.jsonl`. It was split:
+    lines 1-32 stay in place (def7e772), and lines 33-44 moved to `lease_ledger-optional.jsonl` (482159b3). The
+    concatenation is byte-identical to the pre-split file.
+  - Sources: `optional_runs.md` "Bookkeeping"; critic-optional A2/A3.
 
 **Per arm, primary** (`primary.md` section 4):
 
@@ -386,5 +396,12 @@ triggers) are cited by `primary.md` and `optional_runs.md`.
   Changing it would need a new frozen table and a new run, never this one.
 - **Setting B stats view:** the frozen `stats_decision.py` cannot read LIBERO records without `final_success`. A
   versioned stats tool is a later task.
+- **Vendored binaries in `7361cd4`:** that commit includes 10 vendored upstream LaMa test images (2.98 MB) under
+  `methods/pcd/service/third_party/lama_ia_3889cc7/lama/saicinpainting/evaluation/masks/countless/`
+  (`images/{gcim.jpg, gray_segmentation.png, segmentation.png, sparse.png}` and 6 `memprof/*.png`).
+  - They are evaluation/test images of the blob-identical Apache-2.0 Inpaint-Anything tree, not weights or compiled
+    code.
+  - The commit message's "no binaries/venv" is therefore inaccurate; correct is "no compiled code, venv or weights".
+  - `7361cd4` is not amended, because the regress record and the COORDINATION DONE line bind it (critic-final C3).
 - **Remaining scope:** the other 7 SIMPLER tasks and the paper's 300-trial denominators were not run. No 9-task claim
   is made.

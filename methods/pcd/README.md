@@ -2,8 +2,9 @@
 
 PCD (Wu et al., arXiv:2505.13255, ICLR 2026; code Koorye/PCD @ 31b027e) contrasts OpenVLA's action-token logits on
 the real frame with those on a counterfactual frame in which the instruction's objects are removed. This package
-is a `null: shadow` controller on the EXT openvla-contrast `logits` readout. That extension is built on branch
-`ext2/openvla-contrast` and is NOT merged yet; see `docs/extensions/openvla-contrast.md`.
+is a `null: shadow` controller on the EXT openvla-contrast `logits` readout. That extension is merged into harnessstudio
+`main` in 4f93662 (built on branch `ext2/openvla-contrast` @ adc271a), and EXT simpler-seeded in ecc9b68; see
+`docs/extensions/openvla-contrast.md`.
 
 ## Results (2026-11-03; details in `docs/results/pcd.md`)
 
