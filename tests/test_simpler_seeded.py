@@ -375,9 +375,13 @@ def _scope_check_applies():
 
 
 def _scope_base():
-    """The commit this branch's own range starts at: merge-base with the stacked parent ext2/openvla-contrast while
-    that branch exists (also correct if the parent later gains commits HEAD lacks, or was merged), else with main."""
-    ref = PARENT_BRANCH if _git("rev-parse", "--verify", "-q", PARENT_BRANCH).returncode == 0 else "main"
+    """The commit this branch's own range starts at. While the stacked parent ext2/openvla-contrast exists and is NOT yet
+    contained in main: merge-base with the parent (also correct if the parent later gains commits HEAD lacks). Once the
+    parent is gone, or merged into main (even if its branch outlives the merge; review critic-readiness-2 R3): merge-base
+    with main, so main's later commits that this branch was rebased onto are never counted as this branch's diff."""
+    parent_exists = _git("rev-parse", "--verify", "-q", PARENT_BRANCH).returncode == 0
+    parent_merged = parent_exists and _git("merge-base", "--is-ancestor", PARENT_BRANCH, "main").returncode == 0
+    ref = PARENT_BRANCH if parent_exists and not parent_merged else "main"
     mb = _git("merge-base", "HEAD", ref)
     assert mb.returncode == 0, mb.stderr
     return mb.stdout.strip()
