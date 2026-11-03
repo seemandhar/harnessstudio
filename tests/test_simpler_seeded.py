@@ -346,7 +346,7 @@ SIMPLER_FILES = {
     "tests/test_openvla_simpler_server.py", "tests/test_openvla_logits.py", "docs/extensions/simpler-seeded.md",
     "docs/extensions/README.md", "docs/writing-a-method.md", "docs/superpowers/specs/2026-10-31-harnessstudio-v2-design.md",
 }
-BASE = "1fc5b10"   # ext2/openvla-contrast head this branch was cut from
+BASE = "da817ba"   # ext2/openvla-contrast head this branch sits on (cut from 1fc5b10, rebased)
 
 
 def test_simpler_branch_touches_only_its_files():
