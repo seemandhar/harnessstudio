@@ -1,0 +1,17 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hs-reseat-reentry"
+version = "1.0.0"
+description = "reseat-reentry: SCALE decoding + post-release gap trigger + witnessed open-gripper re-seat (Run X r2)"
+requires-python = ">=3.10"
+dependencies = ["harnessstudio", "hs-scale"]
+
+[project.entry-points."harnessstudio.methods"]
+reseat-reentry = "hs_reseat_reentry:config"
+reseat-reentry-respondoff = "hs_reseat_reentry:config_respondoff"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hs_reseat_reentry"]

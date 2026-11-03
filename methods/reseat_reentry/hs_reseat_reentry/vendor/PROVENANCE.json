@@ -1,0 +1,16 @@
+{"codex_planner.py": {"source": "runs/scaleagent-codex-20261103/impl/codex_operator/codex_planner.py (identical copy also in methods/witnessed_rescue vendor dir)",
+                      "sha256": "a37c8f1a61abf2cb54e12491bf897e796edd19cd2bde69fc81e971eed98580fc",
+                      "copied": "verbatim", "cli": "codex-cli 0.166.0, model pin gpt-6.1-sol"},
+ "vendored_from_witnessed_rescue_fix2b (live tree at copy time; import name deliberately not used)": {
+   "controller module": {"sha256": "de4577f9fdb46f2566da93574ac3be8be44f3e3dba26cae592ff2507ea6274d1",
+                         "taken": "scale_sampler, _clean, _argv_out/evidence_dirs (renamed variables), _step, _retain, _call"},
+   "perception module": {"sha256": "896ad9db90f6ce2d5bb1eb5df95eb8a04c8e1255b7b47791ead4e4350855a949",
+                         "taken": "whole module (views, world_map, table_height, Packet, locate, marked_views, zoom_view, ...) + new hover_target"},
+   "motion module": {"sha256": "8afb975d2eee10592c2d39269e8765b47719de00363a56b70a5ae7f2dc62948b",
+                     "taken": "ACTION_SCALE and the proportional servo with stall early-return (rewritten, open gripper only)"},
+   "planner module": {"sha256": "161824e860ca3f17aa8b36401d581b3a16d1d222e8117af5b4145218ac36dd08",
+                      "taken": "SYSTEM, size_text, witness_prompt (size cue), VERDICT_SCHEMA, label_ok, CallResult, ScriptedPlanner, PlannerSession"},
+   "tests/wr_fake_bench.py": {"sha256": "7a606c71138e815b2754060fc06f16a4c254f258e7f0b5136ab7d1a01f0ed1be", "taken": "adapted as tests/rr_fake_bench.py"}},
+ "trigger": {"source": "Scientist C (runs/scaleagent-codex-20261103/ideas/proposals-c.json) carry.py sha256 00c1e17a50a4e5915ae4a9ff15ab745bf6aa705400b5fedb88d7bfb043c8d1de and gap.py sha256 9210456c5e0c143e3ad755051e667ba3f900ee2e757f90881d3565aded5adc82 (scratchpad)",
+             "port": "triggers_gap.py: carry detector as code; gap rule made causal (deferral), see its docstring"},
+ "declared_dependency": {"hs-scale": "hs_scale.decoder.DEFAULTS + factory name (sampler dict identical to the plain scale method; unit-tested)"}}

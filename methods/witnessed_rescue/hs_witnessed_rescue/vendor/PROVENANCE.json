@@ -1,0 +1,15 @@
+{"codex_planner.py": {"source": "runs/scaleagent-codex-20261103/impl/codex_operator/codex_planner.py",
+                      "sha256": "a37c8f1a61abf2cb54e12491bf897e796edd19cd2bde69fc81e971eed98580fc",
+                      "copied": "verbatim (sha256 identical)", "author_task": "x-codex-operator (agent acad55dd3fecbc4c9)",
+                      "cli": "codex-cli 0.166.0, model pin gpt-6.1-sol"},
+ "vendored_functions": {
+   "perception.views/world_map": {"source": "methods/harness_vla, Harness VLA port, module perception.py (_views, world_map)",
+                                  "sha256": "ca9a7106274bd79c56784ae6b047bf163f63076cbfa75c5363c5f226f64df91d"},
+   "motion.rotation_matrix/yaw_of/wrap + action scales + yaw sign": {"source": "methods/harness_vla, Harness VLA port, module primitives.py",
+                                  "sha256": "2fadc1f63a352c07717e8b4d4d90bb34224225647000b3a95d684e963d0c609f"},
+   "triggers (ported as code)": {"sources": {"runs/scalepp-20261102/ideation/idea-r2b-evidence/scripts/common.py": "02b1e8279a9c8742c8104c7223b8ba3ee565e35b914af549453f396047d88b5f",
+                                             "runs/scalepp-20261102/ideation/idea-r2b-evidence/scripts/h1_trigger_final.py": "1a0a05a5ffa4c1a51de4277309e93f3d9ac62ec2e08405d8e4c23d44a8428677",
+                                             "runs/scalepp-20261102/ideation/idea-r2b-evidence/scripts/h2_trigger_final.py": "96ccc7901efa2e3f0a8655382de4810b916bbc753fbb40d24ec26e7c5e03fe12"},
+                                 "check": "400/400 per-rule close-run sets equal on devbase greedy + SCALE s0 (200 episodes, re-arm/cap disabled)"},
+   "tests/wr_fake_bench.py": {"source": "harnessstudio/methods/gpp/tests/gpp_fake_bench.py (adapted: RGB-D, object, yaw)"}},
+ "declared_dependency": {"hs-scale": "hs_scale.decoder.DEFAULTS + factory name (sampler dict identical to the plain scale method; unit-tested)"}}

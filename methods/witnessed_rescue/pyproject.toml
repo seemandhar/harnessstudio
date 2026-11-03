@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hs-witnessed-rescue"
+version = "1.0.0"
+description = "witnessed-rescue: SCALE decoding + event-triggered, depth-grounded, planner-witnessed grasp rescue (Run X)"
+requires-python = ">=3.10"
+dependencies = ["harnessstudio", "hs-scale"]
+
+[project.entry-points."harnessstudio.methods"]
+witnessed-rescue = "hs_witnessed_rescue:config"
+witnessed-rescue-respondoff = "hs_witnessed_rescue:config_respondoff"
+witnessed-rescue-noplace = "hs_witnessed_rescue:config_noplace"
+witnessed-rescue-analytic = "hs_witnessed_rescue:config_analytic"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hs_witnessed_rescue"]
