@@ -69,6 +69,7 @@ EXT_FILES = {
     "harnessstudio/profiles/openvla-simpler-star.yaml", "harnessstudio/profiles/fake-t3.yaml",
     "harnessstudio/core/capabilities.py", "harnessstudio/core/method.py", "tests/test_ext_openvla_residual_hook.py", "tests/toys/hs_ext_residual_toy.py",
     "docs/extensions/openvla-residual-hook.md", "docs/extensions/README.md", "docs/writing-a-method.md",
+    "tests/test_openvla_logits.py",     # one amended assertion (test_new_profiles), flagged in the EXT doc section 6
 }
 EXT_BRANCH = "ext2/openvla-residual-hook"
 
