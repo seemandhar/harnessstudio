@@ -17,4 +17,8 @@ the evaluator -> independent diff review -> merge into `main` only when `scripts
 - (done 2026-11-03, merged from `ext2/simpler-seeded` @ 9b2b714, stacked on `ext2/openvla-contrast`; GPU checks
   B1-B7 and S6-S10 done, run pcd-port-20261103) the PCD authors' seeded SIMPLER protocol (benchmark subclass + contract) and the OpenVLA
   server mode `simpler_pcd_authors`: `simpler-seeded.md`.
+- (built 2026-11-04 on `ext2/openvla-residual-hook` from main f7dcd0f, review pending; run star-port-20261104) decoder-layer
+  residual hooks on the simpler_pcd_authors OpenVLA server (capability `residual_hooks`) and the SimplerEnv official
+  VM / VA-base grids with `states`: `openvla-residual-hook.md`. Not merged: main stays untouched until the PCD
+  discovery run's RUN CLOSED.
 - Items in `docs/core-todo.md`.

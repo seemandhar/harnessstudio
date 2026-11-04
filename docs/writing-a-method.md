@@ -138,6 +138,24 @@ the authors' axis-angle conversion and relative sticky gripper), and the `logits
 space (float64 on the server; the wire is float32). The server refuses samplers (no `decoding_hooks` in this
 mode); the `logits` readout works as above.
 
+**Decoder-layer residual hooks on OpenVLA + SimplerEnv official grids** (capability `residual_hooks`, profile
+`openvla-simpler-star`, server `policies/openvla_simpler_star_hs.py`, benchmark
+`harnessstudio.benchmarks.simpler_vm:SimplerVMBenchmark`, contract `contracts/simpler_vm.yaml`; EXT
+`docs/extensions/openvla-residual-hook.md`). A slot method sets `sampler = ModuleRef("hs_SLUG.module:Hook", params)`
+with a K = 1 proposer (SCALE pattern). The server imports the hook (module prefix `hs_`) and calls `READS`,
+`bind(total_layers)`, `init_state()` (per episode), `begin(state, obs_view) -> (mixer, info)` and
+`next_state(state, info)`; `obs_view` is a new dict holding only the `READS` keys (allowed: `states`). The mixer
+(`reset()`, `step(h_in, h_out) -> h`, optional `correction_start_layer`) rewrites every Llama decoder layer's output
+during the unchanged native decode (`policy_ext/residual_hooks.py`). Requests without a sampler are the parent's
+decode bitwise (baseline and the derived null). Hook `info` does NOT reach the method or the trace (only readouts do):
+it is written, with the R4 shape counts and the request's CRN seeds, to the server's required `action_log` (path
+`residual_hook`); join it to the hs trace's `sample` events by `seeds`. One seed per request; readouts with a
+sampler are refused. For an overhead control, give the hook a "compute, write nothing back" mode and run it as a
+separate entry point (the framework's derived null sends no sampler). The benchmark enumerates the official
+SimplerEnv grids (`vm_*` visual matching, `va_*` VA base scenes; `vm_close_drawer` refused), sends `states` =
+`agent.eef_pos`, applies the OpenVLA post-processing, runs every episode to its official horizon (do not set
+`max_steps`; results carry `horizon_ok`) and scores `final_success` (official) and `success` (any step).
+
 Any component can define `diagnostics() -> dict` (JSON); it is written to the trace after every
 decision, in every arm. Any component can define `bind(embodiment)`. It receives `Embodiment.action_layout`
 (`name -> (start, end)` from the policy's action spec, e.g. `position (0,3)`, `rotation (3,6)`,
