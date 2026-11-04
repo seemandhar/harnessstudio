@@ -1,0 +1,47 @@
+# Control card (conv-ext-2): overhead/shadow arm of star (review critic-ext-1 R8). Not installed until the merge after discovery RUN CLOSED; ext/EXT_openvla-residual-hook.md.
+name: star-shadow
+version: "0.2.1"
+paper:
+  id: "arXiv:2610.41009v1"
+  title: "STAR: Steering Action Representations with Proprioception for VLA Inference"
+  venue: "arXiv 2026-10-29"
+  url: "https://arxiv.org/abs/2610.41009v1"
+categories: {primary: sampler_guidance, secondary: [observation_grounding]}
+# The released code is the OpenPI pi0.5 LIBERO-PRO implementation only (README). Our target (OpenVLA-7B on
+# SimplerEnv Google Robot) is a re-derivation: the authors' scheduler and layer mixer verbatim (parity:
+# runs/star-port-20261104/parity/), applied to OpenVLA's 32 Llama-2 decoder layers with the paper's Table 7
+# OpenVLA constants and rho = 2/3.
+fidelity: adapted
+substitutions:
+  - "adapted (re-derivation: OpenVLA/SimplerEnv STAR code unreleased; STAR choices U1-U18 of audit/paper_audit.md §6:\nLlama-2 decoder layers 22-32 with the released EMA warm start, whole-layer residual update, the 7 action-token\npositions only, per-forward EMA reset with step-level beta, one action per inference (no state-history ingestion),\nagent.eef_pos proprio, released float32 geodesic quaternion d_rot (resolution floor ~1e-3 rad; float64 |drot|\nlogged), Tw 2.0 s -> W 6, released epsilon/clip/warm-up constants, bf16 EMA, torch implementation (the released\npi0.5 reference path is JAX; parity measured), Table 7 OpenVLA constants, no scheduler reset at the Place-in-Drawer\nsubtask switch, one deterministic run per case (the paper may report 8-run means); protocol: SimplerEnv visual\nmatching assumed (paper silent; its numbers look VA-like), Close Drawer excluded from the VM block (no VM 5-task\naverage), Move Near v0 (official VM script; prepackaged task is v1), final-step success, short decodes scored as\npolicy failures; policy openvla-7b@31f090d with the PCD-port SimplerEnv wrapper (paper names no checkpoint);\ninherited PCD-port substitutions: float32 action wire [B7 rule violated], HarnessStudio transport, env identity\n[vla-eval SIMPLER image vs SimplerEnv@eddb569])"
+  - "VA secondary label: the same string with 'protocol: SimplerEnv variant-aggregation base scenes only (paper silent), Move Near MoveNearGoogleInScene-v0 (official VA script), final-step success'"
+  - "proprio = benchmark-computed end-effector pose in the robot-base frame plus gripper opening (the PCD fork's agent.eef_pos formula); the pinned image has no agent.eef_pos, and vla-eval's tcp_pose fallback covered only Coke/Move Near"
+  - "backbone/benchmark: the authors' OpenVLA and SimplerEnv code is unreleased; the mechanism is the released pi0.5 code (bitwise equal to the authors' torch controller; equal to their JAX path up to fp32 rounding) applied to OpenVLA-7B with paper Eq. 2-14 and Table 7 OpenVLA constants"
+  - "primary metric: final-step success (the official SimplerEnv evaluator's score for a policy that never predicts termination); any-step success secondary"
+  - "protocol: SimplerEnv visual matching assumed (the paper says only 'official evaluation protocol'); VA base scenes as a predeclared secondary"
+  - "tasks: Close Drawer excluded from the VM primary (discovery-run overlap), so no VM 5-task average; Pick Object absent for OpenVLA in the paper"
+  - "Move Near: MoveNearGoogleBakedTexInScene-v0 (official VM script), MoveNearGoogleInScene-v0 for VA; the prepackaged simpler_env task is -v1"
+  - "runs: one deterministic run per paired case, versus the paper's possible 8-run means (U16)"
+  - "no state-history ingestion: one action per inference, so the released chunked-client history replay is never used"
+  - "U17: the STAR scheduler is not reset at the Place-in-Drawer subtask switch (released code resets only at episode start)"
+  - "backend: torch (the released PyTorch controller) instead of the README's JAX path; the two differ by measured fp32 rounding only"
+  - "precision: bf16 model, EMA arithmetic in the hidden-state dtype (bf16), as both released controllers"
+  - "rotation distance (R10): the released float32 geodesic 2*acos|<q1,q2>| (scheduler.py:240-253) is kept; its resolution floor is about 1e-3 rad per step (critic-ext-1 measured 100% relative error at 1e-4-3e-4 rad, 2.3% median at 1e-3-3e-3 rad, 0.2% at 1e-2 rad), so omega is quantised in near-still phases; the float64 angle is logged alongside (w_t_f64) and never used"
+  - "SimplerDecodeShort (supervisor ruling for R9): a short decode is policy behaviour in every arm, a completed failure of that episode, counted and reported per arm; only crashes/transport errors are infrastructure"
+  - "HarnessStudio transport (float32 action wire, P-20261103-08)"
+requires: {capabilities: [act, chunk, seeded_sampling, isolated_streams, residual_hooks]}
+benchmark_params: {send_state: true}   # P-20261103-14 (SimplerVMBenchmark always sends states)
+budgets: {policy_calls: null, llm_calls: 0, tool_calls: 0, max_tokens: 0}
+null: derived
+artifacts: []
+operators: []
+original:
+  repo: "https://github.com/PKU-VaLuE-Lab/STAR (Apache-2.0)"
+  commit: "0eaa15fc9223734af024e928a82e40966724b739"
+  reported: "none: control arm (the paper reports no shadow arm)"
+description: "overhead control: STAR computed, nothing written back (same hooks, beta schedule and EMA as star; actions must equal baseline bitwise). Not a method result."
+tier1: {instruction: "pick coke can", horizon: 8, chunk_len: 1}
+changelog:
+  - "0.1.0-draft (2026-11-04, conv-intake-1b): core ported from STAR@0eaa15f; server hook drafted; extension not built."
+  - "0.2.0 (2026-11-04, conv-ext-2): READS boundary, float64 rotation log, step_context; substitutions completed (critic-ext-1 R11)."
+  - "0.2.1 (2026-11-04, conv-fix-4): substitutions[0] = the FROZEN SETTING rev 3 VM label byte-exact (critic-ext-2 P1); proprio line per P8; mixer activity() edit ratio (P9)."

@@ -1,0 +1,17 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hs-star"
+version = "0.2.1"
+description = "STAR (arXiv:2610.41009): proprioception-modulated EMA over late-layer residual updates, as a HarnessStudio v2 slot method (draft)"
+requires-python = ">=3.10"
+dependencies = ["harnessstudio", "numpy"]
+
+[project.entry-points."harnessstudio.methods"]
+star = "hs_star:config"
+star-shadow = "hs_star:config_shadow"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hs_star"]
