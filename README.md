@@ -196,7 +196,7 @@ announced in the HELLO action-spec description and so recorded in every run mani
 | pcd-gphase (new harness over frozen `pcd`, PCD discovery run; tf_variant: gated gripper + scripted stall lift, coke only; package stays in `runs/pcd-discovery-20261104`; [docs/results/pcd-gphase.md](docs/results/pcd-gphase.md)) | SIMPLER Google robot, seeded, Pick Coke Can + Close Drawer; fresh validation 64 paired cases (OpenVLA-7B) | fresh PCD 31/64 (baseline 22/64) | **34/64**, 4/1 vs PCD, p = 0.375, CI [-1.9, +11.2] pp: validation gate FAILED (dev 43 vs 36, 7/0, exposed seeds); final not opened | - (no paper) |
 | pcd-vgps (V-GPS arXiv:2410.13816 critic as a component over `pcd`; tf_variant; **critic released without a licence, research evaluation only**, not in this repo; [docs/results/pcd-vgps.md](docs/results/pcd-vgps.md)) | same, development 64 paired cases (exposed) | PCD 36/64 (baseline 22/64) | 34/64, 10/12 vs PCD, p = 0.83: dev LOSS; not validated | not comparable (openvla-v01-7b, unpaired, no drawer task) |
 
-All with null vs baseline 0 X. Caveat for Harness VLA: the original prompt tells the planner the goal is not yet
+All with null vs baseline 0 X (pcd-gphase and pcd-vgps rows: null attributed against their declared source, the frozen PCD arm, 64/64 M, 0 X). Caveat for Harness VLA: the original prompt tells the planner the goal is not yet
 reached (LIBERO ends episodes on success, an oracle a real robot lacks); the no-cue row is the fair number. Details, disclosures and an independent compliance audit: `docs/results/`
 (`OVERNIGHT-2026-10-31.md` is the summary). Adapted = the paper's LLM was substituted (Astra is not used).
 

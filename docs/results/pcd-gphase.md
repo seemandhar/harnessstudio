@@ -137,6 +137,7 @@ frozen at 03:09:42Z before any candidate episode (`eval/cand1/FROZEN.json`).
 - **Validation** (aggregates, `validation_assessment.json` `mechanism`): executed overrides LIFT 51, PG 16, WES 9; null
   would-fire LIFT 55, PG 7, WES 10; custody 13 / no custody 3; 0 determinism faults; 0 drawer pairs differ; the 4 wins
   first diverge at LIFT (3) and PG (1); the 1 loss first diverges at WES.
+  Disclosure (T7b): these validation mechanism aggregates are published after the validation block closed. They expose the held-out block's mechanism profile, so no future candidate designed with sight of them may use this run's validation block.
 
 ## Cost
 

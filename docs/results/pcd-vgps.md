@@ -15,6 +15,7 @@ paths are relative to `runs/pcd-discovery-20261104/`.
   (`3f5fa490...`), `eval/vgps/r5_attempt1_infra.json` (`a2bdee5d...`);
 - dev: `eval/vgps/dev_gate.json` (`4202e8fa...`), `eval/vgps/dev_assessment.json` (`533ff6fa...`),
   `analysis/vgps/dev_analysis.md` (`ab7fa5f8...`, dev only);
+- independent recomputation of the dev screen from raw per-step records: `reports/critic-final.review.json` (exact match).
 - reviews and builds: `reports/critic-proposal-vgps.review.json`, `reports/critic-preflight-vgps.review.json`,
   `reports/coder-vgps-feasibility.report.json`, `reports/coder-vgps-service.report.json`,
   `reports/coder-vgps-method.report.json`, `reports/coder-vgps-n1.report.json`, `reports/eval-block-a.report.json`;
@@ -146,7 +147,7 @@ GPU-hours from lease acquisition to release (T11):
 | block | GPU-h | source |
 |---|---|---|
 | E1 tier 2 | 0.716 (2,576.6 GPU-s) | `reports/eval-block-a.report.json` |
-| R5 pilot incl. attempt 1 and the repair | 2.918 (10,503.2 GPU-s) | same |
+| R5 pilot incl. attempt 1 and the repair | 2.967 (lease-ledger segment vgps-r5, T11; eval-block-a's per-step accounting gives 10,503.2 GPU-s = 2.918) | `eval/cost/lease_ledger.jsonl`, `reports/eval-block-a.report.json` |
 | dev screen (candidate + null, 64 seeds) | 5.608 | `eval/FINAL_RECON.json` |
 
 - 2.405 s/step mean in the dev screen; CPU critic K = 10 round trip 0.32 s unloaded, peak RSS 8.0 GB; 3.8 GB download;
