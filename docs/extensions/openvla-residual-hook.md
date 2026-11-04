@@ -188,3 +188,99 @@ tier 0/1, `ext/verify_tier01.json`). Before/after comparison and the final resul
 ## 9. Commits on `ext2/openvla-residual-hook`
 
 Listed in `reports/conv-ext-2.report.json` (`git log f7dcd0f..ext2/openvla-residual-hook`).
+
+## Addendum conv-fix-4 (critic-ext-2 P1, P8, P9; one commit on `ext2/openvla-residual-hook`)
+
+This addendum is appended to `docs/extensions/openvla-residual-hook.md` on the branch. The run copy
+`ext/EXT_openvla-residual-hook.md` is hash-bound by later tasks, so it stays unchanged (P-20261103-21).
+
+### P8: `states` computed by the benchmark for every grid (evaluator defect D-1)
+
+**Change.** `harnessstudio/benchmarks/simpler_vm.py` has a new `robot_states(env)` and a `make_obs` override.
+- `make_obs` calls the base `make_obs`, then ALWAYS sets `obs["states"] = robot_states(self._env)`. This is the one
+  source for all nine grids.
+- The formula is the PCD fork's `agent.eef_pos` (ManiSkill2_real2sim `agents/base_agent.py:174-183`):
+  `ee_in_base = inv(T(agent.robot.pose)) @ T(link "link_gripper_tcp")`. `pos = ee_in_base[:3, 3]`.
+  `quat_wxyz = transforms3d mat2quat(ee_in_base[:3, :3])`, canonical w >= 0. `gripper = 1 - agent.get_gripper_closedness()`.
+  Output: float32 8-D.
+- No dependency on `extra.tcp_pose`, which the drawer and place envs leave empty.
+- If any robot read fails, `RobotStateUnavailable` is raised (no silent fallback). The STAR hook also refuses missing
+  `states`.
+
+**Robot-only rule (ruling under P8).** `test_p8_robot_states_reads_robot_attributes_only` (AST) pins the attributes of
+`robot_states` to {unwrapped, agent, robot, pose, to_transformation_matrix, get_links, get_name, get_pose,
+get_gripper_closedness} plus numpy names. It also bans object, drawer, contact, success, scene, episode, reward,
+evaluate and extra tokens, and checks that `make_obs` calls `robot_states`.
+
+**CPU tests.** The fake envs now have NO `agent.eef_pos` and NO `extra.tcp_pose` by default, which is drawer-like.
+- `test_p8_states_without_eef_pos_or_tcp_pose`: VM Open Drawer, VM Place, VA Close Drawer, VM Coke and VA Move Near,
+  over 4 steps each. `states` is 8-D float32, equals an independent float64 formula within 1e-6, has w >= 0 and unit
+  norm.
+- `test_p8_equals_vla_eval_fallback_and_fork_value`: equals vla-eval's `tcp_pose` fallback, and a fork-style
+  `agent.eef_pos`, within 1e-6. The comparison is up to quaternion sign, because vla-eval's `matrix_to_quat` is not
+  sign-canonical.
+- `test_p8_raises_when_robot_state_unavailable`.
+
+**Contract.** The comment in `contracts/simpler_vm.yaml` is updated.
+
+**Prototype.** `runs/star-port-20261104/simpler_ext/star_simpler_vm.py` was used by the evaluator's reset probe, so the
+same function and override are mirrored there. A test asserts the mirrored function text equals the branch's. The
+file is marked SUPERSEDED by the branch file.
+
+**Pinned-image check (evaluator, P5/P8; not run here, no simulator in this task).** Do a reset-only `states` check for
+one case of each env family:
+- GraspSingle;
+- MoveNear BakedTex v0 and MoveNearGoogleInScene;
+- Open*Drawer VM and VA, and Close*Drawer VA;
+- PlaceIntoClosedTopDrawer VM and VA.
+
+Each `states` must be present, finite and of unit quaternion norm. For Coke and Move Near it must also equal the
+vla-eval fallback within 1e-6.
+
+**Card.** Substitution line added: "proprio = benchmark-computed end-effector pose in the robot-base frame plus gripper
+opening (the PCD fork's agent.eef_pos formula); the pinned image has no agent.eef_pos, and vla-eval's tcp_pose
+fallback covered only Coke/Move Near".
+
+### P9: per-layer edit ratio (logging only)
+
+**Change.**
+- `hs_star.star_core.StarLayerMixer` has a new `activity()`.
+- In `step`, after `self.am` is updated, it computes two float32 norms on fresh tensors, out of place:
+  `vector_norm((am - delta)[:, -1, :].float())` and `vector_norm(delta[:, -1, :].float())`. Both stay on the device.
+- `activity()` stacks all of them and moves them to the host once per request. It returns:
+  - `edit_ratio` [7 forwards][11 layers]; a zero denominator gives null;
+  - `edit_ratio_layers` = [22..32];
+  - `edit_ratio_positions` = "last";
+  - `edit_ratio_dtype` = "float32".
+- STAR and star-shadow both compute it. With the sampler off, no mixer exists.
+- The server (`openvla_simpler_star_hs.py` `_activity`) stores it as `record["activity"]` after the R4 check. It
+  asserts the shape [forwards][mixed] and the layer list, and raises `ResidualHookShapeError` otherwise.
+
+**Correction to critic-ext-2.** The critic expected layer 22 to be "exactly 0". It is O(eps) of the hidden dtype
+instead: the warm start computes `beta*dh + (1-beta)*dh`, which equals `dh` only up to rounding. Measured in parity v3
+O8: up to 3.1e-3 in bf16; in fp32 the tests assert < 1e-5.
+
+**Tests.**
+- Method:
+  - `test_p9_edit_ratio_logging_only` (fp32 and bf16, positions last and all): outputs bitwise equal with logging on
+    vs off, shape [7][11].
+  - `test_p9_edit_ratio_matches_float64_recompute`: fp32 rel < 1e-5, bf16 rel < 1e-2.
+- Server:
+  - `test_p9_activity_recorded_and_shape_checked`: a toy mixer with good and bad shapes; actions equal with and
+    without `activity()`.
+  - `test_star_hook_through_server_if_available`: the real STAR mixer through the server gives [7][11] with
+    layer 22 < 1e-5, and STAR is bitwise equal with logging on vs off.
+- Parity v3 (`parity/check_openvla_hooks.v3.py`):
+  - O1 and O5 pass with logging on.
+  - O7: STAR and shadow are bitwise equal on vs off.
+  - O8: the float64 recompute matches (8 cases: fp32 rel 1.7e-7, bf16 rel 1.4e-3, shape [7][11] in every case).
+- `parity/check_parity.v2.py` re-run on the 0.2.1 files into `parity/parity_result.v3.json`: ok (S, S2, T and W
+  0 diffs; J64 float64 max 1.8e-15).
+
+### P1: card label
+
+`method/hs_star/paper.yaml` and `paper_shadow.yaml` changed:
+- `substitutions[0]` is the FROZEN SETTING rev 3 VM label, byte-exact. It is the substring between `...before the
+  first scored episode:\n"` and `".\n**VA secondary label:**`, newlines included, sha256 `9a61613d...c9e748b`. YAML
+  loads it back equal; the edit script is `ext/p1_card.py`.
+- Version is bumped to 0.2.1 (cards and `pyproject.toml`).

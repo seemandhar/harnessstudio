@@ -187,6 +187,27 @@ class TestStatic(unittest.TestCase):
         self.assertEqual((coke[0]["build_kwargs"], coke[25]["build_kwargs"], coke[0]["overlay"]),
                          ({"lr_switch": True}, {"upright": True}, None))
 
+    def test_p8_robot_states_reads_robot_attributes_only(self):
+        """P8 ruling: the states function reads only the robot (base pose, TCP link pose, gripper closedness)."""
+        import ast
+        import inspect as _inspect
+        from harnessstudio.benchmarks import simpler_vm as V
+        fn = ast.parse(_inspect.getsource(V.robot_states))
+        attrs = {n.attr for n in ast.walk(fn) if isinstance(n, ast.Attribute)}
+        robot_side = {"unwrapped", "agent", "robot", "pose", "to_transformation_matrix", "get_links", "get_name",
+                      "get_pose", "get_gripper_closedness"}
+        numeric_side = {"asarray", "float64", "float32", "linalg", "inv", "concatenate", "astype", "isfinite", "all",
+                        "shape", "ndarray", "__name__"}          # np.ndarray annotation; type(exc).__name__ in the error
+        self.assertEqual(attrs, robot_side | numeric_side, sorted(attrs ^ (robot_side | numeric_side)))
+        names = {n.id for n in ast.walk(fn) if isinstance(n, ast.Name)}
+        self.assertNotIn("raw_obs", names)
+        src = _inspect.getsource(V.robot_states).lower()
+        for bad in ("obj", "drawer", "contact", "success", "cabinet", "scene", "episode", "reward", "evaluate", "extra"):
+            self.assertNotIn(bad, src.replace("get_links", "").replace("link", ""), bad)
+        mk = ast.parse(__import__("textwrap").dedent(_inspect.getsource(V.SimplerVMBenchmark.make_obs)))
+        calls = {n.func.id for n in ast.walk(mk) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)}
+        self.assertIn("robot_states", calls)
+
     def test_robot_quat(self):
         from harnessstudio.benchmarks import simpler_vm as V
         self.assertEqual(V.robot_quat(0.0), [0.0, 0.0, 0.0, 1.0])
@@ -215,13 +236,72 @@ class TestStatic(unittest.TestCase):
 
 
 # --------------------------------------------------------------------------------------- fake SimplerEnv
+def _quat_wxyz_to_mat(q):
+    w, x, y, z = np.asarray(q, dtype=np.float64) / np.linalg.norm(q)
+    return np.array([[1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+                     [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+                     [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)]])
+
+
+def _mat4(p, q):
+    t = np.eye(4)
+    t[:3, :3], t[:3, 3] = _quat_wxyz_to_mat(q), np.asarray(p, dtype=np.float64)
+    return t
+
+
+class _FakePose:
+    def __init__(self, p, q):
+        self.p, self.q = np.asarray(p, dtype=np.float64), np.asarray(q, dtype=np.float64) / np.linalg.norm(q)
+
+    def to_transformation_matrix(self):
+        return _mat4(self.p, self.q)
+
+
+class _FakeLink:
+    def __init__(self, name, pose):
+        self._name, self._pose = name, pose
+
+    def get_name(self):
+        return self._name
+
+    def get_pose(self):
+        return self._pose
+
+
+class _FakeRobot:
+    def __init__(self, env):
+        self._env = env
+
+    @property
+    def pose(self):
+        return _FakePose([0.35, 0.20, 0.079], [0.0, 0.0, 0.0, 1.0])      # base rotated by pi about z (VM init)
+
+    def get_links(self):
+        t = self._env._elapsed_steps
+        tcp = _FakePose([0.4 + 0.001 * t, -0.2, 0.96], [0.16 + 0.001 * t, -0.60, 0.78, -0.03])
+        return [_FakeLink("link_base", self.pose), _FakeLink("link_gripper_tcp", tcp)]
+
+
+class _FakeAgent:
+    def __init__(self, env):
+        self.robot = _FakeRobot(env)
+        self._env = env
+
+    def get_gripper_closedness(self):
+        return 0.25 if self._env._elapsed_steps > 2 else 0.0
+
+
 class FakeVMEnv:
     """Gymnasium-like: TimeLimit at max_episode_steps; PlaceInto* force-advances its subtask when _elapsed_steps >= 100
-    BEFORE a step (place_in_closed_drawer_in_scene.py:244-247); obs carries agent.eef_pos."""
+    BEFORE a step (place_in_closed_drawer_in_scene.py:244-247). Like the pinned image's drawer/place envs, the raw obs
+    has NO agent.eef_pos and NO extra.tcp_pose (P8 / D-1); `obs_style` adds them for the equality tests."""
+
+    obs_style = "drawer"     # "drawer" | "tcp_pose" (vla-eval fallback inputs) | "eef_pos" (PCD fork)
 
     def __init__(self, env_name, **kwargs):
         self.env_name, self.kwargs, self._elapsed_steps, self.subtask = env_name, kwargs, 0, 0
         self.unwrapped = self
+        self.agent = _FakeAgent(self)
         self.resets = []
 
     def get_language_instruction(self):
@@ -231,9 +311,14 @@ class FakeVMEnv:
 
     def _obs(self):
         t = self._elapsed_steps
-        eef = np.array([0.4 + 0.001 * t, 0.0, 0.8, 1.0, 0.0, 0.0, 0.0, 1.0], dtype=np.float32)
-        return {"image": np.full((4, 4, 3), t % 255, np.uint8), "agent": {"eef_pos": eef, "base_pose": np.zeros(7)},
-                "extra": {"tcp_pose": np.zeros(7)}}
+        agent = {"qpos": np.zeros(11), "base_pose": np.concatenate([self.agent.robot.pose.p, self.agent.robot.pose.q])}
+        extra = {}
+        tcp = self.agent.robot.get_links()[1].get_pose()
+        if self.obs_style == "tcp_pose":
+            extra["tcp_pose"] = np.concatenate([tcp.p, tcp.q])
+        if self.obs_style == "eef_pos":
+            agent["eef_pos"] = fork_eef_pos(self)
+        return {"image": np.full((4, 4, 3), t % 255, np.uint8), "agent": agent, "extra": extra}
 
     def reset(self, **kw):
         self.resets.append(kw)
@@ -249,6 +334,33 @@ class FakeVMEnv:
 
     def close(self):
         pass
+
+
+def _mat_to_quat_wxyz(m):
+    """Independent rotation -> unit quaternion (eigenvector of the Bar-Itzhack K matrix), canonical w >= 0."""
+    m = np.asarray(m, dtype=np.float64)
+    k = np.array([[m[0, 0] - m[1, 1] - m[2, 2], m[1, 0] + m[0, 1], m[2, 0] + m[0, 2], m[2, 1] - m[1, 2]],
+                  [m[1, 0] + m[0, 1], m[1, 1] - m[0, 0] - m[2, 2], m[2, 1] + m[1, 2], m[0, 2] - m[2, 0]],
+                  [m[2, 0] + m[0, 2], m[2, 1] + m[1, 2], m[2, 2] - m[0, 0] - m[1, 1], m[1, 0] - m[0, 1]],
+                  [m[2, 1] - m[1, 2], m[0, 2] - m[2, 0], m[1, 0] - m[0, 1], m[0, 0] + m[1, 1] + m[2, 2]]]) / 3.0
+    vals, vecs = np.linalg.eigh(k)
+    x, y, z, w = vecs[:, np.argmax(vals)]
+    q = np.array([w, x, y, z])
+    return -q if q[0] < 0 else q
+
+
+def fork_eef_pos(env):
+    """The PCD fork's agent.eef_pos (agents/base_agent.py:174-183), re-derived in float64 for the tests."""
+    ag = env.unwrapped.agent
+    rel = np.linalg.inv(ag.robot.pose.to_transformation_matrix()) @ ag.robot.get_links()[1].get_pose().to_transformation_matrix()
+    return np.concatenate([rel[:3, 3], _mat_to_quat_wxyz(rel[:3, :3]), [1.0 - ag.get_gripper_closedness()]])
+
+
+def _signfree_maxabs(a, b):
+    a, b = np.asarray(a, dtype=np.float64), np.asarray(b, dtype=np.float64)
+    qa, qb = a[3:7], b[3:7]
+    q = min(np.abs(qa - qb).max(), np.abs(qa + qb).max())
+    return max(np.abs(a[:3] - b[:3]).max(), q, abs(a[7] - b[7]))
 
 
 class TestBenchmarkFakeEnv(unittest.TestCase):
@@ -301,8 +413,9 @@ class TestBenchmarkFakeEnv(unittest.TestCase):
         np.testing.assert_allclose(opts["options"]["obj_init_options"]["init_xy"],
                                    self.V.enumerate_grid("vm_pick_coke_can")[7]["obj"]["init_xy"])
         np.testing.assert_allclose(opts["options"]["robot_init_options"]["init_rot_quat"], [0, 0, 0, 1])
-        o = b.make_obs(obs, {"task_id": "vm007"})
-        self.assertEqual((o["states"].shape, o["task_description"]), ((8,), "pick coke can"))
+        if HAS_T3D:                     # robot_states (P8) uses transforms3d mat2quat; absent in the shared venv
+            o = b.make_obs(obs, {"task_id": "vm007"})
+            self.assertEqual((o["states"].shape, o["task_description"]), ((8,), "pick coke can"))
         with self.assertRaises(ValueError):
             b.reset({"task_id": "vm003", "episode_idx": 0})
         with self.assertRaises(ValueError):
@@ -346,6 +459,51 @@ class TestBenchmarkFakeEnv(unittest.TestCase):
             r = b.step({"actions": np.zeros(7)})
         res = b.get_step_result(r)
         self.assertEqual((res["steps"], res["horizon_ok"]), (10, False))
+
+    # ---- P8 (review critic-ext-2; evaluator defect D-1) ----------------------------------------------------------
+    @needs_t3d
+    def test_p8_states_without_eef_pos_or_tcp_pose(self):
+        for grid, tid in (("vm_open_drawer", "vm000"), ("vm_place_in_drawer", "vm010"), ("va_close_drawer", "va004"),
+                          ("vm_pick_coke_can", "vm007"), ("va_move_near", "va001")):
+            b = self.bench(grid, [int(tid[2:])])
+            obs = b.reset({"task_id": tid, "episode_idx": 0})
+            env = self.made[-1]
+            self.assertNotIn("eef_pos", obs["agent"])
+            self.assertNotIn("tcp_pose", obs["extra"])
+            for _ in range(4):
+                o = b.make_obs(obs, {"task_id": tid})
+                st = o["states"]
+                self.assertEqual((st.shape, st.dtype), ((8,), np.float32))
+                self.assertLess(_signfree_maxabs(st, fork_eef_pos(env)), 1e-6)
+                self.assertGreaterEqual(float(st[3]), 0.0)
+                self.assertAlmostEqual(float(np.linalg.norm(st[3:7].astype(np.float64))), 1.0, places=6)
+                obs = b.step({"actions": np.zeros(7)}).obs
+
+    @needs_t3d
+    def test_p8_equals_vla_eval_fallback_and_fork_value(self):
+        from vla_eval.benchmarks.simpler.benchmark import SimplerEnvBenchmark
+        for style in ("tcp_pose", "eef_pos"):
+            with mock.patch.object(FakeVMEnv, "obs_style", style):
+                b = self.bench("vm_pick_coke_can", [3])
+                obs = b.reset({"task_id": "vm003", "episode_idx": 0})
+                for _ in range(3):
+                    base = SimplerEnvBenchmark.make_obs(b, obs, {"task_id": "vm003"})["states"]   # vla-eval's value
+                    ours = b.make_obs(obs, {"task_id": "vm003"})["states"]
+                    self.assertLess(_signfree_maxabs(ours, base), 1e-6, style)
+                    obs = b.step({"actions": np.zeros(7)}).obs
+
+    @needs_t3d
+    def test_p8_raises_when_robot_state_unavailable(self):
+        b = self.bench("vm_open_drawer", [0])
+        obs = b.reset({"task_id": "vm000", "episode_idx": 0})
+        env = self.made[-1]
+        with mock.patch.object(_FakeAgent, "get_gripper_closedness", side_effect=AttributeError("no gripper")):
+            with self.assertRaises(self.V.RobotStateUnavailable):
+                b.make_obs(obs, {"task_id": "vm000"})
+        with mock.patch.object(_FakeRobot, "get_links", return_value=[]):
+            with self.assertRaises(self.V.RobotStateUnavailable):
+                b.make_obs(obs, {"task_id": "vm000"})
+        self.assertIsNotNone(env)
 
 
 # --------------------------------------------------------------------------------------------- server
@@ -573,6 +731,23 @@ class TestServer(unittest.TestCase):
         asyncio.run(srv.on_episode_start({}, CTX))
         self.assertNotIn(("sess", "ep1", key), srv._states)
 
+    def test_p9_activity_recorded_and_shape_checked(self):
+        from harnessstudio.policies import openvla_simpler_star_hs as R
+        srv = make_server(self.log)
+        ok = {"factory": "hs_ext_residual_toy:ToyHook", "params": {"start_from_last": 11, "gain": 0.5, "activity": "ok"}}
+        (a_on, _), = srv.sample_chunks(obs(11), [1], ok, (), CTX)
+        rec = [r for r in _records(self.log) if r["path"] == "residual_hook"][-1]
+        er = rec["activity"]["edit_ratio"]
+        self.assertEqual((len(er), {len(r) for r in er}, rec["activity"]["edit_ratio_layers"]),
+                         (AD, {11}, list(range(22, 33))))
+        (a_off, _), = srv.sample_chunks(obs(11), [1], TOY, (), CTX)       # same hook arithmetic, no activity()
+        self.assertEqual(a_on.tobytes(), a_off.tobytes())
+        self.assertIsNone([r for r in _records(self.log) if r["path"] == "residual_hook"][-1]["activity"])
+        bad = {"factory": "hs_ext_residual_toy:ToyHook", "params": {"start_from_last": 11, "gain": 0.5, "activity": "bad"}}
+        with self.assertRaises(R.ResidualHookShapeError):
+            srv.sample_chunks(obs(11), [1], bad, (), CTX)
+        self._no_hooks(srv)
+
     def test_star_hook_through_server_if_available(self):
         if importlib.util.find_spec("hs_star") is None:
             raise unittest.SkipTest("hs_star not on sys.path (run-local method package)")
@@ -590,6 +765,27 @@ class TestServer(unittest.TestCase):
         self.assertTrue(all(0.25 <= b <= 0.55 for b in betas))
         self.assertEqual({r["shape"]["mixed_per_forward"] for r in rec}, {11})
         self.assertIn("w_t_f64", rec[-1]["info"])
+        er = [r["activity"]["edit_ratio"] for r in rec]                        # P9 on the real STAR mixer
+        self.assertTrue(all(len(e) == AD and all(len(row) == 11 for row in e) for e in er))
+        # layer 22: warm start m = beta*dh + (1-beta)*dh, equal to dh only up to rounding (critic-ext-2 P9 said
+        # "exactly 0"; in floating point it is O(eps): documented in the EXT doc)
+        self.assertTrue(all(row[0] is not None and row[0] < 1e-5 for e in er for row in e))
+        self.assertEqual(rec[0]["activity"]["edit_ratio_layers"], list(range(22, 33)))
+        # STAR bitwise equal with activity logging on vs off (test-only toggle)
+        from hs_star import star_core
+        o = obs(31)
+        srv2 = make_server(self.log + ".2")
+        (on, _), = srv2.sample_chunks(o, [0], sampler, (), types.SimpleNamespace(session_id="x", episode_id="y"))
+        orig = star_core.StarLayerMixer.__init__
+
+        def off_init(self, *a, **k):
+            k["record_activity"] = False
+            orig(self, *a, **k)
+        srv3 = make_server(self.log + ".3")
+        with mock.patch.object(star_core.StarLayerMixer, "__init__", off_init):
+            (off, _), = srv3.sample_chunks(o, [0], sampler, (), types.SimpleNamespace(session_id="x", episode_id="y"))
+        self.assertEqual(on.tobytes(), off.tobytes())
+        self.assertIsNone(_records(self.log + ".3")[-1]["activity"])
 
 
 if __name__ == "__main__":

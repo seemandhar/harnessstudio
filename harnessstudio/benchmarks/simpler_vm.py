@@ -29,7 +29,15 @@ Grids (case ids "vm<index>" / "va<index>"):
   vm_pick_coke_can 300, vm_move_near_v0 240, vm_open_drawer 108, vm_place_in_drawer 108,
   va_open_drawer 27, va_close_drawer 27, va_place_in_drawer 27, va_move_near 60, va_pick_coke_can 75.
 REFUSED: vm_close_drawer (its 108 configurations are the pool of the PCD discovery run's seeded Close Drawer protocol).
-`states` = agent.eef_pos [pos3 robot-base frame, quat_wxyz4, gripper1] (vla-eval make_obs with send_state=True).
+`states` (review critic-ext-2 P8, evaluator defect D-1): ALWAYS computed by this benchmark from the robot alone, for all
+nine grids, with the PCD fork's `agent.eef_pos` formula (ManiSkill2_real2sim agents/base_agent.py:174-183):
+ee_in_base = inv(T(agent.robot.pose)) @ T(link "link_gripper_tcp"), pos = ee_in_base[:3, 3], quat_wxyz =
+transforms3d mat2quat(ee_in_base[:3, :3]) with canonical w >= 0, gripper = 1 - agent.get_gripper_closedness();
+float32 [pos3, quat_wxyz4, gripper1]. The pinned simulator image has no `agent.eef_pos`, and vla-eval's
+`extra.tcp_pose` fallback exists only for Coke / Move Near (drawer and place envs leave `extra` empty), so the base
+`make_obs` value is always overwritten; if the robot state cannot be read, `make_obs` raises (never a silent
+fallback). `robot_states` reads robot attributes only (no object, drawer, contact or success attribute; pinned by a
+static test). OpenVLA never receives `states`; only a residual hook with READS = ("states",) does.
 The constructor has no **kwargs (server observation_params cannot inject a seed, P-20261103-07). Needs only vla-eval
 and numpy at import; the simulator modules are imported lazily.
 """
@@ -159,6 +167,35 @@ def enumerate_grid(grid: str) -> list[dict]:
     return cases
 
 
+TCP_LINK = "link_gripper_tcp"          # ManiSkill2_real2sim agents/robots/googlerobot.py (the fork's ee_pose link)
+
+
+class RobotStateUnavailable(RuntimeError):
+    """The robot's base pose, TCP link or gripper closedness could not be read: no `states` (never a fallback)."""
+
+
+def robot_states(env) -> np.ndarray:
+    """Proprioception [pos3, quat_wxyz4, gripper_open] of the Google Robot's TCP in its own base frame (P8)."""
+    from transforms3d.quaternions import mat2quat
+
+    try:
+        agent = env.unwrapped.agent
+        t_base = np.asarray(agent.robot.pose.to_transformation_matrix(), dtype=np.float64)
+        tcp = [link for link in agent.robot.get_links() if link.get_name() == TCP_LINK]
+        t_ee = np.asarray(tcp[0].get_pose().to_transformation_matrix(), dtype=np.float64)
+        closedness = float(agent.get_gripper_closedness())
+    except Exception as exc:  # noqa: BLE001
+        raise RobotStateUnavailable(f"robot state unavailable for `states`: {type(exc).__name__}: {exc}") from exc
+    ee_in_base = np.linalg.inv(t_base) @ t_ee
+    quat = np.asarray(mat2quat(ee_in_base[:3, :3]), dtype=np.float64)
+    if quat[0] < 0:
+        quat = -quat
+    out = np.concatenate([ee_in_base[:3, 3], quat, [1.0 - closedness]]).astype(np.float32)
+    if out.shape != (8,) or not np.isfinite(out).all():
+        raise RobotStateUnavailable(f"non-finite or malformed states {out!r}")
+    return out
+
+
 def _overlay_dir() -> Path:
     import mani_skill2_real2sim
 
@@ -250,6 +287,11 @@ class SimplerVMBenchmark(SimplerSeededBenchmark):
         obs, _ = self._env.reset(**self._reset_kwargs)
         self._task_description = self._instruction()
         self._recorder.record_video(self._extract_frame(obs))
+        return obs
+
+    def make_obs(self, raw_obs: Any, task: Task):
+        obs = super().make_obs(raw_obs, task)
+        obs["states"] = robot_states(self._env)          # P8: one source for every grid, always overwritten
         return obs
 
     def get_step_result(self, step_result: StepResult) -> EpisodeResult:

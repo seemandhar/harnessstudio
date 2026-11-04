@@ -42,7 +42,9 @@ byte-identical. Behaviour:
   session, episode, tokens, float64 action) plus ``seeds`` (the CRN seeds the hs trace logs in its ``sample`` event:
   the join key), ``input_sha256`` (the framework fingerprint of the observation as received; advisory join key),
   ``hook`` (factory + params), ``info`` (the hook's per-request values, e.g. STAR beta/r/c/v/j/w) and ``shape`` (the
-  R4 counts). ``action_log`` is therefore REQUIRED for this server.
+  R4 counts). ``action_log`` is therefore REQUIRED for this server. If the mixer offers ``activity()`` (review
+  critic-ext-2 P9, logging only) its dict is stored as ``activity`` after the decode; an ``edit_ratio`` field must be
+  [forwards][mixed layers] with ``edit_ratio_layers`` equal to the mixed layer ids (else ResidualHookShapeError).
 - SimplerDecodeShort (R9, supervisor ruling 2026-11-04): unchanged behaviour (the parent raises in every arm); this
   server first writes a ``decode_short`` record (seq, session, episode, path, seeds, input_sha256) so the evaluator can
   count the event per arm and classify the episode as a completed policy failure, never as infrastructure.
@@ -125,6 +127,25 @@ class HarnessOpenVLASimplerStarServer(HarnessOpenVLASimplerServer):
         s.update(n_layers=n_layers, correction_start_layer=start, mixed_per_forward=mixed)
         return s
 
+    def _activity(self, mixer, shape: dict) -> Optional[dict]:
+        """Optional mixer.activity() (review critic-ext-2 P9; logging only), called after the decode and the R4
+        check. An `edit_ratio` must be [forwards][mixed layers], with `edit_ratio_layers` = the mixed layer ids."""
+        get = getattr(mixer, "activity", None)
+        if not callable(get):
+            return None
+        act = get()
+        if act is None:
+            return None
+        act = dict(act)
+        if "edit_ratio" in act:
+            er = act["edit_ratio"]
+            layers = list(range(shape["correction_start_layer"], shape["n_layers"] + 1))
+            if (len(er) != shape["forwards"] or any(len(row) != shape["mixed_per_forward"] for row in er)
+                    or list(act.get("edit_ratio_layers") or []) != layers):
+                raise ResidualHookShapeError(f"activity.edit_ratio shape {[len(r) for r in er]} / layers "
+                                             f"{act.get('edit_ratio_layers')}, expected {shape['forwards']} x {layers}")
+        return act
+
     # ---- evidence (R1, R9) ----------------------------------------------------------------------------------
     def _write(self, rec: dict) -> None:
         with self._log_lock:
@@ -175,12 +196,13 @@ class HarnessOpenVLASimplerStarServer(HarnessOpenVLASimplerServer):
                 self._decode_short(PATH, seeds, obs, ctx, exc)
                 raise
             shape = self._check_shape(rec, mixer)
+            activity = self._activity(mixer, shape)
             action = self._actions(tokens)
             a = np.ascontiguousarray(action, dtype=np.float64)
             self._write({**self._ids(ctx), "path": PATH, "tokens": [int(t) for t in tokens],
                          "action_f64": a.reshape(-1).tolist(), "action_f64_hex": a.tobytes().hex(),
                          "seeds": [int(s) for s in seeds], "input_sha256": fingerprint(dict(obs)),
-                         "hook": json.loads(key), "info": dict(info), "shape": shape})
+                         "hook": json.loads(key), "info": dict(info), "shape": shape, "activity": activity})
             self._states[state_key] = hook.next_state(state, info)
             return [(action[None, :], {"seed": int(seeds[0])})]
 

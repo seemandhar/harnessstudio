@@ -5,6 +5,8 @@ A server-side *mixer* rewrites the output of every decoder layer of a transforme
     mixer.reset()                    called at layer 0 of every forward pass of the stack
     mixer.step(h_in, h_out) -> h     called once per layer, in order; h replaces the layer's hidden-state output
     mixer.correction_start_layer     optional int (1-based): the first layer the mixer may change (for accounting)
+    mixer.activity() -> dict         optional, called by the server once after the decode (logging only, e.g.
+                                     STAR's per-layer edit ratio; EXT openvla-residual-hook review critic-ext-2 P9)
 
 `residual_hooks(layers, mixer)` attaches it with PyTorch forward pre-hooks / forward hooks (no module is modified:
 the hooks are removed in ``finally``, also when the decode raises), so a request without a mixer runs the untouched

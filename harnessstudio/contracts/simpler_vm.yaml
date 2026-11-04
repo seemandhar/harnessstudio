@@ -3,8 +3,9 @@
 # google_robot_<grid>, task_id = vm<index>/va<index>, episode_idx 0).
 # Observation (vla-eval SimplerEnvBenchmark.make_obs, send_state=True): images = {primary: overhead_camera RGB uint8},
 #   task_description = env.get_language_instruction() (re-read every step; Place in Drawer switches after step 101),
-#   states = agent.eef_pos [pos3 in the robot-base frame, quat_wxyz4, gripper1]; base_pose / tcp_pose / task_name are
-#   sent too but are not public. A residual-hook server reads only `states` (HOOK_READABLE); OpenVLA reads none of it.
+#   states = [pos3 of the TCP in the robot-base frame, quat_wxyz4 (w >= 0), gripper opening 1 - closedness], computed
+#   by the benchmark from the robot alone with the PCD fork's agent.eef_pos formula (simpler_vm.robot_states; the
+#   pinned image has no agent.eef_pos); base_pose / tcp_pose / task_name may be sent too but are not public. A residual-hook server reads only `states` (HOOK_READABLE); OpenVLA reads none of it.
 # Action: RAW OpenVLA [x, y, z, roll, pitch, yaw, open_gripper]; the benchmark applies euler2axangle and the Google
 #   relative 15-step sticky gripper. Horizons = official TimeLimits (max_episode_steps of the official scripts); no
 #   early stop. Eval configs must not set max_steps (the episode result carries horizon_ok).
