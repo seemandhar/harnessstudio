@@ -203,8 +203,9 @@ def validate(config: MethodConfig) -> MethodConfig:
         if r in needs and needs[r] not in config.required:
             raise RegistrationError(f"Readout {r!r} needs capability {needs[r]!r}")
     if "sampler" in config.slots and not {"denoise_hooks", "differentiable_denoiser",
-                                           "decoding_hooks"} & set(config.required):
-        raise RegistrationError("A sampler needs 'denoise_hooks', 'differentiable_denoiser' or 'decoding_hooks'")
+                                           "decoding_hooks", "residual_hooks"} & set(config.required):
+        raise RegistrationError("A sampler needs 'denoise_hooks', 'differentiable_denoiser', 'decoding_hooks' or "
+                                "'residual_hooks'")   # residual_hooks: EXT openvla-residual-hook
     for a in config.artifacts:
         if not isinstance(a, ArtifactPin):
             raise RegistrationError("Artifacts must be ArtifactPins")

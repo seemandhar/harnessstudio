@@ -1,0 +1,6 @@
+# harnessstudio.policies.openvla_simpler_star_hs (EXT openvla-residual-hook): the openvla-simpler-logits server
+# (mode simpler_pcd_authors) plus server-side decoder-layer residual hooks (capability residual_hooks). Requests
+# without a sampler are the parent's native decode, bitwise. action_log is required (activation evidence).
+capabilities: [act, chunk, seeded_sampling, isolated_streams, logits_readout, residual_hooks]
+chunking: harness
+execute_horizon: 1
