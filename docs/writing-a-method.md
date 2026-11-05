@@ -153,7 +153,7 @@ it is written, with the R4 shape counts and the request's CRN seeds, to the serv
 sampler are refused. For an overhead control, give the hook a "compute, write nothing back" mode and run it as a
 separate entry point (the framework's derived null sends no sampler). The benchmark enumerates the official
 SimplerEnv grids (`vm_*` visual matching, `va_*` VA base scenes; `vm_close_drawer` refused), sends `states` =
-`agent.eef_pos`, applies the OpenVLA post-processing, runs every episode to its official horizon (do not set
+the robot-computed TCP pose (`agent.robot.pose` + link `link_gripper_tcp`, the fork's `eef_pos` formula), applies the OpenVLA post-processing, runs every episode to its official horizon (do not set
 `max_steps`; results carry `horizon_ok`) and scores `final_success` (official) and `success` (any step).
 
 Any component can define `diagnostics() -> dict` (JSON); it is written to the trace after every

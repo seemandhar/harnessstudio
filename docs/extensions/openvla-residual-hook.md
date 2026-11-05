@@ -1,9 +1,13 @@
 # EXT openvla-residual-hook: decoder-layer residual hooks on the OpenVLA SimplerEnv server + SimplerEnv official grids with proprioception
 
-Status: BUILT on branch `ext2/openvla-residual-hook` (worktree
-`/home/sejain/research/cvpr27/RoboMetaHarness-claude/harnessstudio-wt/ext2/openvla-residual-hook`, created from main
-`f7dcd0fa0ab20147fa9e96b29e8417d50bbb5c62`), commits listed in section 9. NOT merged: main stays untouched until the
-PCD discovery run's PROGRESS.md says RUN CLOSED and `scripts/regress.py --inflight` is empty. Run star-port-20261104,
+Status: MERGED into main on 2026-11-05.
+- A `d9e2e8b`: no-ff merge of `ext2/openvla-residual-hook` @ 6d618f8 into main 29e705c.
+- B `34c17c8`: `methods/star`, the frozen scored snapshot.
+- Merge identity A/B PASS; regress 84 -> 86 methods ok; M2 review critic-m2-1 GO
+  (`runs/star-port-20261104/merge/M1_results.json`, `runs/star-port-20261104/reviews/critic-m2-1.md`).
+
+The branch was built in the worktree `/home/sejain/research/cvpr27/RoboMetaHarness-claude/harnessstudio-wt/ext2/openvla-residual-hook`
+from main `f7dcd0fa0ab20147fa9e96b29e8417d50bbb5c62`; its commits are listed in section 9. Run star-port-20261104,
 task conv-ext-2, author rmh_converter (agent ad6f985cab099bc95). Proposal review: critic-ext-1 APPROVE_WITH_CONDITIONS
 (`runs/star-port-20261104/reviews/critic-ext-1.md`, `.review.json`); this document carries R1-R13 into the build. The
 same text is committed as `docs/extensions/openvla-residual-hook.md` on the branch.
@@ -187,7 +191,12 @@ tier 0/1, `ext/verify_tier01.json`). Before/after comparison and the final resul
 
 ## 9. Commits on `ext2/openvla-residual-hook`
 
-Listed in `reports/conv-ext-2.report.json` (`git log f7dcd0f..ext2/openvla-residual-hook`).
+`0526759` (build), `01e4a8e` (proposal/build doc, amended test), `6d618f8` (P8/P9 fixes; amended from `10c6f7c`,
+whose evidence is preserved in `runs/star-port-20261104/ext/amended_10c6f7c/`); `git log f7dcd0f..6d618f8`.
+- Merge into main: `d9e2e8b` (no-ff, because main had moved to 29e705c with other runs' docs commits).
+- Merge identity: `HEAD:harnessstudio` = `b7421844` and `HEAD:tests` = `51c32460` equal 6d618f8's subtrees
+  (`runs/star-port-20261104/merge/check_identity.sh`; `merge/exec/identity_A.txt`, `identity_B.txt`,
+  `merge/stageC_results.json`).
 
 ## Addendum conv-fix-4 (critic-ext-2 P1, P8, P9; one commit on `ext2/openvla-residual-hook`)
 
