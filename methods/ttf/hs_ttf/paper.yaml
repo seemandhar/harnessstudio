@@ -1,0 +1,39 @@
+# Card (conv-ttf-port-1, DRAFT). Needs EXT openvla-vision-token-hook (runs/repro-next-20261105/ext/ttf/EXT_PROPOSAL.md).
+name: ttf
+version: "0.1.0"
+paper:
+  id: "arXiv:2508.19257v3"
+  title: "TTF-VLA: Temporal Token Fusion via Pixel-Attention Integration for Vision-Language-Action Models"
+  venue: "AAAI 2026"
+  url: "https://arxiv.org/abs/2508.19257v3"
+categories: {primary: observation_grounding, secondary: [memory_retrieval]}
+# Ported from the authors' release (github.com/PKU-XLab/TTF-VLA @ afbd6bf, MIT): aptube_manager.py (masks, top-k,
+# cache) and the fusion branch of modeling_prismatic.py, op for op (hs_ttf/ttf_core.py; parity:
+# runs/repro-next-20261105/parity/). Where the release and the paper differ, the release is followed and listed.
+# Fidelity: the MECHANISM is a bitwise-faithful port (parity 0 differences against the authors' modules in the same
+# transformers 4.40.1 env, critic-select-1 C8), but the RUN differs from the authors' environment (vla-eval benchmark
+# and PIL preprocessing instead of their TF pipeline) and INVARIANTS 4 requires listing that; the framework accepts a
+# substitution list only for tf_variant/adapted, so the card says adapted (open question for the SETTING critic).
+fidelity: adapted
+substitutions:
+  - "RELEASED-CODE FIX: the README's run command passes --fusion_mode attention_guided, which the code rejects (assert False, modeling_prismatic.py:191, caught per step by run_libero_eval_aptube.py:259/332-335 so every episode would end as a failure); the paper's Pixel-Attention TTF (Table 3, Eq. 4) is the code's fusion_mode=hybrid, used here"
+  - "constants from the paper text and README (K=3, pixel threshold 0.03, top-k 70, text-to-vision attention of LLM layer 15); the release's argument defaults (disabled, pixel, K=5, 0.1, 120) are not the paper's"
+  - "attention source: the paper's Algorithm 1 says the vision encoder returns the attention A_t; the release uses the previous step's PREFILL attention of LLM decoder layer 15 (generate(output_attentions=True).attentions[0][15]), text tokens = multimodal positions 257..291 (truncated at 35 text tokens), vision = 1..256; followed"
+  - "decode numerics as released: every arm of the release (TTF and its baseline) calls generate(output_attentions=True); with transformers 4.40.1 and OpenVLA's default SDPA attention this falls back to eager attention with NO causal mask in the prefill (LlamaModel._update_causal_mask returns None for an all-ones mask, query length = key length; audit/code_vs_paper.md F6). Reproduced, not fixed: the baseline arm is ttf-paper-baseline (the release's disabled path), not the native SDPA server"
+  - "image preprocessing and environment: vla-eval 0.8.0 LIBERO + OpenVLA server (PIL JPEG round trip, PIL Lanczos 224, PIL center crop 0.9 area) instead of the authors' TF pipeline (tf JPEG, tf lanczos3 antialias, tf crop_and_resize); same for every arm; vla-eval's reproduction of OpenVLA LIBERO is 86.6/86.6/79.0/52.8 vs official 84.7/88.4/79.2/53.7"
+  - "per-episode TTF state object instead of the release's process-wide singleton (behaviour-neutral: state reset at episode start in both; step 0 is a keyframe whose own prefill attention is stored before any use); only the configured attention layer is passed to the hook (the release keeps all 32 and reads one)"
+  - "the vision featurizers run once per step (the release runs them twice on keyframes and keeps the second, identical result)"
+  - "HarnessStudio transport: float32 action wire, one 7-D action per request (OpenVLA has no chunks), CRN seeds unused (greedy)"
+requires: {capabilities: [act, chunk, seeded_sampling, isolated_streams, vision_token_hooks]}
+budgets: {policy_calls: null, llm_calls: 0, tool_calls: 0, max_tokens: 0}
+"null": derived
+artifacts: []
+operators: []
+original:
+  repo: "https://github.com/PKU-XLab/TTF-VLA (MIT)"
+  commit: "afbd6bf38fa08b6c5895f58677fe241ce9607100"
+  reported: "LIBERO, OpenVLA task-specific fine-tunes, 200 episodes per suite (10 tasks x 20): OpenVLA -> +TTF Object 66.5 -> 72.5, Spatial 82.0 -> 84.5, Goal 77.0 -> 79.0, Long 48.0 -> 53.5, average 68.4 -> 72.4 (Table 1, arXiv:2508.19257v3); fusion rates 44.6/41.2/43.5/42.0"
+description: "TTF-VLA: training-free temporal token fusion; at non-keyframe steps OpenVLA reuses the previous step's visual token of every patch that is both static (grayscale difference) and outside the previous step's top-k text-to-vision attention."
+tier1: {instruction: "put both the alphabet soup and the tomato sauce in the basket", horizon: 12, chunk_len: 1}
+changelog:
+  - "0.1.0-draft (2026-11-05, conv-ttf-port-1): ported from TTF-VLA@afbd6bf; EXT openvla-vision-token-hook drafted."
