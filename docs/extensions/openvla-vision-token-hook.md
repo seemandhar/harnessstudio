@@ -1,8 +1,9 @@
 # EXT openvla-vision-token-hook: server-side vision-token hooks on the OpenVLA LIBERO server
 
-Status: BUILT on branch `ext2/openvla-vision-token-hook` (code commit 2d8ba3d from main 32c86a6; docs-only follow-up
-commits since). Reviewed by critic-ttf-1 (READY FOR GPU PRE-CHECKS; merge after G1/G2 pass on the code commit, by
-fast-forward of main, with `scripts/regress.py --inflight` empty). Run
+Status: MERGED into main by fast-forward 32c86a6 -> 5a2ce3b on 2026-11-05T06:01:29Z (code commit 2d8ba3d; 5a2ce3b is
+docs only), after G1/G2 passed and with `scripts/regress.py --inflight` empty; method package `methods/ttf` (hs-ttf 0.1.0)
+added on branch docs/ttf-results. Reviewed by critic-ttf-1 (READY FOR GPU PRE-CHECKS) and used by the sealed TTF-VLA
+primary (critic-ttf-final: ACCEPT WITH CONDITIONS); results: `docs/results/ttf_vla.md`. Run
 `repro-next-20261105`, task conv-ttf-port-1 (rmh_converter). Proposal and evidence:
 `runs/repro-next-20261105/ext/ttf/EXT_PROPOSAL.md`.
 
