@@ -12,6 +12,14 @@ mixer.reset() at layer 0 of every forward, mixer.step(h_in, h_out) -> h per laye
 mixer.correction_start_layer (policy_ext/residual_hooks.py). It is distinct from decoding_hooks (token selection and
 vision-attention temperature, openvla_hs.py): a decoding_hooks server calls bind(action_token_begin=...) and fails on
 a residual hook, and a residual_hooks server refuses readouts with a sampler and more than one seed.
+
+vision_token_hooks (EXT openvla-vision-token-hook, policies/openvla_ttf_hs.py): a server-side *vision-token hook*
+named by the request's `sampler` {factory, params} chooses the patch tokens the projector receives (it sees the fused
+vision backbone's DINOv2 + SigLIP tokens of the request's image) and receives the prefill attention of the decoder
+layers it declares, with per-episode state. Protocol: harnessstudio/policy_ext/vision_token_hooks.py (marker
+VISION_TOKEN_HOOK = True, OUTPUT_ATTENTIONS, ATTENTION_LAYERS, bind, init_state, vision, after_decode). A server
+without this capability never runs such a hook: an openvla_hs (decoding_hooks) server would treat it as a decoder and
+fail, so methods must declare vision_token_hooks.
 """
 from __future__ import annotations
 
@@ -27,6 +35,7 @@ CAPABILITIES: dict[str, str] = {
     "differentiable_denoiser": "Sampler.guide gets a VJP of the denoised estimate",
     "decoding_hooks": "a server-side Sampler changes autoregressive token decoding (temperature, attention)",
     "residual_hooks": "a server-side residual hook rewrites decoder-layer residual updates inside the forward pass",
+    "vision_token_hooks": "a server-side vision-token hook chooses the visual tokens the projector receives, per episode",
     "attention_readout": "action-token attention is returned as extras",
     "logits_readout": "token logits are returned as extras",
     "predicted_futures": "predicted future frames are returned as extras",

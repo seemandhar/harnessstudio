@@ -1,0 +1,7 @@
+# harnessstudio.policies.openvla_ttf_hs (EXT openvla-vision-token-hook): the openvla-libero-hs server (per-suite
+# OpenVLA LIBERO fine-tunes, vla-eval preprocessing) plus server-side vision-token hooks (capability
+# vision_token_hooks). Requests without a sampler, or with a decoding-hook sampler, are the parent's path unchanged.
+# activation_log is required for hooked requests (activation evidence).
+capabilities: [act, chunk, seeded_sampling, isolated_streams, decoding_hooks, vision_token_hooks]
+chunking: harness
+execute_horizon: 1

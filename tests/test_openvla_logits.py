@@ -294,7 +294,9 @@ def test_new_profiles():
     # EXT openvla-residual-hook (review critic-ext-1 R5, route a) also declares residual_hooks on fake-t3; for every
     # capability that existed before it, fake-t3 still adds exactly logits_readout over fake-t2.
     t3, t2 = set(load_profile("fake-t3").capabilities), set(load_profile("fake-t2").capabilities)
-    assert "residual_hooks" in t3 and t3 - t2 - {"residual_hooks"} == {"logits_readout"}
+    # EXT openvla-vision-token-hook adds vision_token_hooks on fake-t3 the same way (amended assertion, flagged in
+    # docs/extensions/openvla-vision-token-hook.md section 6).
+    assert "residual_hooks" in t3 and t3 - t2 - {"residual_hooks", "vision_token_hooks"} == {"logits_readout"}
 
 
 # ---- U8 (+R4): toy shadow controller -------------------------------------------------------------------------

@@ -3,6 +3,9 @@
 # EXT openvla-residual-hook (review critic-ext-1 R5, route a): residual_hooks is declared too; the fake server ignores
 # samplers (fake.py), so a residual-hooks method's tier 1 checks plumbing only. Methods servable by fake-t0..t2 keep
 # their profile (tier1.default_profile is first-match), so no installed method's tier-1 profile changes.
+# EXT openvla-vision-token-hook (same route a): vision_token_hooks is declared too; the fake server ignores samplers,
+# so a vision-token-hook method's tier 1 checks plumbing only (its server is tested in
+# tests/test_ext_openvla_vision_token_hook.py).
 capabilities: [act, chunk, seeded_sampling, isolated_streams, velocity_readout, decoding_hooks, logits_readout,
-               residual_hooks]
+               residual_hooks, vision_token_hooks]
 chunking: harness

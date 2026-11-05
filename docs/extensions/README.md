@@ -22,4 +22,7 @@ the evaluator -> independent diff review -> merge into `main` only when `scripts
   star-port-20261104) decoder-layer residual hooks on the simpler_pcd_authors OpenVLA server (capability
   `residual_hooks`) and the SimplerEnv official VM / VA-base grids with robot-computed `states`:
   `openvla-residual-hook.md`. Results: `docs/results/star.md`.
+- (built 2026-11-05, review pending; branch `ext2/openvla-vision-token-hook`, run repro-next-20261105) server-side
+  vision-token hooks on the OpenVLA LIBERO server (capability `vision_token_hooks`) for TTF-VLA:
+  `openvla-vision-token-hook.md`.
 - Items in `docs/core-todo.md`.
