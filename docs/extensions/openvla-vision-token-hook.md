@@ -1,6 +1,8 @@
 # EXT openvla-vision-token-hook: server-side vision-token hooks on the OpenVLA LIBERO server
 
-Status: BUILT on branch `ext2/openvla-vision-token-hook` (from main 32c86a6), review pending. Run
+Status: BUILT on branch `ext2/openvla-vision-token-hook` (code commit 2d8ba3d from main 32c86a6; docs-only follow-up
+commits since). Reviewed by critic-ttf-1 (READY FOR GPU PRE-CHECKS; merge after G1/G2 pass on the code commit, by
+fast-forward of main, with `scripts/regress.py --inflight` empty). Run
 `repro-next-20261105`, task conv-ttf-port-1 (rmh_converter). Proposal and evidence:
 `runs/repro-next-20261105/ext/ttf/EXT_PROPOSAL.md`.
 
@@ -43,12 +45,18 @@ to the eager forward, which then applies no causal mask: the prefill is bidirect
   other R6 pins of `tests/test_ext_openvla_residual_hook.py`; checked again by V1.
 - Native and baseline requests of the new server are the parent's code path (no hook installed, V4).
 - No installed method's tier 0/1 changes except that methods requiring `vision_token_hooks` now get fake-t3.
-- Regression gate: `runs/repro-next-20261105/ext/ttf/regress.json`.
+- Regression gate on the exact code commit 2d8ba3d (critic-ttf-1, clean worktree, caches disabled): pytest 106 passed /
+  40 skipped; 84 of 86 methods PASS tier 0/1; the 2 failures (tube-steer-vfb, -ortho) are an untracked asset
+  (`visual_memory.npz`) absent from every worktree, and both pass on main. Re-run on the docs-only head:
+  `runs/repro-next-20261105/ext/ttf/regress_<head>.json` (`git_head` = that commit). An earlier run
+  (`regress.json`) was made on the uncommitted tree and is not evidence for any commit.
 
 ## 6. Flagged edits for the diff review
 - `tests/test_openvla_logits.py::test_new_profiles`: amended assertion (fake-t3 gains `vision_token_hooks`).
-- `core/method.py` and `docs/extensions/README.md` are also edited by `ext2/episode-feedback` (different hunks); merge
-  order is free, a textual merge of the README backlog line may be needed.
+- `core/method.py`, `docs/extensions/README.md` and `docs/writing-a-method.md` are also edited by
+  `ext2/episode-feedback`: method.py merges cleanly (disjoint hunks); README backlog line and writing-a-method
+  paragraph conflict textually: keep both. Merge order (critic-ttf-1): this branch first by fast-forward of main after
+  G1/G2; episode-feedback after the TTF primary run (it changes server/eval/pairing code the TTF run imports).
 
 ## 7. GPU checks (evaluator, before any scored episode)
 - G1: native path of `openvla_ttf_hs` bitwise equal to the stock vla-eval server (actions over a few episodes).

@@ -156,6 +156,25 @@ SimplerEnv grids (`vm_*` visual matching, `va_*` VA base scenes; `vm_close_drawe
 the robot-computed TCP pose (`agent.robot.pose` + link `link_gripper_tcp`, the fork's `eef_pos` formula), applies the OpenVLA post-processing, runs every episode to its official horizon (do not set
 `max_steps`; results carry `horizon_ok`) and scores `final_success` (official) and `success` (any step).
 
+**Vision-token hooks on the OpenVLA LIBERO server** (capability `vision_token_hooks`, profile `openvla-libero-ttf`,
+server `policies/openvla_ttf_hs.py`, a subclass of `openvla_hs.py`; EXT `docs/extensions/openvla-vision-token-hook.md`).
+A slot method sets `sampler = ModuleRef("hs_SLUG.module:Hook", params)` with a K = 1 proposer and declares
+`vision_token_hooks` (a plain `openvla-libero-hs` server would treat the hook as a decoder and fail at `bind`). The
+hook class sets `VISION_TOKEN_HOOK = True`, `OUTPUT_ATTENTIONS` and `ATTENTION_LAYERS`, and implements
+`bind(n_patches, dims, num_layers)`, `init_state()` (per episode; dropped at EPISODE_START/END),
+`vision(state, pixel_values, new_dino, new_siglip) -> (patches, info)` (called once per request inside the prefill's
+vision forward; return the stock shape and dtype) and `after_decode(state, prefill_attentions, info) -> info`
+(protocol: `policy_ext/vision_token_hooks.py`). A hooked request is `generate(..., output_attentions=OUTPUT_ATTENTIONS,
+return_dict_in_generate=True)` on the processor's inputs with 29871 appended to `input_ids` only (the TTF-VLA
+release's call). Note: with transformers 4.40.x and OpenVLA's default SDPA attention, `output_attentions=True` makes the
+PREFILL NON-CAUSAL (eager fallback with no mask); every arm that must be comparable has to take the same path, so give
+the hook an "off" mode (stock tokens, same decode) for the baseline and a "shadow" mode (compute, write nothing back)
+for the overhead null, both as separate entry points; the derived null (no sampler) is the native causal decode and
+is a determinism control only. Requests without a sampler, or with a decoding-hook sampler, are the parent's path
+unchanged. Hook `info` reaches only the server's required `activation_log` (one JSON record per hooked request:
+tokens, float64 action + hex, seeds, input sha256, hook params, info, shape); join it to the trace by `seeds`. One
+seed per request; readouts with a hook are refused.
+
 Any component can define `diagnostics() -> dict` (JSON); it is written to the trace after every
 decision, in every arm. Any component can define `bind(embodiment)`. It receives `Embodiment.action_layout`
 (`name -> (start, end)` from the policy's action spec, e.g. `position (0,3)`, `rotation (3,6)`,
