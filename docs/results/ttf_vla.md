@@ -4,9 +4,14 @@
 > `d1170e947d48afbd…`, agent a027b13c594984db6, 2026-11-05T23:37Z). Its conditions C1-C7, required disclosures and
 > interpretation are binding on this document. §14 maps each condition to the section that meets it.
 >
-> **Where this document lives:** it is `harnessstudio/docs/results/ttf_vla.md`. Its source is `results/ttf_vla.v2.md`
+> **v3 addition:** the section "Diagnostics (D1): decode-path checks (descriptive; changes no label)", after §12,
+> reports the separately frozen D1 experiment under critic-ttf-d1-results (ACCEPT WITH CONDITIONS, `fe94642b…`).
+> It changes no number, table or label of the sealed result.
+>
+> **Where this document lives:** it is `harnessstudio/docs/results/ttf_vla.md`. Its source is `results/ttf_vla.v3.md`
 > of run `repro-next-20261105`, written by rmh_converter (task conv-ttf-results-1, 2026-11-05, 23:40Z to 23:58Z UTC,
-> `date -u`; v2 corrections 2026-11-06 ~03:30Z, task conv-ttf-d1-1 hand-off, critic-ttf-docs D1/D2).
+> `date -u`; v2 corrections 2026-11-06 ~03:30Z, task conv-ttf-d1-1 hand-off, critic-ttf-docs D1/D2; v3 D1 diagnostics
+> 2026-11-06 from 06:28Z, task conv-ttf-results-2, critic-ttf-d1-results C1-C7).
 > The two files are byte-identical.
 >
 > **Paths:** relative paths without a `harnessstudio/` prefix are relative to the run folder
@@ -247,6 +252,23 @@ U > 0.
    degraded on every suite. So the data do **not** support "the non-causal prefill explains the paper's Object row"
    (§4).
 
+**D1 update** (v3; descriptive; see "Diagnostics (D1)" after §12; it changes no label):
+- **Point 2 now has paired support within our stack.** On the same 200 scenes (init states 0-4), native causal
+  OpenVLA succeeds 148/200 (74.0%) against the sealed paper-baseline's 60/200 (30.0%), D +44.0 pp [35.6, 51.3]. So
+  the release's decode path accounts for paper-baseline's gap to stock OpenVLA in our stack. "Decode path" means
+  the missing mask together with eager-vs-SDPA numerics; D1-b does not separate the two over an episode.
+- **(a) is more plausible but untested.** The release's decode call keeps the causal mask from transformers 4.41.2
+  on, and the causal decode is consistent with the paper's Spatial, Goal and Long rows (paper value inside the
+  native arm's Wilson 95% interval, n = 50, unpaired, init states 0-4). D1 observes nothing of the authors'
+  environment.
+- **(b) is not tested.**
+- **(c) is weakened for step 0 only.** Restoring the mask on the release's own code path reproduces the native first
+  action in 729/800 start states.
+- **Object 66.5 is not consistent:** it lies below the native interval [71.5, 91.7], so the paper's Object row stays
+  unexplained.
+- **What remains open:** which cause explains the paper's own baseline rows. Every cause (a)-(e) remains an untested
+  hypothesis.
+
 **Post-hoc analyst note (descriptive only; not reviewed by a critic; it changes no label).**
 - `analysis/ttf_post_hoc.md` (analyst-ttf-1, written after the seal; hash in §15) reads the sealed per-step records
   through proprioceptive proxies. No frames were stored, so these are proxies, not visual evidence.
@@ -274,12 +296,18 @@ U > 0.
 - The shadow null rules out overhead and decode-path artefacts within the comparison.
 - The released-code decode path in our environment gives a heavily degraded OpenVLA: 31.6% pooled, against about
   75-80% for stock causal OpenVLA on comparable stacks.
+- (v3, from D1, descriptive) Within our stack, on identical scenes, the release's decode path accounts for
+  paper-baseline's gap to stock OpenVLA: native causal 148/200 vs paper-baseline 60/200 on init states 0-4, paired.
+  At step 0 the missing causal mask accounts for most of the change (v1 vs v3: 14/800 all-7 equal); kernel numerics
+  alone change 71/800 (8.9%) first actions and 27/800 first tokens, never the gripper.
 
 **Cannot be concluded:**
-- TTF's effect in the paper's ~68% baseline regime, or on a standard causal decode;
+- TTF's effect in the paper's ~68% baseline regime, or on a standard causal decode. D1 does not test TTF; TTF-C
+  (decision d10) is a separate frozen experiment under design;
 - that the paper's Table 1 is wrong or irreproducible in its authors' environment;
 - that Table 1 was produced with a non-causal prefill;
-- which cause explains the baseline gap;
+- which cause explains the paper's baseline rows (D1 makes hypothesis (a) more plausible but leaves it untested);
+- how mask and kernel effects divide over a closed-loop episode (D1-a is step 0 only);
 - anything about TTF's absolute success relative to the paper's TTF row;
 - per-suite effects.
 
@@ -324,10 +352,17 @@ U > 0.
 - All-in cost: 0.299 GPU-s per policy step.
 - Paid API $0; NRP calls 0.
 
-**The rest of the authority.**
-- About 19.65 GPU-h remains.
-- Pigey's share under A1 C2 is ≤ 12 GPU-h; its SETTING v3 allowance is 12.25. Pigey has used 0 GPU-h so far.
-- That leaves about 7.4-7.65 GPU-h unallocated.
+**The rest of the authority.** These are the v2 figures, at the seal:
+- About 19.65 GPU-h remained.
+- Pigey's share under A1 C2 was ≤ 12 GPU-h; its SETTING v3 allowance was 12.25. Pigey had used 0 GPU-h.
+- That left about 7.4-7.65 GPU-h unallocated.
+
+**v3 update (D1).**
+- D1 used **3.88 GPU-h**: D1-a 0.645 (including the smoke) and D1-b 3.235, from lease GPU-s
+  (`d1/cost/lease_ledger.jsonl`), within d07's ~3-5 GPU-h and d08's caps. $0 API; 0 NRP calls.
+- **Session total: about 64.2 GPU-h** (60.35 + 3.88) of the 80 GPU-h authority, so **about 15.8 GPU-h remain**.
+- Pigey was dropped by decision d10 after using 0 GPU-h.
+- TTF-C's budget is set at its own freeze.
 
 ## 12. Follow-ups (C6): each one is a new frozen experiment
 
@@ -350,6 +385,120 @@ U > 0.
 | TTF-on-causal study, 3 arms × 800 | TTF itself in the strong-baseline regime | 40-45, or ≈ 10 per suite |
 
 The last option does not fit the remaining authority without a user budget increase.
+
+**Status (v3).**
+- **D1 is done** ("Diagnostics (D1)" below). It covers two rows only partially:
+  - the step-0 decode-variant probe, done in full;
+  - "eager-causal arm, one suite": mask vs kernel was measured at step 0 only, not in closed loop;
+  - "paired stock/native causal baseline": 200 cases, init states 0-4, all suites, not 800.
+- **The P6 analogue is not done.**
+- **TTF-C (decision d10)** is a separate frozen experiment still under design: TTF on a causal decode, a disclosed
+  variant of the release.
+  - It needs its own matched causal baseline and shadow arms with its own decode numerics, because per D1-a, eager vs
+    SDPA already changes 8.9% of first actions.
+  - **The D1-b native arm is not TTF-C's baseline.**
+  - TTF-C must disclose the exposure of the sealed init 0-19 outcomes and of the D1-b native outcomes on init
+    states 0-4.
+
+## Diagnostics (D1): decode-path checks (descriptive; changes no label)
+
+D1 is a separate experiment under critic-ttf-final C6 (SETTING-D1 rev 3 `fe2de44015bec374…`, frozen
+2026-11-06T03:57:15Z; FROZEN-D1.rev3 `aa76af2f4a696378…`), independently recomputed by critic-ttf-d1-results. It
+changes nothing above. The label of record stays **not reproduced (non-matching baseline regime; adapted)**, and
+`sealed/labels.json` (`ce0f70f8131a244b…`) is unchanged.
+- **Exposure:** the init-state 0-19 outcomes of the sealed arms were known before D1. The D1-b cases (init states
+  0-4) were fixed by position before any native outcome.
+- **Cost:** 3.88 GPU-h (D1-a 0.645, D1-b 3.235, lease GPU-s); $0 API.
+
+**Sources (sha256, first 16 hex digits).**
+
+| File | sha256 |
+|---|---|
+| `d1/SETTING-D1.md` = `d1/control/SETTING-D1.frozen.md` (rev 3) | `fe2de44015bec374` |
+| `d1/control/FROZEN-D1.rev3.json` | `aa76af2f4a696378` |
+| `d1/d1a.json` (D1-a analysis) / `d1/d1a.native_xcheck.json` | `bbafbed0142d5314` / `ffd5339e17071cdc` |
+| `d1/d1b.json` (D1-b analysis) | `77083792d0c038bd` |
+| `d1/R2_reference.json` | `e43c75380508c507` |
+| `d1/b/native_assembled.jsonl` (200 native records) | `22038e8dc13b6f50` |
+| `d1/probe/all_probe.jsonl` / `d1/cost/lease_ledger.jsonl` | `0673f1f7a3c9afd1` / `d9194101ea21ae15` |
+| `reviews/critic-ttf-d1-results.md` / `.review.json` (ACCEPT WITH CONDITIONS, agent a927ad86246cd4624, 2026-11-06T06:28Z) | `fe94642b22665542` / `efaec3f718b99091` |
+
+**D1-a: the release's decode and OpenVLA's first action (800 scored start states, no rollouts).** On every sealed
+start state (observation identical to the sealed paper-baseline step-0 input, and release-decode tokens identical to
+the sealed paper-baseline tokens, 800/800), three decodes of the first action were compared:
+- v1: the release's `generate(output_attentions=True)` under transformers 4.40.1, eager attention without a causal
+  mask;
+- v2: OpenVLA's native causal SDPA decode;
+- v3: eager attention with the causal mask.
+
+| Pair | What differs | All 7 tokens equal | First token equal | Gripper token equal |
+|---|---|---|---|---|
+| v1 vs v2 | mask and kernel | 15/800 (1.9%) | 144/800 (18.0%) | 765/800 |
+| v1 vs v3 | causal mask only | 14/800 (1.8%) | 145/800 (18.1%) | 765/800 |
+| v2 vs v3 | kernel only (eager vs SDPA, both causal) | 729/800 (91.1%) | 773/800 (96.6%) | 800/800 |
+
+- **What the mask does:**
+  - the missing causal mask changes OpenVLA's first action in about 98% of start states;
+  - on the real weights, the release's prefill attends to later positions in every layer, while the eager-causal
+    decode puts zero attention there (checked on one start state per task, 40/40 tasks);
+  - the release decode also turns the gripper command to "close" at step 0 in 35/800 start states.
+- **What the kernel does:** eager-vs-SDPA numerics alone change the first action in 71/800 (8.9%), never the
+  gripper. So the mask accounts for most, but not all, of the step-0 change.
+- **The port:** restoring the mask on the release's own code path reproduces the native first action in 729/800.
+- **Limit:** this is step 0 only. How the two effects compound over an episode was not measured.
+
+**D1-b: native causal OpenVLA vs the sealed paper-baseline on the same 200 scenes.** The cases are 4 suites × 10
+tasks × init states 0-4. Both arms ran on the same server build, configs, Docker image and env_seed 0. The first
+observation was identical in 200/200, and all 200 native episodes were valid on the first attempt, with official
+horizons.
+
+| Suite | Native causal | Paper-baseline (sealed, same cases) | D (pp) | 95% CI (pp) | Native Wilson 95% | Paper's baseline row | vla-eval stock, init 0-4 (R2) / 0-19 (R1) |
+|---|---|---|---|---|---|---|---|
+| Spatial | 41/50 (82%) | 17/50 (34%) | +48.0 | [29.2, 62.1] | [69.2, 90.2] | 82.0 | 82 / 85.0 |
+| Object | 42/50 (84%) | 23/50 (46%) | +38.0 | [20.2, 52.6] | [71.5, 91.7] | 66.5 | 90 / 86.0 |
+| Goal | 42/50 (84%) | 18/50 (36%) | +48.0 | [31.4, 60.7] | [71.5, 91.7] | 77.0 | 78 / 77.0 |
+| Long | 23/50 (46%) | 2/50 (4%) | +42.0 | [26.0, 55.9] | [33.0, 59.6] | 48.0 | 52 / 53.5 |
+| **Pooled** | **148/200 (74.0%)** | **60/200 (30.0%)** | **+44.0** | **[35.6, 51.3]** | [67.5, 79.6] | 68.4 | 75.5 / 75.4 |
+
+- **Statistics:** the cells are n11/n10/n01/n00 = 52/96/8/44, with n10 = native-only success; exact McNemar
+  p = 2.8e-20. The CI is Newcombe (1998b) method 10, from the sealed primary's frozen label script. Per-suite rows are
+  descriptive.
+- **References:** the vla-eval stock references are unpaired and only comparable (another harness version,
+  round-robin shards).
+  - R1 is the predeclared rate over `episode_id` < 20: 85.0 / 86.0 / 77.0 / 53.5.
+  - R2 is the predeclared rate over `episode_id` < 5: 82 / 90 / 78 / 52.
+  - Both are unpaired and comparable, not paired.
+  - `R2_reference.json`'s field `R1_rate` (86.6 / 86.6 / 79.0 / 52.8) is over all 50 init states. It is not the
+    predeclared R1, and it is not used here.
+- **A-5 cross-check:** the frozen analysis reported its native-vs-probe cross-check as not comparable (200/200),
+  because the script looks for `sample` events while native traces log `native` events. A post-hoc critic check found
+  that the native arm's first action equals the D1-a v2 action, and the sealed paper-baseline's first action equals
+  the v1 action, in 200/200 cases. That check is post hoc and outside the frozen analysis.
+- **Exposure:** the D1-b native outcomes on init states 0-4 are now exposed as well. Any later experiment on these
+  cases (TTF-C) must disclose that.
+
+**What D1 shows.**
+1. **Within our stack, the release's decode path accounts for paper-baseline's gap to stock OpenVLA.** On identical
+   scenes, switching to the native causal decode raises success from 30.0% to 74.0%. The native rates are in line
+   with the stock references. "Decode path" here means the missing causal mask together with eager-vs-SDPA numerics:
+   D1-a attributes most of the step-0 change to the mask, and D1-b does not separate them over an episode.
+2. **The causal decode is consistent with the paper's baseline rows on Spatial, Goal and Long, but not on Object.**
+   - On Spatial, Goal and Long, each paper value lies inside the native arm's Wilson 95% interval (n = 50 per suite,
+     unpaired, init states 0-4). Intervals this wide cannot establish a match.
+   - On Object, the paper's 66.5 lies below the native interval [71.5, 91.7]. Native Object (84%) sits next to stock
+     (86-90%), so the paper's Object row stays unexplained.
+3. **Hypothesis (a) becomes more plausible but stays untested.** The release's decode call drops the causal mask
+   under its pinned transformers 4.40.1 (and 4.40.2) and keeps it from 4.41.2 on (CPU check, SETTING-D1 §3). Together
+   with point 2, this makes (a) of §8, that the authors' effective runs decoded causally, more plausible. It stays
+   untested: D1 observes nothing of the authors' environment, and hypothesis (b) is not tested either.
+
+**What D1 does not show.**
+- **TTF.** It does not test TTF on a causal decode. TTF-C (decision d10) is being designed as a separate, newly frozen
+  experiment with its own matched causal baseline and shadow arms.
+- **The sealed result.** It does not change, replace or qualify away the sealed paired effect (D = −0.62 pp
+  [−3.92, +2.67]) or its label.
+- **The paper.** It does not establish what produced the paper's Table 1, or that the paper's numbers are wrong.
+
 
 ## 13. Reproducing the scored run (evaluator-owned; GPU)
 
@@ -394,6 +543,13 @@ One arm-shard (here ttf, libero_10 task 9 on GPU 6):
 | C5 session GPU accounting | §11; addendum §10 |
 | C6 follow-ups are new frozen experiments | §12 |
 | C7 qualified label in every table cell and README row | §1, §3; the `harnessstudio/README.md` row; `methods/ttf/README.md` |
+| critic-ttf-d1-results C1 (own section, citations; sealed tables unchanged) | "Diagnostics (D1)" with its sources table; §1-§3 unchanged |
+| critic-ttf-d1-results C2 (paper rows: "consistent with" / "not consistent") | "Diagnostics (D1)" point 2; §8 D1 update |
+| critic-ttf-d1-results C3 (D1-a attribution wording; step 0 only) | "Diagnostics (D1)" D1-a; §9 |
+| critic-ttf-d1-results C4 (R1 / R2; not the `R1_rate` field) | "Diagnostics (D1)" References |
+| critic-ttf-d1-results C5 (A-5 frozen result + post-hoc check) | "Diagnostics (D1)" A-5 cross-check |
+| critic-ttf-d1-results C6 (exposure, cost) | "Diagnostics (D1)" Exposure and Cost; §11 v3 update |
+| critic-ttf-d1-results C7 (follow-ups; D1-b is not TTF-C's baseline) | §12 Status (v3) |
 
 ## 15. Sources (sha256, first 16 hex digits)
 
@@ -413,6 +569,7 @@ One arm-shard (here ttf, libero_10 task 9 on GPU 6):
 | `analysis/ttf_labels.py` | `b334a24e40919727` |
 | `analysis/ttf_post_hoc.md` / `.json` (post-hoc, descriptive, file as of 23:42Z) | `c832da6f2fdcc2d5` / `82bdac71fac62570` |
 | `method/MANIFEST.json` / `configs/primary/MANIFEST.json` | `a611af04503c8922` / `f4e4288571b71790` |
+| D1 files (v3) | listed in the sources table of "Diagnostics (D1)" |
 
 ## 16. Changelog
 
@@ -430,3 +587,16 @@ One arm-shard (here ttf, libero_10 task 9 on GPU 6):
   - v1 is kept unchanged as `results/ttf_vla.v1.md` (sha256 `d8b1a0be7a8c00bd…`), cited by hash in
     critic-ttf-docs and as evidence of playbook lesson 20261105T235020Z. This file cannot contain its own hash;
     the v2 sha256 is in the commit message that adds it and in `reports/conv-ttf-results-1.report.json`.
+- v3 (2026-11-06, conv-ttf-results-2, critic-ttf-d1-results C1-C7; no sealed number, table or label changed):
+  - New section "Diagnostics (D1): decode-path checks (descriptive; changes no label)" after §12. It is the critic's
+    wording block, plus the D1 sources table, the R1/R2 definitions (not `R2_reference.json`'s `R1_rate`) and the
+    D1-b exposure note.
+  - §8: a D1 update. It gives paired support within our stack, says (a) is more plausible but untested and (c) is
+    weakened for step 0 only, and that Object is not consistent. All causes remain untested hypotheses.
+  - §9: one can-conclude item and two cannot-conclude items added.
+  - §11: D1's 3.88 GPU-h added; session about 64.2 GPU-h, about 15.8 left; Pigey dropped (d10).
+  - §12: status; TTF-C (d10) under design; D1-b is not TTF-C's baseline.
+  - §14: D1 condition rows. §15: a pointer to the D1 sources. The header notes v3.
+  - The headline, the §1 table, §2, the §3 labels and every C7 wording are unchanged.
+  - v2 (`d770c4356953a3a3…`) and v1 (`d8b1a0be7a8c00bd…`) are kept unchanged in `results/`. This file cannot
+    contain its own hash; the v3 sha256 is in the commit message and in `reports/conv-ttf-results-2.report.json`.
