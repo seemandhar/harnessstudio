@@ -8,7 +8,7 @@
 > reports the separately frozen D1 experiment under critic-ttf-d1-results (ACCEPT WITH CONDITIONS, `fe94642b…`).
 > It changes no number, table or label of the sealed result.
 >
-> **Where this document lives:** it is `harnessstudio/docs/results/ttf_vla.md`. Its source is `results/ttf_vla.v3.md`
+> **Where this document lives:** it is `harnessstudio/docs/results/ttf_vla.md`. Its source is `results/ttf_vla.v4.md`
 > of run `repro-next-20261105`, written by rmh_converter (task conv-ttf-results-1, 2026-11-05, 23:40Z to 23:58Z UTC,
 > `date -u`; v2 corrections 2026-11-06 ~03:30Z, task conv-ttf-d1-1 hand-off, critic-ttf-docs D1/D2; v3 D1 diagnostics
 > 2026-11-06 from 06:28Z, task conv-ttf-results-2, critic-ttf-d1-results C1-C7).
@@ -253,9 +253,11 @@ U > 0.
    (§4).
 
 **D1 update** (v3; descriptive; see "Diagnostics (D1)" after §12; it changes no label):
-- **Point 2 now has paired support within our stack.** On the same 200 scenes (init states 0-4), native causal
-  OpenVLA succeeds 148/200 (74.0%) against the sealed paper-baseline's 60/200 (30.0%), D +44.0 pp [35.6, 51.3]. So
-  the release's decode path accounts for paper-baseline's gap to stock OpenVLA in our stack. "Decode path" means
+- **Point 2's within-stack inference now has paired support** (native vs paper-baseline; the stock references and
+  the paper's rows stay unpaired). On the same 200 scenes (init states 0-4), native causal OpenVLA succeeds 148/200
+  (74.0%) against the sealed paper-baseline's 60/200 (30.0%), D +44.0 pp [35.6, 51.3], and the native rate is in line
+  with the unpaired stock references (75.4-75.5%). So the release's decode path accounts for paper-baseline's gap to
+  stock OpenVLA in our stack. "Decode path" means
   the missing mask together with eager-vs-SDPA numerics; D1-b does not separate the two over an episode.
 - **(a) is more plausible but untested.** The release's decode call keeps the causal mask from transformers 4.41.2
   on, and the causal decode is consistent with the paper's Spatial, Goal and Long rows (paper value inside the
@@ -297,7 +299,7 @@ U > 0.
 - The released-code decode path in our environment gives a heavily degraded OpenVLA: 31.6% pooled, against about
   75-80% for stock causal OpenVLA on comparable stacks.
 - (v3, from D1, descriptive) Within our stack, on identical scenes, the release's decode path accounts for
-  paper-baseline's gap to stock OpenVLA: native causal 148/200 vs paper-baseline 60/200 on init states 0-4, paired.
+  paper-baseline's gap to stock OpenVLA: native causal 148/200 vs paper-baseline 60/200 on init states 0-4 (paired), with native 74.0% in line with the unpaired stock references (75.4-75.5%).
   At step 0 the missing causal mask accounts for most of the change (v1 vs v3: 14/800 all-7 equal); kernel numerics
   alone change 71/800 (8.9%) first actions and 27/800 first tokens, never the gripper.
 
@@ -360,7 +362,9 @@ U > 0.
 **v3 update (D1).**
 - D1 used **3.88 GPU-h**: D1-a 0.645 (including the smoke) and D1-b 3.235, from lease GPU-s
   (`d1/cost/lease_ledger.jsonl`), within d07's ~3-5 GPU-h and d08's caps. $0 API; 0 NRP calls.
-- **Session total: about 64.2 GPU-h** (60.35 + 3.88) of the 80 GPU-h authority, so **about 15.8 GPU-h remain**.
+- **Session total: about 64.2 GPU-h** (60.35 + 3.88). The user raised the authority from 80 to about 92 GPU-h for
+  TTF-C (authority-amendment-2, 2026-11-06T06:14:21Z), so **about 27.8 GPU-h remain**; decision d11 sets TTF-C's cap
+  at or above its outcome-proof worst case even if the session total then exceeds ~92 GPU-h (actual spend reported).
 - Pigey was dropped by decision d10 after using 0 GPU-h.
 - TTF-C's budget is set at its own freeze.
 
@@ -384,7 +388,8 @@ U > 0.
 | same, all 800 cases | same, all suites | ≈ 14 |
 | TTF-on-causal study, 3 arms × 800 | TTF itself in the strong-baseline regime | 40-45, or ≈ 10 per suite |
 
-The last option does not fit the remaining authority without a user budget increase.
+The last option does not fit the remaining authority without a user budget increase. (v3: the user has since raised
+the authority to about 92 GPU-h for TTF-C, authority-amendment-2.)
 
 **Status (v3).**
 - **D1 is done** ("Diagnostics (D1)" below). It covers two rows only partially:
@@ -594,7 +599,8 @@ One arm-shard (here ttf, libero_10 task 9 on GPU 6):
   - §8: a D1 update. It gives paired support within our stack, says (a) is more plausible but untested and (c) is
     weakened for step 0 only, and that Object is not consistent. All causes remain untested hypotheses.
   - §9: one can-conclude item and two cannot-conclude items added.
-  - §11: D1's 3.88 GPU-h added; session about 64.2 GPU-h, about 15.8 left; Pigey dropped (d10).
+  - §11: D1's 3.88 GPU-h added; session about 64.2 GPU-h of the raised ~92 GPU-h authority (authority-amendment-2),
+    about 27.8 left; TTF-C's cap per d11; Pigey dropped (d10).
   - §12: status; TTF-C (d10) under design; D1-b is not TTF-C's baseline.
   - §14: D1 condition rows. §15: a pointer to the D1 sources. The header notes v3.
   - The headline, the §1 table, §2, the §3 labels and every C7 wording are unchanged.
