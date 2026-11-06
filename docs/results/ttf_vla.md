@@ -4,8 +4,9 @@
 > `d1170e947d48afbd…`, agent a027b13c594984db6, 2026-11-05T23:37Z). Its conditions C1-C7, required disclosures and
 > interpretation are binding on this document. §14 maps each condition to the section that meets it.
 >
-> **Where this document lives:** it is `harnessstudio/docs/results/ttf_vla.md`. Its source is `results/ttf_vla.v1.md`
-> of run `repro-next-20261105`, written by rmh_converter (task conv-ttf-results-1, 2026-11-05, 23:40Z to 00:30Z UTC).
+> **Where this document lives:** it is `harnessstudio/docs/results/ttf_vla.md`. Its source is `results/ttf_vla.v2.md`
+> of run `repro-next-20261105`, written by rmh_converter (task conv-ttf-results-1, 2026-11-05, 23:40Z to 23:58Z UTC,
+> `date -u`; v2 corrections 2026-11-06 ~03:30Z, task conv-ttf-d1-1 hand-off, critic-ttf-docs D1/D2).
 > The two files are byte-identical.
 >
 > **Paths:** relative paths without a `harnessstudio/` prefix are relative to the run folder
@@ -163,7 +164,7 @@ U > 0.
 - ttf-paper-baseline `c125ad52…`;
 - ttf-shadow `78f54245…`.
 
-`harnessstudio/methods/ttf` is byte-identical to that package; see §13.
+`harnessstudio/methods/ttf` is byte-identical to the scored `method/` per MANIFEST `a611af04…` at commit 8a24164; since then only one changelog string was appended to `hs_ttf/paper.yaml` and `README.md` was added (metadata; fingerprints unchanged); see §13.
 
 ## 7. Required disclosures (critic-ttf-final `required_disclosures`)
 
@@ -353,7 +354,7 @@ The last option does not fit the remaining authority without a user budget incre
 ## 13. Reproducing the scored run (evaluator-owned; GPU)
 
 The method package is `harnessstudio/methods/ttf`: hs-ttf 0.1.0, entry points `ttf`, `ttf-paper-baseline` and
-`ttf-shadow`, byte-identical to the scored `method/` per MANIFEST `a611af04…`.
+`ttf-shadow`, byte-identical to the scored `method/` per MANIFEST `a611af04…` at commit 8a24164; since then only one changelog string was appended to `hs_ttf/paper.yaml` and `README.md` was added (metadata; fingerprints unchanged).
 - It needs the capability `vision_token_hooks` (EXT openvla-vision-token-hook, server
   `harnessstudio/policies/openvla_ttf_hs.py`, profile `openvla-libero-ttf`).
 - The scored run imported the package from the run's `method/` with
@@ -418,3 +419,14 @@ One arm-shard (here ttf, libero_10 task 9 on GPU 6):
 - v1 (2026-11-05, conv-ttf-results-1): first results document, written after the seal and the final review. The card
   `methods/ttf/hs_ttf/paper.yaml` gets one appended changelog line, which is metadata only and leaves the fingerprints
   unchanged, following the STAR precedent.
+- v2 (2026-11-06, critic-ttf-docs D1/D2; no number, label or conclusion changed):
+  - D1: §6 and §13 no longer call `harnessstudio/methods/ttf` byte-identical to the scored `method/` at the pushed
+    commit. It is byte-identical per MANIFEST `a611af04…` at commit 8a24164; the later docs commit appended one
+    changelog string to `hs_ttf/paper.yaml` and added `README.md` (metadata; fingerprints unchanged).
+  - D2: the header's writing window is the actual `date -u` window, 23:40Z to 23:58Z (v1 said "23:40Z to 00:30Z",
+    an estimate). `results/RESULTS_ADDENDUM.md` (sha256 `a7e00d39a491d085…`) has the same estimated window
+    "between 23:40Z and 00:30Z" in its header; it is left unedited because reviews cite it by hash, and its actual
+    window is likewise 23:40Z to 23:58Z.
+  - v1 is kept unchanged as `results/ttf_vla.v1.md` (sha256 `d8b1a0be7a8c00bd…`), cited by hash in
+    critic-ttf-docs and as evidence of playbook lesson 20261105T235020Z. This file cannot contain its own hash;
+    the v2 sha256 is in the commit message that adds it and in `reports/conv-ttf-results-1.report.json`.
