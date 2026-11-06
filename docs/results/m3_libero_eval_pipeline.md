@@ -11,6 +11,12 @@ last of 4 seeded samples and is not expected to help.
 | Policy | `harnessstudio/policies/pi05_openpi.py` (vla-eval Pi0ModelServer + HarnessPolicyMixin), pi05_libero, GPU 6, profile `pi05-libero-hs` (seeded, isolated 10-step chunks) |
 | Method | `harnessstudio.verify.testing_methods:pick_last_k4` (proposer K=4, selector "last") |
 
+Env seed (clarification, env-seed audit
+`/home/sejain/research/cvpr27/RoboMetaHarness-claude/runs/repro-next-20261105/audit/env_seed_audit.md` (sha256
+`1c7dabbe…`)): the config sets `seed: 7` and no `env_seed`, so vla-eval 0.8.0 calls `env.seed(7)`
+(`vla_eval/benchmarks/libero/benchmark.py:119,200`); the pi0.5 server sends no seed. This matches openpi's LIBERO
+example (`env.seed(7)`). All three arms used it, so pairing is unaffected.
+
 | Arm | Successes | Policy samples | Wall time (s) |
 |---|---|---|---|
 | baseline | 5/5 | 44 | 40.3 |

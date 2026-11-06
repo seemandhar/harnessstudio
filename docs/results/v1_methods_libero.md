@@ -10,6 +10,13 @@
 | Arms | baseline / null / candidate via `hs eval` (one process per arm, same case list and order) |
 | Report | successes per arm, paired wins/losses and sign-test p, null attribution M/R/X, policy samples, wall time |
 
+Env seed (clarification, env-seed audit
+`/home/sejain/research/cvpr27/RoboMetaHarness-claude/runs/repro-next-20261105/audit/env_seed_audit.md` (sha256
+`1c7dabbe…`)): the config sets `seed: 7` and no `env_seed`, so vla-eval 0.8.0 calls `env.seed(7)`
+(`vla_eval/benchmarks/libero/benchmark.py:119,200`); the pi0.5 server sends no seed. This matches openpi's LIBERO
+example (`env.seed(7)`). The LIBERO-Pro screen below also ran `env.seed(7)` (LIBERO-Pro accepts only `seed`). Every
+arm used it, so pairing is unaffected.
+
 These are screens of training-free methods ported from v1 on a new benchmark/policy pair, not paper
 reproductions (medoid-bon and chunk-interrupt are components of larger papers; AAC's paper used GR00T on RoboCasa).
 

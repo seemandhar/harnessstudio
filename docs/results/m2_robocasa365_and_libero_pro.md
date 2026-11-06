@@ -41,3 +41,8 @@ the host's NVIDIA driver wedged machine-wide (every CUDA/EGL/nvidia-smi client b
 - **Parity (after the driver recovered): 3/3 episodes bitwise identical** between the benchmark connected
   directly to stock pi0.5 and through `hs serve identity` (libero_spatial_with_mug, episodes 0-2: success/74,
   fail/220, success/74 in both). `hs2-gpu/libero_pro/parity.sh`, fresh policy server before each run.
+- Env seed (clarification, env-seed audit
+  `/home/sejain/research/cvpr27/RoboMetaHarness-claude/runs/repro-next-20261105/audit/env_seed_audit.md` (sha256
+  `1c7dabbe…`)): LIBERO-Pro's benchmark accepts only `seed` (no `env_seed`), so every LIBERO-Pro run here called
+  `env.seed(7)` (stock `libero_pro/eval.yaml` `seed: 7`); the pi0.5 server sends no seed. This matches openpi's LIBERO
+  example (`env.seed(7)`). Both sides of the parity check used it, so the parity result is unaffected.

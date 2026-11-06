@@ -11,6 +11,12 @@ HarnessStudio running `identity`.
 | Harness | `hs serve identity --contract libero --profile allenai-passthrough` (server chunking, T0) |
 | Protocol | policy server restarted before each run (openpi's RNG advances per inference call) |
 
+Env seed (clarification, env-seed audit
+`/home/sejain/research/cvpr27/RoboMetaHarness-claude/runs/repro-next-20261105/audit/env_seed_audit.md` (sha256
+`1c7dabbe…`)): the config sets `seed: 7` and no `env_seed`, so vla-eval 0.8.0 calls `env.seed(7)`
+(`vla_eval/benchmarks/libero/benchmark.py:119,200`); the pi0.5 server sends no seed. This matches openpi's LIBERO
+example (`env.seed(7)`). Both runs used it, so the parity result is unaffected.
+
 | Episode | Direct | Through harness | Step-by-step |
 |---|---|---|---|
 | 0 | success, 77 steps | success, 77 steps | identical |

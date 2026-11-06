@@ -175,6 +175,11 @@ authors' code as written.
   - the B smoke on t0/i3 was valid (15/15 checks);
   - shards (`optional_runs_addendum.md` R3): GPU 6 t0-t2 (9 pairs), GPU 7 t3-t5 (9), GPU 4 t6-t7 (6) and GPU 5 t8-t9 (6),
     GPUs 4/5 after their Move Near shards.
+- **Env seed** (clarification, env-seed audit
+  `/home/sejain/research/cvpr27/RoboMetaHarness-claude/runs/repro-next-20261105/audit/env_seed_audit.md` (sha256
+  `1c7dabbe…`)): `seed: 7` with no `env_seed`, and vla-eval 0.8.0 drops the OpenVLA server's HELLO `seed: 0`, so all
+  arms ran `env.seed(7)`, not the OpenVLA reference `env.seed(0)`. Pairing is unaffected. The libero_goal rates are
+  not comparable with OpenVLA's published libero_goal numbers; none is claimed.
 - **Result:**
   - baseline **23/30** -> PCD **23/30**, W 3 / L 3, p **1.0**, Newcombe CI [-0.162, +0.162];
   - null M 30/0/0;

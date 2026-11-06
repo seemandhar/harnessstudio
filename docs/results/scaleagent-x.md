@@ -18,6 +18,12 @@ The goal was to beat SCALE (arXiv:2602.04208) with a training-free harness whose
 (gpt-6.1-sol). Both methods decode with SCALE at every step, using the exact sampler of the plain `scale` method
 under the same common-random-numbers key. Runtime: GPUs 4-7.
 
+Env seed (clarification, env-seed audit
+`/home/sejain/research/cvpr27/RoboMetaHarness-claude/runs/repro-next-20261105/audit/env_seed_audit.md` (sha256
+`1c7dabbe…`)): scenes are (env seed, init state), with env seed = the `seed` block (7 or 9): no config sets
+`env_seed`, and vla-eval 0.8.0 drops the OpenVLA server's HELLO `seed: 0`. This differs from the OpenVLA reference
+protocol (`env.seed(0)`); no paper rate is compared here.
+
 ## 1. witnessed-rescue (x-r1) — `methods/witnessed_rescue`, NEGATIVE
 
 **Mechanism.** The controller watches public proprio for grasp-failure triggers: H2 empty close and H1 settled

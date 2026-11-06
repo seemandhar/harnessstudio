@@ -28,6 +28,12 @@ In short:
 The paper's matched block uses 500 episodes per suite and condition: 10 tasks × 10 initial states × seeds 101–105.
 Ours uses the same inventory per seed: evaluation init states 0–9 (`runs/rtcf-20261031/protocol/run-order.md`,
 addenda 1–3).
+Env seed (clarification, env-seed audit
+`/home/sejain/research/cvpr27/RoboMetaHarness-claude/runs/repro-next-20261105/audit/env_seed_audit.md` (sha256
+`1c7dabbe…`)): each protocol seed is the env seed (`env.seed(101..105)`; development `env.seed(7)`), since no config
+sets `env_seed` and the pi0-FAST server sends no seed. This matches the paper's seeds 101-105 only if the authors'
+script seeds the env as openpi's LIBERO example does (`env.seed(args.seed)`); no RTCF code was released
+(`methods/rtcf/hs_rtcf/paper.yaml`), so this cannot be checked.
 <!-- FILL:order -->
 Seeds were run in the predeclared priority order 101→105. Seed 104 ran early on GPU 6 because its baseline shards were there (critic ruling s4-early-start), so the completion order of the complete seeds was 101, 102, 104, 103, 105 and was set by capacity, not outcomes.
 <!-- /FILL:order -->

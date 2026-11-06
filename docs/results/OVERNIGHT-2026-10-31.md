@@ -30,6 +30,13 @@ method packages (`hs new`, `hs verify` tiers 0/1/2, `hs eval`, `hs prepare`, `hs
 | FastHarness | `fast-harness` (gpt-6.1-sol reviewer; experience frozen by `hs prepare`) | adapted | RoboDojo build_tower (+ stack_bowls), held-out layouts, cold vs warm | tier 2 PASS; port matches the original code on 198,542 randomized checks; **token savings not reproduced**: warm vs cold prompt tokens -11% / -16% per step (build_tower), +26% (stack_bowls) vs the paper's -57%; experience features rarely match across layouts; no success claim (n = 1-2) |
 | RoboHarness / SOMA (released eval never intervenes: MAX_RETRIES=0, fixed to 3) | `roboharness` (NRP qwen3-vl orchestrator, SAM3 tools, frozen dev memory) | adapted | LIBERO-Pro spatial/object x task/swap, 10 tasks x 2 eps (80) | **22/80 vs baseline 23/80 (4 wins / 5 losses, p = 1.0)**: not reproduced (paper Pos 2.3 -> 57.2%, Task 0.9 -> 55.2% on ~0% LeRobot baselines); parity vs authors' code 0 diffs; LIBERO-RoboHarness release unusable (stale init states) |
 
+Env seed (SCALE rows; added after the env-seed audit of 2026-11-05,
+`/home/sejain/research/cvpr27/RoboMetaHarness-claude/runs/repro-next-20261105/audit/env_seed_audit.md` (sha256
+`1c7dabbe…`)): every LIBERO / LIBERO-Pro run summarised here used env seed 7 (vla-eval 0.8.0 drops the OpenVLA
+server's HELLO `seed: 0` because the config sets `seed: 7`). The SCALE paper values (52.7 -> 63.3, 77.7 -> 82.3) come
+from `env.seed(0)` pipelines, so they are not like-for-like with our rates. Pairing within each run is unaffected:
+compare the paired differences, not the rates (see `scale.md`, "Env seed").
+
 Ported v1 methods on new benchmarks (`v1_methods_libero.md`): medoid-bon, chunk-interrupt and AAC run cleanly
 (0 X) but are at ceiling on standard LIBERO-10 (29/30 all arms) and unchanged on LIBERO-Pro task-perturbation
 cells (object 2/20 and goal 3/20 baseline; candidates 2 and 3-4).

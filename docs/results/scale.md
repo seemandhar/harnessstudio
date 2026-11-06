@@ -45,10 +45,14 @@ SCALE hyperparameters (official `configs/scale.yaml`, "tuned on LIBERO-Long and 
 
 - Benchmark: vla-eval 0.8.0 LIBERO, suite **libero_10 (Long)**, all **10 tasks x episodes 0, 1, 2 = 30 cases**,
   benchmark seed 7, `num_steps_wait = 10`, official horizon `max_steps = 520`, Docker image
-  `ghcr.io/allenai/vla-evaluation-harness/libero:latest`, rendering on GPU 5. The OpenVLA server's HELLO sets
-  the benchmark `seed: 0` observation param exactly as in vla-eval's reproduction (env seed 0).
+  `ghcr.io/allenai/vla-evaluation-harness/libero:latest`, rendering on GPU 5. ~~The OpenVLA server's HELLO sets
+  the benchmark `seed: 0` observation param exactly as in vla-eval's reproduction (env seed 0).~~
+  **Correction (env-seed audit of 2026-11-05):** that HELLO param was not applied; the config's `seed: 7` wins,
+  so every arm ran **env seed 7**, not 0 (see "Env seed" under Deviations and disclosures).
 - Policy: `openvla/openvla-7b-finetuned-libero-10` (vla-eval reproduction: 52.8% on LIBERO-Long, paper 53.7%;
   SCALE paper's greedy: 52.7%), `unnorm_key: libero_10`, `jpeg_roundtrip: true`, `center_crop: true`, bf16.
+  **Correction (env-seed audit of 2026-11-05):** these reference rates come from `env.seed(0)` pipelines and our arms
+  ran env seed 7, so they are context, not like-for-like rates (see "Env seed" below).
 - Arms: **baseline** (native greedy), **null** (derived: same K = 1 request, sampler off = greedy), **candidate**
   (SCALE, paper defaults). Common random numbers: candidate seed per decision = HarnessStudio's
   `sha256(namespace, benchmark, task, episode, decision, 0)`.
@@ -138,6 +142,8 @@ null-vs-baseline attribution also checks cross-process determinism for tasks 3-9
   determinism check of the greedy path.
 - Baseline 16/30 = 53%, in line with vla-eval's reproduction (52.8%) and the SCALE paper's greedy (52.7%).
   Candidate 20/30 = 67% (paper: 63.3%). With n = 30 and 16 discordant pairs the difference is **not significant**.
+  **Correction (env-seed audit of 2026-11-05):** those reference rates used `env.seed(0)` and our arms env seed 7, so
+  this agreement is context, not a like-for-like reproduction check (see "Env seed" under Deviations and disclosures).
 - Per task (baseline -> candidate, of 3): alphabet soup + tomato sauce 1 -> 3; cream cheese + butter 3 -> 3;
   stove + moka pot 1 -> 3; black bowl in drawer 2 -> 2; white mug left plate + yellow-white mug right plate
   3 -> **0**; book in caddy 3 -> 2; white mug on plate + pudding 0 -> 2; alphabet soup + cream cheese 0 -> 3;
@@ -207,6 +213,8 @@ episode keys 3-5 that would **not** pair with a later sequential vla-eval run un
 - **libero_goal**, 10 tasks x episodes 0-2 = 30 cases, seed 7, `num_steps_wait = 10`, official horizon 300,
   checkpoint `openvla/openvla-7b-finetuned-libero-goal` (`unnorm_key: libero_goal`; vla-eval reproduction 79.0%,
   SCALE paper greedy 77.7 -> SCALE 82.3), same server file and SCALE defaults (tuned on Long, applied unchanged).
+  **Correction (env-seed audit of 2026-11-05):** as for libero_10, these arms ran env seed 7 while those reference
+  rates used `env.seed(0)` (see "Env seed" below).
 - Arms and statistics as for libero_10. Runs after the libero_10 extension: candidate + null (tasks 4-9) on 8116,
   baseline + null (tasks 0-3) on 8115, each server restarted with the goal checkpoint.
 
@@ -230,6 +238,13 @@ The official repo's own `run_libero_eval.py` (its LIBERO install, TF preprocessi
 seed 7, `env.seed(0)`), libero_10, `--num_trials_per_task 2` (initial states 0 and 1 of each task), `greedy` and
 `scale` concurrently on GPU 5 (`hs2-gpu/scale/run_official.sh`, in the LIBERO container with only GPU 5 visible).
 Different random streams and preprocessing from the HarnessStudio runs, so only rates are comparable, not pairs.
+**Correction (env-seed audit of 2026-11-05):** the env seed differs too (official `env.seed(0)`, HarnessStudio env
+seed 7). The seeded env RNG places the jointless fixtures at every reset (see the extension caveat above), so the
+scenes can differ, though not on every task (in one libero_10 replication, tasks 4 and 6 replayed bit for bit across
+env seeds 7, 8 and 9: P-20261101-18 in
+`/home/sejain/research/cvpr27/RoboMetaHarness-claude/.claude/skills/harnessstudio-v2-porting/PITFALLS.md`). "Same init
+states" therefore means the same LIBERO initial states, not necessarily the same scenes, and the rates below are
+context, not like-for-like either.
 (Run outside a container first, robosuite's EGL device index 5 rendered on physical GPU 6; those runs were stopped
 after one episode and discarded. TensorFlow's preallocation was turned off with `TF_FORCE_GPU_ALLOW_GROWTH`.)
 
@@ -243,6 +258,10 @@ after one episode and discarded. TensorFlow's preallocation was turned off with 
   on only 8 of 20 episodes (TF vs PIL crop/resize, flash-attention-2 vs SDPA, `env.seed(0)` reuse order), which is
   why the HarnessStudio comparisons are paired within one pipeline. Official logs:
   `hs2-gpu/results/scale/official_{greedy,scale}_n2/logs/`, `hs2-gpu/logs/scale_official_{greedy,scale}.log`.
+- **Correction (env-seed audit of 2026-11-05):** the HarnessStudio greedy runs used env seed 7, not `env.seed(0)`, so
+  the env seed (0 vs 7) is a further possible cause of the low 8-of-20 agreement, besides the preprocessing and kernel
+  differences listed. No run separates its share, and it cannot matter on tasks whose scene the env seed does not
+  change (see the correction above). The `env.seed(0)` reuse order listed above applies to the official pipeline only.
 
 ## Deviations and disclosures
 
@@ -256,3 +275,14 @@ after one episode and discarded. TensorFlow's preallocation was turned off with 
   server settings shared by baseline, null and candidate, not part of SCALE.
 - Prompt: vla-eval's `task_description` as sent (the official script lower-cases it; LIBERO-10 instructions
   are already lower case).
+- **Env seed (correction from the env-seed audit of 2026-11-05,
+  `/home/sejain/research/cvpr27/RoboMetaHarness-claude/runs/repro-next-20261105/audit/env_seed_audit.md` (sha256
+  `1c7dabbe…`)).** The OpenVLA server's HELLO `seed: 0` was *not* applied: vla-eval 0.8.0 keeps the config's `seed: 7`
+  over server observation params ("eval config wins", `vla_eval/orchestrator.py:90-105`), and with no `env_seed` in
+  the config `LIBEROBenchmark` calls `env.seed(7)` (`vla_eval/benchmarks/libero/benchmark.py:119,200`). Every arm here
+  (tier 2, the libero_10 subset and extension, libero_goal) therefore ran **env seed 7**. All arms shared it, so the
+  paired wins/losses and the null attribution are unaffected. The vla-eval reproduction (52.8% Long, 79.0% Goal; its
+  data records `env_seed: 0`), the OpenVLA and SCALE paper values and the official-pipeline runs used `env.seed(0)`.
+  Wherever this doc sets our rates next to them (Summary, Predeclared subset, the libero_10 subset and extension
+  readings, libero_goal, official pipeline), they are context, not like-for-like rates: compare our paired differences
+  with the reported gains, not the rates.

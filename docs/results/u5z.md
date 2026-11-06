@@ -129,6 +129,10 @@ Each package stays in `methods/` as a record; none is promoted. Details: `runs/r
   init 30-32 seed 7; validation init 38-49 seed 7 (120); full init 0-9 x seeds 101-105 (500) with recorded prior
   exposure; reserved memory scenes init 10-29. Null-gate tolerance 4 discordant / |net| 3 was set before any idea
   from measured renderer nondeterminism (X = 0 binding).
+- Env seed (clarification, env-seed audit
+  `/home/sejain/research/cvpr27/RoboMetaHarness-claude/runs/repro-next-20261105/audit/env_seed_audit.md` (sha256
+  `1c7dabbe…`)): no config sets `env_seed`, so vla-eval 0.8.0 uses `seed` as the env seed (`env.seed(seed)`); the
+  pi0-FAST server sends no seed.
 - Frozen closure: `runs/rtcfpp-campaign4-20261101/harnesses/25-rtcfpp-campaign4-20261101--u5z-a7/source/snapshot`
   (261 files; check with `python -m robometaharness verify --run rtcfpp-campaign4-20261101 --idea u5z-a7`).
 

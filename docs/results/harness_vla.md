@@ -41,6 +41,11 @@ Status: **complete** (05:45 PT): package, tiers 0/1/2, predeclared 100-case subs
 | Reported | successes per arm and cell, paired wins/losses (candidate vs baseline, candidate vs null), null attribution M/R/X, LLM calls/tokens, SAM3 calls, wall time |
 | Extension (only if time remains) | episode_idx 1 for the same 20 tasks, reported separately and only if complete |
 
+Env seed (clarification, env-seed audit
+`/home/sejain/research/cvpr27/RoboMetaHarness-claude/runs/repro-next-20261105/audit/env_seed_audit.md` (sha256
+`1c7dabbe…`)): LIBERO-Pro's benchmark accepts only `seed`, so every arm ran `env.seed(7)`; the pi0.5 server sends no
+seed. This matches openpi's LIBERO example (`env.seed(7)`). Every arm used it, so pairing is unaffected.
+
 **Amendment (03:05 PT, before any scored episode was run):** the tier-2 smoke showed about one minute per episode
 per arm, so the subset is **10 tasks x 5 episodes (episode_idx 0-4) per cell = 100 cases** (50 Goal-T + 50 Goal-S),
 all three arms. Everything else above is unchanged. The ep-0 rows are reported separately too (the original
@@ -166,6 +171,8 @@ Launcher: `hs2-gpu/harness_vla/rpent_ref/launch_rpent_ref.sh` (RPent @ 945682a r
 
 Comparison with the port is by case outcome only (different policy checkpoint and env server, so not exactly
 paired).
+The RPent reference run used RPent's own env server; its env seed was not determined by the env-seed audit (open item
+there).
 
 Result (20/20 cases finished, `rpent_ref/comparison.txt`, `scripts/compare_rpent.py`):
 

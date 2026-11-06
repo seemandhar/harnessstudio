@@ -58,6 +58,11 @@ failures, labelled by the environment), which HarnessStudio does not allow.
 Predeclared subset: LIBERO-Pro {spatial, object} x {task, swap}, all 10 tasks x episodes 0-1 (80 paired cases),
 official horizons, pi0.5 (openpi pi05_libero, seeded), orchestrator NRP qwen3-vl. Table III rows are reported as
 a sub-subset. Candidates ran as 12 task shards on the same policy server as the baseline (pairing exact).
+Env seed (clarification, env-seed audit
+`/home/sejain/research/cvpr27/RoboMetaHarness-claude/runs/repro-next-20261105/audit/env_seed_audit.md` (sha256
+`1c7dabbe…`)): every arm ran `env.seed(7)` (LIBERO-Pro's benchmark accepts only `seed`, configured as 7; the pi0.5
+server sends no seed), matching openpi's LIBERO example. Pairing is unaffected. The Table III rows use different
+(LeRobot) baselines and an env seed this audit did not check; they remain context only.
 
 | Cell | Paired | Baseline | RoboHarness | Wins / losses | p (McNemar) |
 |---|---|---|---|---|---|
