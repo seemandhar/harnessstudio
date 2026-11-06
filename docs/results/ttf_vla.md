@@ -8,10 +8,16 @@
 > reports the separately frozen D1 experiment under critic-ttf-d1-results (ACCEPT WITH CONDITIONS, `fe94642b…`).
 > It changes no number, table or label of the sealed result.
 >
-> **Where this document lives:** it is `harnessstudio/docs/results/ttf_vla.md`. Its source is `results/ttf_vla.v4.md`
+> **v5 addition:** the section "TTF-C: TTF on a causal decode (separate decode-variant experiment)", after
+> "Diagnostics (D1)", reports the separately frozen and separately sealed TTF-C experiment under critic-ttfc-final
+> (ACCEPT WITH CONDITIONS, `a5e63bc2…`). TTF-C appears only in that section. It changes no number, table, headline or
+> label of the sealed primary result.
+>
+> **Where this document lives:** it is `harnessstudio/docs/results/ttf_vla.md`. Its source is `results/ttf_vla.v6.md`
 > of run `repro-next-20261105`, written by rmh_converter (task conv-ttf-results-1, 2026-11-05, 23:40Z to 23:58Z UTC,
 > `date -u`; v2 corrections 2026-11-06 ~03:30Z, task conv-ttf-d1-1 hand-off, critic-ttf-docs D1/D2; v3 D1 diagnostics
-> 2026-11-06 from 06:28Z, task conv-ttf-results-2, critic-ttf-d1-results C1-C7).
+> 2026-11-06 from 06:28Z, task conv-ttf-results-2, critic-ttf-d1-results C1-C7; v5 TTF-C section 2026-11-06 from
+> 12:16Z, task conv-ttf-results-2, critic-ttfc-final CF-1..CF-8).
 > The two files are byte-identical.
 >
 > **Paths:** relative paths without a `harnessstudio/` prefix are relative to the run folder
@@ -20,7 +26,9 @@
 > **Hashes:** sha256, truncated to 16 hex digits; the full values are in the cited files.
 >
 > **Numbers:** every number comes from the sealed result `sealed/` (SEAL `dda8177cb4fe05cf…`, 17 files) or the files
-> cited next to it. No label in this document differs from `sealed/labels.json` (`ce0f70f8131a244b…`).
+> cited next to it. No label of the primary result in this document differs from `sealed/labels.json`
+> (`ce0f70f8131a244b…`). The TTF-C section's numbers and labels come only from its own seal `ttfc/sealed/` (SEAL
+> `9f273f8ba24bbe40…`, 19 files) or from critic-ttfc-final's `recomputed` block.
 
 ## 1. Outcome
 
@@ -305,7 +313,8 @@ U > 0.
 
 **Cannot be concluded:**
 - TTF's effect in the paper's ~68% baseline regime, or on a standard causal decode. D1 does not test TTF; TTF-C
-  (decision d10) is a separate frozen experiment under design;
+  (decision d10) has since run (v5) as a separate frozen decode-variant experiment, reported only in its own section
+  ("TTF-C" after "Diagnostics (D1)"), and it does not establish that effect either;
 - that the paper's Table 1 is wrong or irreproducible in its authors' environment;
 - that Table 1 was produced with a non-causal prefill;
 - which cause explains the paper's baseline rows (D1 makes hypothesis (a) more plausible but leaves it untested);
@@ -366,7 +375,18 @@ U > 0.
   TTF-C (authority-amendment-2, 2026-11-06T06:14:21Z), so **about 27.8 GPU-h remain**; decision d11 sets TTF-C's cap
   at or above its outcome-proof worst case even if the session total then exceeds ~92 GPU-h (actual spend reported).
 - Pigey was dropped by decision d10 after using 0 GPU-h.
-- TTF-C's budget is set at its own freeze.
+- TTF-C's budget is set at its own freeze. (v5: FROZEN-C set it at 55 GPU-h; TTF-C has since run, see below.)
+
+**v5 update (TTF-C; CF-6).**
+- TTF-C ran and was sealed (section "TTF-C" after "Diagnostics (D1)"). It used **14.30 GPU-h** (51,495 GPU-s:
+  47,173 s scored-scheduler leases and 4,322 s gates, including the failed G-C3 r0), from lease GPU-s
+  (`ttfc/sealed/lease_ledger.jsonl`, `ttfc/sealed/results.json` `cost`), under its 55 GPU-h cap. $0 paid API; 0 NRP
+  calls.
+- **Listed separately, not charged and not in the totals below:** 2,054 s (2,054.1 GPU-s) of idle-held reservations
+  on GPUs 4-6 under decision d16 (holds, 09:06:11Z to 09:25:38Z; C-A5-a).
+- **Session total: about 78.5 GPU-h** (64.2 + 14.30) of the raised ~92 GPU-h authority (authority-amendment-2), so
+  **about 13.5 GPU-h remain**. TTF-C cost less than the 33.4-35.1 GPU-h expected at its freeze (FROZEN-C) mainly
+  because the user cut its scope from 800 to 200 pairs (d15).
 
 ## 12. Follow-ups (C6): each one is a new frozen experiment
 
@@ -389,7 +409,8 @@ U > 0.
 | TTF-on-causal study, 3 arms × 800 | TTF itself in the strong-baseline regime | 40-45, or ≈ 10 per suite |
 
 The last option does not fit the remaining authority without a user budget increase. (v3: the user has since raised
-the authority to about 92 GPU-h for TTF-C, authority-amendment-2.)
+the authority to about 92 GPU-h for TTF-C, authority-amendment-2. v5: TTF-C ran at 200 pairs after the user's scope
+cut, d15; see the section "TTF-C".)
 
 **Status (v3).**
 - **D1 is done** ("Diagnostics (D1)" below). It covers two rows only partially:
@@ -397,8 +418,10 @@ the authority to about 92 GPU-h for TTF-C, authority-amendment-2.)
   - "eager-causal arm, one suite": mask vs kernel was measured at step 0 only, not in closed loop;
   - "paired stock/native causal baseline": 200 cases, init states 0-4, all suites, not 800.
 - **The P6 analogue is not done.**
-- **TTF-C (decision d10)** is a separate frozen experiment still under design: TTF on a causal decode, a disclosed
-  variant of the release.
+- **TTF-C (decision d10)** is a separate frozen experiment (v3: still under design): TTF on a causal decode, a
+  disclosed variant of the release. **v5: it ran** (2026-11-06, 07:39Z to 11:56Z) and was sealed at 11:57:20Z
+  (`ttfc/sealed/SEAL.json` `9f273f8ba24bbe40…`). Its result is reported only in the section "TTF-C: TTF on a causal
+  decode (separate decode-variant experiment)" below, and it leaves the sealed labels unchanged.
   - It needs its own matched causal baseline and shadow arms with its own decode numerics, because per D1-a, eager vs
     SDPA already changes 8.9% of first actions.
   - **The D1-b native arm is not TTF-C's baseline.**
@@ -498,11 +521,306 @@ horizons.
    untested: D1 observes nothing of the authors' environment, and hypothesis (b) is not tested either.
 
 **What D1 does not show.**
-- **TTF.** It does not test TTF on a causal decode. TTF-C (decision d10) is being designed as a separate, newly frozen
-  experiment with its own matched causal baseline and shadow arms.
+- **TTF.** It does not test TTF on a causal decode. TTF-C (decision d10), a separate, newly frozen experiment with its
+  own causal baseline and shadow arms, has since run (v5); see the next section.
 - **The sealed result.** It does not change, replace or qualify away the sealed paired effect (D = −0.62 pp
   [−3.92, +2.67]) or its label.
 - **The paper.** It does not establish what produced the paper's Table 1, or that the paper's numbers are wrong.
+
+## TTF-C: TTF on a causal decode (separate decode-variant experiment)
+
+**Status: ACCEPTED WITH CONDITIONS by critic-ttfc-final.** The review is `reviews/critic-ttfc-final.md`
+(`c4238f9894a6ec7d…`) with `reviews/critic-ttfc-final.review.json` (`a5e63bc2c5e1ac89…`), by an rmh_critic that wrote
+none of the TTF-C setting, schedulers, label or seal tools, or earlier TTF-C reviews (2026-11-06T12:16Z). Its
+conditions CF-1..CF-8, required disclosures, must-not-state list and D1-b ruling bind this section.
+`results/v5_cf_checklist.md` maps each of them to the lines that meet it.
+
+- **Separate experiment.** TTF-C was frozen separately under critic-ttf-final C6 (SETTING-C `57e69ab0c0561c09`,
+  frozen 2026-11-06T06:50:44Z by critic-ttfc-1; FROZEN-C `a9247ab9e6805fb1`; AMENDMENT-C1 as approved, `0f24ec0c367fa681`)
+  and sealed separately (`ttfc/sealed/SEAL.json` `9f273f8ba24bbe40…`, 19 files, 2026-11-06T11:57:20Z, evaluator
+  ac7c496a55d231956).
+- **Primary:** The sealed primary label ('not reproduced (non-matching baseline regime; adapted)') is unchanged;
+  TTF-C appears in its own section and never in the primary's table or headline. critic-ttfc-final found the primary
+  seal (`dda8177cb4fe05cf…`, 17 files) and `sealed/labels.json` untouched.
+- **Numbers:** every number in this section is taken from `ttfc/sealed/` (`RESULTS.md`, `results.json`,
+  `ttfc_labels_c1.json`) or from critic-ttfc-final's `recomputed` block, at the sealed rounding.
+
+### Result (CF-1: the approved results sentence, verbatim)
+
+> TTF-C (TTF-VLA on a causal eager decode; a separate decode-variant experiment that leaves the sealed primary label "not reproduced" unchanged): consistent with the paper, not established (causal decode; baseline rows differ from the paper's on libero_object); adapted, decode variant; 200-pair subset (init 0-4 of all 40 tasks) chosen by the user before any TTF-C outcome was read (d15); D = +1.00 pp (ttfc 152/200 vs ttfc-baseline 150/200), Newcombe-10 95% CI [-5.51, +7.51], exact McNemar p = 0.88, against the paper's +4.0 pp, at a power of 0.14-0.18 for a true +4.0 pp.
+
+The label comes from the pinned chain: wrapper `ttfc/analysis/ttfc_labels_c1_c43ef03e.py` (`c43ef03e9a08ee20…`, the
+AMENDMENT-C1 scope filter by case key), then the frozen `ttfc/analysis/ttfc_labels.py` (`cd43d106e07cb1b3…`), then the
+primary's pinned `analysis/ttf_labels.py` (`b334a24e40919727…`), with the primary's rule, targets, Newcombe method-10
+CI, exact McNemar test and task-clustered bootstrap unchanged. critic-ttfc-final reran the pinned chain on the sealed
+records (output byte-identical to `ttfc_labels_c1.json`, `0ec0b67359bba660…`) and recomputed every number
+independently (agreement to 1e-12).
+
+| TTF-C block | Pairs | ttfc-baseline → ttfc | Cells n11/n10/n01/n00 | D (pp) | Newcombe-10 95% CI (pp) | McNemar p | Target | TTF-C label of record (sealed) |
+|---|---|---|---|---|---|---|---|---|
+| Headline (4 suites, init 0-4) | 200 | 150 → 152 | 129/23/21/27 | 1.00 | [-5.51, 7.51] | 0.8804 | +4.0 | consistent with the paper, not established (causal decode; baseline rows differ from the paper's on libero_object); adapted, decode variant |
+| Secondary (Spatial/Goal/Long; never overrides the headline) | 150 | 103 → 107 | 85/22/18/25 | 2.67 | [-5.57, 10.85] | 0.6358 | +10/3 | consistent with the paper, not established (S/G/L baseline rows consistent with the paper's); adapted, decode variant |
+
+- n10 counts the pairs where only ttfc completed the task. The task-clustered bootstrap 95% interval (a sensitivity
+  check) for the headline is [-6.5, 8.5].
+- **The rule at the +4.0 pp target:** L = -5.51 ≤ 0 ≤ U = 7.51 and U ≥ 4.0, so the label is "consistent with the
+  paper, not established". The interval contains both zero and the paper's +4.0 pp: this result neither establishes
+  nor excludes the paper's effect in the causal-decode regime.
+- **The secondary block** (Spatial, Goal and Long, whose baseline rows are all consistent with the paper's) gives the
+  same label as the headline.
+
+### Scope (d15) and power
+
+- **Scope:** The user cut TTF-C from 800 to 200 pairs (init 0-4 of all 40 tasks; compute-matched shadow null on init
+  0-3, 160 cases) at about 08:41Z, before any TTF-C outcome was read. Before choosing, the user was shown that if the
+  paper's +4.0 pp is real, the chance of a 'reproduced' label was about 48 % at 800 pairs, 28 % at 400 and 16 % at 200.
+  Episodes with init >= 5 that ran before the cut (159 ttfc-baseline and 139 ttfc trace files) were excluded by case
+  key, never used, and will not be used to extend the scope.
+  - "Excluded by case key" means that each out-of-scope trace file was parsed only to obtain its key; no out-of-scope
+    field entered any output (critic-ttfc-final F10).
+  - The question, the options shown and the answer are recorded in `ttfc/control/USER-scope-cut-200.json`
+    (`5db6247f200d93c8…`). The user was also told before choosing that the predeclared rule, not the choice of
+    subset, assigns the label.
+- **C-A1-a stays in force (CF-7):** init >= 5 records are never used; any 400- or 800-pair extension is a new
+  experiment, with this exposure disclosed.
+- **Power:** Exact McNemar power for a true +4.0 pp at 200 pairs was 0.179 (discordance 0.23) and 0.137 (0.33),
+  computed at 08:43Z, after the user's cut and before any TTF-C outcome was read (`ttfc/analysis/power_c1.json`,
+  `f69a01e2c571d578…`, written 08:43:25Z). 'Consistent with the paper, not established' was the most likely label
+  whatever the true effect. Observed discordance: 44/200.
+
+### Per suite (descriptive; 50 pairs each)
+
+| Suite | Cells n11/n10/n01/n00 | ttfc-baseline → ttfc | D (pp) | 95% CI (pp) | McNemar p | Target | Frozen rule's per-suite output (descriptive only) |
+|---|---|---|---|---|---|---|---|
+| Spatial | 38/5/3/4 | 41 → 43 | 4.00 | [-7.57, 15.80] | 0.727 | +2.5 | consistent with the paper, not established |
+| Object | 44/1/3/2 | 47 → 45 | -4.00 | [-14.09, 5.01] | 0.625 | +6.0 | not reproduced |
+| Goal | 30/6/7/7 | 37 → 36 | -2.00 | [-15.96, 12.04] | 1 | +2.0 | consistent with the paper, not established |
+| Long | 17/11/8/14 | 25 → 28 | 6.00 | [-10.66, 22.13] | 0.648 | +5.5 | consistent with the paper, not established |
+
+- **Per suite:** Per-suite deltas (+4.0 / -4.0 / -2.0 / +6.0 pp, 50 pairs each) are descriptive and not significant;
+  the Object and Goal decreases are not claimed as effects.
+- The Object per-suite output ("not reproduced", because U = 5.01 < 6.0) is descriptive like every per-suite output.
+  It carries no label, and it sits on the suite with the least headroom (next subsection).
+
+### Baseline rows next to the paper's (Wilson 95%, n = 50)
+
+| Suite | ttfc-baseline | Wilson 95% (%) | Paper baseline (Table 1, %) | Baseline row |
+|---|---|---|---|---|
+| Spatial | 41/50 | [69.2, 90.2] | 82.0 | consistent |
+| Object | 47/50 | [83.8, 97.9] | 66.5 | differs (predeclared, SETTING-C §5.3) |
+| Goal | 37/50 | [60.4, 84.1] | 77.0 | consistent |
+| Long | 25/50 | [36.6, 63.4] | 48.0 | consistent |
+
+- **Baseline rows:** At n = 50 per suite, the causal baseline is consistent with the paper's baseline row on Spatial
+  (41/50), Goal (37/50) and Long (25/50), with wide intervals, and differs on Object (47/50 vs 66.5 %, predeclared),
+  where little headroom remains for the paper's +6.0 pp.
+- "Consistent" means that the paper's value lies inside a wide n = 50 interval. It is overlap, not equality.
+
+### Variant and protocol
+
+- **Variant:** Adapted, decode variant: every arm decodes with an eager-attention copy of the same frozen checkpoint
+  under the full causal mask. This is neither the authors' release, whose decode is non-causal under its pin, nor
+  stock SDPA OpenVLA. It tests the paper's claim in a regime where three of four baseline rows are consistent with the
+  paper's; it does not establish what the authors ran.
+- **Arms** (`hs eval … --arms candidate`, profile `openvla-libero-ttf`, contract `libero`):
+  - ttfc-baseline (mode off: stock tokens, causal eager decode), the baseline of every comparison;
+  - ttfc (mode ttf: hybrid fusion, K = 3, τ = 0.03, top-k 70, LLM layer-15 text attention);
+  - ttfc-shadow (mode shadow: the full TTF computation, stock tokens to the projector), the compute-matched null.
+- **Method:** `ttfc/method` = hs-ttf-c 0.1.0 (MANIFEST `45d5e5aba1ce5b4d…`), fingerprints `96a558a0…` / `0fb12b36…`
+  / `48c111fb…` (ttfc-baseline / ttfc / ttfc-shadow).
+  - The fusion files are byte-identical to the primary's hs_ttf 0.1.0. The only change is the hooked decode: the D1-a
+    v3 call on an eager copy of the same pinned checkpoint, without the processor's short attention mask.
+  - The server is a run-local subclass of the EXT server. There is no framework change: every scored attempt ran on
+    harnessstudio HEAD `07c64228` (tree `6360a96c…`), and the 41 configs used equal `configs/primary/` (MANIFEST
+    `f4e4288571b71790…`).
+- **Benchmark:** the primary's (§6): seed 7, env_seed 0, `num_steps_wait` 10, official horizons 220/280/300/520. Every
+  failure ran to its official horizon. The any-step task-completion signal stays evaluator-only, and the public
+  inputs are image and language only.
+- **Episodes per arm-shard:** paired arm-shards ran 20 episodes before the d15 cut and
+  `--benchmark-overrides '{"episodes_per_task": 5}'` after it; the shadow always ran with 4.
+- **Not TTF-C's baseline:** the D1-b native SDPA arm (another kernel) and the sealed paper-baseline (non-causal). Both
+  appear here only descriptively.
+- **Cap:** 55 GPU-h (FROZEN-C), set above the outcome-proof bound of 51.2 GPU-h so that the cap could not bind through
+  outcomes.
+- **AMENDMENT-C1** (resource placement and scope; `ttfc/control/AMENDMENT-C1.final.md`) is cited "as approved". The
+  file is byte-identical to the proposed file and its header still says "proposed"; its finality comes from
+  critic-ttfc-c1 (`02c1aa2cae3686b9…`) and decision d17 (critic-ttfc-final F11).
+
+### Null control and activation
+
+- **Null and activation:** Shadow null M 160 / R 0 / X 0 in-run and in the full pairing; libero_goal_t2's shadow ran
+  on another GPU (rule (a)) and matched 4/4. TTF was active: the reused visual-slot rate on all in-scope ttfc steps was
+  43.2 / 45.8 / 44.9 / 44.4 % (Spatial / Object / Goal / Long), vs the paper's 41.2 / 44.6 / 43.5 / 42.0. Fallback,
+  keyframe-phase and zero-reuse descriptives and the ttfc-baseline vs sealed paper-baseline comparison were not computed
+  in the sealed analysis.
+- **The null, four ways:** the 40 in-run per-task pairings, the full `hs pair` (160 cases, no invalid record), the
+  label script and critic-ttfc-final's independent hash-stream recomputation each give M 160 / R 0 / X 0. The shadow
+  paid TTF's fusion computation on every policy step while executing native actions.
+- **Fusion rates** (sealed `ttfc_labels_c1.json` `activation`; step-pooled over the 42,028 in-scope ttfc steps only):
+
+| Suite | ttfc reused visual-slot rate (in scope) | Paper | Flagged (outside ±10 pp) | Decode violations | Nonzero upper mass |
+|---|---|---|---|---|---|
+| Spatial | 43.2 % | 41.2 % | no | 0 | 0 |
+| Object | 45.8 % | 44.6 % | no | 0 | 0 |
+| Goal | 44.9 % | 43.5 % | no | 0 | 0 |
+| Long | 44.4 % | 42.0 % | no | 0 | 0 |
+
+- **The actions diverged:** ttfc's action stream differs from ttfc-baseline's in 200/200 episodes, and the first
+  divergence always comes at a non-keyframe step (critic-ttfc-final recomputation).
+
+### Validity
+
+- 560/560 required episodes are valid: 200 ttfc-baseline, 200 ttfc and 160 ttfc-shadow. Keys are unique, and episodes
+  are exactly 0-4 (shadow 0-3) of all 40 tasks. Every termination is "environment".
+- 120/120 arm-shards are done with one attempt each, so there were **no E3 retries**. The four attempts voided under
+  d16 contribute only their complete in-scope records (10 ttfc-baseline, 10 ttfc, 0 ttfc-shadow); none was relaunched.
+- **V2** (one hooked activation record per policy step) passed for all 560 episodes over 12 scored server logs,
+  including the GPU-7 log `g7-libero_goal-0`. **V3** (the `eager_causal_v3` decode tag, zero attention mass above the
+  diagonal, 12/12 server self-checks) passed.
+- Every server showed the frozen startup probe, the frozen libraries and the frozen policy JSON hash.
+
+### D1-b comparison (descriptive; critic-ttfc-final ruling)
+
+- **D1-b:** Descriptive only, no label (quoted from the sealed ttfc_labels_c1.json; omitted from results.json/RESULTS.md
+  by a key mismatch in the frozen seal tool): on the same 200 cases the eager-causal ttfc-baseline scored 150/200 and
+  the earlier D1-b native SDPA-causal arm 148/200 (both 123, ttfc-baseline only 27, native only 25, neither 25). D1-b
+  outcomes were known before TTF-C; this compares decode kernels in closed loop across separate runs and is not a TTF
+  effect.
+- **The seal-tool key mismatch:** `ttfc/eval/seal_c1.py` line 54 reads the key `native_d1b`, but the label script
+  writes `descriptive_d1b_native_vs_ttfc_baseline`. So the sealed `results.json` has `native_d1b: null`, and the
+  sealed `RESULTS.md` omits the comparison. The label is unaffected: critic-ttfc-final reran the pinned chain without
+  the D1-b input, and the output differs only in that descriptive key. There is no reseal.
+
+### Run history: d14, d15, d16, K-5 and libero_goal_t2
+
+All times are 2026-11-06 UTC. critic-ttfc-final checked that every mid-run decision preceded the first read of any
+TTF-C outcome (11:56:51Z), using the transcripts, file birth times and atime evidence.
+
+| Time (UTC) | Event | What was visible |
+|---|---|---|
+| 07:12:16Z / 07:27:14Z | d12 (launch route after the narrow review); d13 (after I-C1, rerun G-C3 as r1) | no TTF-C outcome existed |
+| 07:39:46Z | scored run launched on GPUs 4-7 (scheduler `5ca404de`), 800 pairs planned | — |
+| 08:36:56Z / 08:38:04Z | **d14**: the user asked to free GPU 7 (08:36:56Z); decision 08:38:04Z; resource only | validity progress only |
+| 08:40:21Z to 08:42:15Z | **d15**: the user's question (08:40:21Z); the options were shown at 08:41:01Z, the answer "Cut to 200 pairs now" was recorded by 08:42:04Z, and its record file was written at 08:42:15Z. (`decision-d15.json` says "08:44Z approx"; the transcript times above are the precise ones, critic-ttfc-final F7) | the 08:39:55Z progress line only: shard counts, valid-episode counts, null M 12 / R 0 / X 0, GPU-s |
+| 08:43:25Z | power at 200 pairs computed (`power_c1.json`) | no outcome read by anyone |
+| 08:48:25Z to 08:51:38Z | **d16**: the user asked to kill the GPU-7 work and move it to GPUs 4-6. STOP 08:49:07Z; four GPU-7 attempts stopped 08:49:34Z to 08:51:36Z (I-C2); GPU 7 released 08:51:38Z | validity and monitor events |
+| 09:06:11Z to 09:25:38Z | idle-held reservations (holds) on GPUs 4-6 under d16; no process ran under them | resource only |
+| 09:08:32Z | **d17**: AMENDMENT-C1 bound as approved (critic-ttfc-c1); route (ii), scheduler S3 `8c6388e6` | review and validity lines |
+| 09:18:08Z; stops 09:18:27Z to 09:20:29Z | **d18 / K-5**: approved stop (critic-ttfc-k5) of the out-of-scope tails of four GPU-5 libero_10 attempts, each holding 5/5 valid in-scope episodes when checked | in-scope validity and wall time |
+| 09:21:18Z | resume on GPUs 4-6 (scheduler `8c6388e6`) | — |
+| 10:34:16Z | finalize and seal tools frozen (`finalize_c1.py` `fd09c73d…`, `seal_c1.py` `ca0538d7…`, mode 0444) | dry test printed counts only |
+| 11:20:19Z / 11:29:52Z | **libero_goal_t2, rule (a)**: its baseline and ttfc ran on GPU 7 (void under d16, in-scope records kept); its shadow ran once on GPU 5 (`rebound_from: 7`) and paired M 4 / R 0 / X 0. It is the only task whose arms ran on two GPUs | null attribution only |
+| 11:56:22Z | scheduler end (no STOP) | — |
+| 11:56:39Z / 11:56:51Z | finalize stage A passed (outcome-free); stage B, the first outcome read | — |
+| 11:57:20Z | seal | — |
+
+- At 09:15:52Z the evaluator surfaced per-shard elapsed minutes and episode counts for the four GPU-5 attempts, a
+  wall-time proxy. It informed only the K-5 resource stop, which removed out-of-scope episodes and could not change any
+  in-scope record (critic-ttfc-final F9, advisory).
+
+### Incidents
+
+- **Incidents:** I-C1 foreign-process OOM during the non-scored G-C3 r0 (archived; r1 passed); I-C2 user-directed kill
+  of four GPU-7 attempts (void for retries; their complete in-scope records used); K-5 approved stop of out-of-scope
+  tails of four libero_10 attempts (not infrastructure failures); no E3 retries; no genuine infrastructure failure in
+  scored work.
+- The 22 incidents in the scheduler state reconcile as 8 `job_infrastructure_failure` entries (4 from I-C2, 4 from
+  K-5), 4 `attempt_void_d16`, 1 `task_rebind_pending_d16`, 8 `scope_c1_done_from_existing` and 1
+  `task_rebound_missing_arms_d16`. None is a robot failure.
+- Not in the sealed `RESULTS.md` incident list: G-C0's literal venv check failed on two editable-install lines and was
+  resolved before launch (critic-ttfc-narrow Q3-CL); a monitor-pipe delivery gap from 10:57Z to 11:27Z (recorded in the
+  post-seal part of `run_notes.md`) left the validity checks unaffected.
+
+### Cost (CF-6)
+
+- **Cost:** 14.30 GPU-h (51,495 GPU-s: 47,173 s scored-scheduler leases, 4,322 s gates including the failed G-C3 r0),
+  cap 55 GPU-h, $0 paid API. Separately, 2,054 s of idle-held reservations under d16, not charged.
+- **Breakdown** (`ttfc/sealed/results.json` `cost`):
+  - scored-scheduler leases 47,172.8 s: GPU 7 4,105.3 s; first scheduler generation on GPUs 4/5/6 16,396.2 s; second
+    generation 26,671.3 s;
+  - gate leases 4,322.4 s: G-C1 54.7 s; G-C3 r0 1,836.5 s (failed under I-C1, charged); G-C3 r1 2,431.2 s;
+  - idle-held d16 holds 2,054.1 s (GPU 4 907.2 s, GPU 5 161.4 s, GPU 6 985.5 s), listed separately and **not charged**
+    (C-A5-a).
+- The charged time includes the 298 out-of-scope episodes that ran before the cut, the I-C2 GPU-7 work and the
+  K-5-truncated tails. The ledger has no open interval. Session accounting: §11, "v5 update".
+
+### Seal notes (CF-5)
+
+- **Seal notes:** The seal binds run_notes.md 28590fba; a section appended at 11:58:05Z is outside the seal.
+- `ttfc/eval/run_notes.md` is cited here as sealed `28590fba82468345…`, which is its first 4,376 bytes. The current
+  file (`d04c50f65a8040e1…`) appends, 45 s after the seal, the section headed "2026-11-06T11:58:05Z S3 completion,
+  finalize and seal". That section is **post-seal and not covered by the seal**. The change is append-only (checked by
+  critic-ttfc-final F1). There is no reseal.
+
+### Exposure
+
+- Before TTF-C, the sealed primary outcomes on init states 0-19 and the D1-b native outcomes on init states 0-4 were
+  known; FROZEN-C discloses both.
+- The TTF-C outcomes of ttfc-baseline and ttfc on init states 0-4, and of ttfc-shadow on init states 0-3, are now
+  exposed as well. Any later experiment on these cases must disclose that.
+
+### What TTF-C can and cannot support
+
+**Can be concluded:**
+- On a causal eager decode of the same frozen checkpoints, with TTF active at reuse rates near the paper's, the paired
+  difference ttfc minus ttfc-baseline on 200 pairs was D = +1.00 pp, 95% CI [-5.51, +7.51]. That interval contains both zero and the
+  paper's +4.0 pp, so the TTF-C label is "consistent with the paper, not established". At a power of 0.14-0.18, this
+  was the most likely label whatever the true effect.
+- The compute-matched shadow null found no overhead or fusion-leak effect: in all 160 shadow cases (init 0-3) its
+  per-step action and observation hashes equal ttfc-baseline's (M 160 / R 0 / X 0). Init state 4 had no shadow arm.
+
+**Cannot be concluded:**
+- that TTF raises OpenVLA's paired LIBERO outcome by the paper's +4.0 pp on a causal decode (not established);
+- that TTF has no effect, or harms OpenVLA;
+- any per-suite effect, including the Object and Goal decreases;
+- what the authors ran, or why the paper's Object baseline row differs from ours;
+- anything that changes the primary result: TTF-C does not relabel, replace or qualify the sealed primary.
+
+**Never to be written from TTF-C** (critic-ttfc-final `must_not_state`): that TTF-C reproduced the paper's gain; that
+any baseline row or result "matches" the paper; that it is a faithful reproduction; a TTF-C number stated as a claim
+of task success for TTF; that the paper's baseline used a non-causal prefill; that any TTF-C number, or the Awomo
+43.96 % (a different benchmark), is verified SOTA; that TTF-C relabels, replaces or qualifies the sealed primary; the
+full `hs pair` candidate row (an init 0-3 denominator) as a result.
+
+**Not quoted as values (CF-3):** the full `hs pair` candidate row (it uses the init 0-3, 160-case denominator, not the
+label's); the per-mode activation record counts and the V3 record total (both include out-of-scope steps; they are
+validity counts only); the sealed E3 replay-determinism field as determinism evidence (it is vacuous: no attempt
+was compared, because there were no E3 retries).
+
+### Re-running TTF-C (evaluator-owned; GPU)
+
+- **Schedulers:** `ttfc/eval/ttfc_sched_5ca404de.py` (07:39:46Z to 09:20:39Z, stopped under d16) and
+  `ttfc/eval/ttfc_sched_8c6388e6.py` (S3, 09:21:18Z to 11:56:22Z). Their launch records are sealed
+  (`ttfc/sealed/launch_record.json`, `launch_record_resume_s3.json`).
+- **Arm-shards:** each ran the §13 argv shape with the entry points `ttfc-baseline`, `ttfc` and `ttfc-shadow`, the
+  run-local server launcher `ttfc/method/server/openvla_ttfc_hs.py` (policy JSONs `ttfc/servers/policy-<suite>.json`),
+  and `--benchmark-overrides` as above.
+- **Labels and seal:** `ttfc/eval/finalize_c1.py` (`fd09c73dbbbaf2db…`) assembles the in-scope records, checks
+  V2/V3, runs the full `hs pair` and calls the pinned label chain; its exact label argv is in
+  `ttfc/sealed/finalize.json`. `ttfc/eval/seal_c1.py` (`ca0538d7722cda89…`) writes the seal.
+
+**TTF-C sources (sha256, first 16 hex digits).**
+
+| File | sha256 |
+|---|---|
+| `ttfc/sealed/SEAL.json` | `9f273f8ba24bbe40` |
+| `ttfc/sealed/RESULTS.md` / `ttfc/sealed/results.json` | `4455823b7b803299` / `eccbf01d1402357a` |
+| `ttfc/sealed/ttfc_labels_c1.json` | `0ec0b67359bba660` |
+| `ttfc/sealed/stage_a.json` / `finalize.json` / `pair_full_summary.json` | `e0746b1492736958` / `225c098e76db6183` / `3b1d3dbf090e89c9` |
+| `ttfc/sealed/` records: ttfc-baseline / ttfc / ttfc-shadow | `81be175f720b9521` / `e2b29c209a579f8d` / `b2cd15a7ec3150cc` |
+| `ttfc/sealed/lease_ledger.jsonl` | `cf4fd8e6e5cf936f` |
+| `ttfc/control/SETTING-C.frozen.md` / `FROZEN-C.json` | `57e69ab0c0561c09` / `a9247ab9e6805fb1` |
+| `ttfc/control/AMENDMENT-C1.final.md` (as approved) / `USER-scope-cut-200.json` / `L-U_user_notice.json` | `0f24ec0c367fa681` / `5db6247f200d93c8` / `bd87e82b1d395c2b` |
+| `ttfc/analysis/power_c1.json` | `f69a01e2c571d578` |
+| `ttfc/analysis/ttfc_labels_c1_c43ef03e.py` / `ttfc_labels.py` / `analysis/ttf_labels.py` | `c43ef03e9a08ee20` / `cd43d106e07cb1b3` / `b334a24e40919727` |
+| `ttfc/eval/finalize_c1.py` / `seal_c1.py` / `k5_stops.json` | `fd09c73dbbbaf2db` / `ca0538d7722cda89` / `65b2b1bb7dfacb3c` |
+| `ttfc/eval/run_notes.md`: sealed prefix (4,376 bytes) / current file (post-seal section appended) | `28590fba82468345` / `d04c50f65a8040e1` |
+| `ttfc/method/MANIFEST.json` | `45d5e5aba1ce5b4d` |
+| `control/research/decision-d14` / `d15` / `d16` / `d17` / `d18` `.json` | `d9b3efc98a2907c9` / `2165c7405a5a57ee` / `e6afc068ce07c485` / `c3be70f6e2a31128` / `1bd202c70c2fa6be` |
+| `d1/b/native_assembled.jsonl` (D1-b input to the descriptive comparison) | `22038e8dc13b6f50` |
+| `reviews/critic-ttfc-final.md` / `.review.json` | `c4238f9894a6ec7d` / `a5e63bc2c5e1ac89` |
+| `reviews/critic-ttfc-1` / `-c1` / `-k5` / `-s3` / `-narrow` / `-f` `.review.json` | `8498197829cf389e` / `02c1aa2cae3686b9` / `7a17fcaaf9946a2e` / `6eea4e434ada6451` / `63156bab34108bd5` / `4d7fd59c57775111` |
+| `reports/eval-ttfc.report.json` (the evaluator's report; its power wording and run_notes hash are superseded by this section, CF-4/CF-5) | `49d4810834adb778` |
 
 
 ## 13. Reproducing the scored run (evaluator-owned; GPU)
@@ -555,6 +873,15 @@ One arm-shard (here ttf, libero_10 task 9 on GPU 6):
 | critic-ttf-d1-results C5 (A-5 frozen result + post-hoc check) | "Diagnostics (D1)" A-5 cross-check |
 | critic-ttf-d1-results C6 (exposure, cost) | "Diagnostics (D1)" Exposure and Cost; §11 v3 update |
 | critic-ttf-d1-results C7 (follow-ups; D1-b is not TTF-C's baseline) | §12 Status (v3) |
+| critic-ttfc-final CF-1 (approved results sentence, verbatim) | "TTF-C", Result |
+| critic-ttfc-final CF-2 (every required disclosure) | "TTF-C": Scope and power, Per suite, Baseline rows, Variant and protocol, Null control and activation, D1-b comparison, Incidents, Cost, Seal notes; the Primary bullet at its top |
+| critic-ttfc-final CF-3 (no `hs pair` candidate row, per-mode activation counts or V3 total as values; "no E3 retries") | "TTF-C": Validity; "Not quoted as values" |
+| critic-ttfc-final CF-4 (power computed at 08:43Z, after the user's cut and before any outcome was read) | "TTF-C": Scope and power |
+| critic-ttfc-final CF-5 (`run_notes.md` sealed 28590fba = first 4,376 bytes; post-seal section marked) | "TTF-C": Seal notes; its sources table |
+| critic-ttfc-final CF-6 (holds of 2,054 s reported separately) | "TTF-C": Cost; §11 v5 update |
+| critic-ttfc-final CF-7 (C-A1-a: init >= 5 never used; any extension is a new experiment) | "TTF-C": Scope and power |
+| critic-ttfc-final CF-8 (TTF-C only in its own section; primary table, headline and label unchanged) | "TTF-C" only; §1-§8 unchanged; only pointers in the header, §9, §12 and "Diagnostics (D1)", and the session cost in §11 (CF-6) |
+| critic-ttfc-final line-level map | `results/v5_cf_checklist.md` |
 
 ## 15. Sources (sha256, first 16 hex digits)
 
@@ -575,6 +902,7 @@ One arm-shard (here ttf, libero_10 task 9 on GPU 6):
 | `analysis/ttf_post_hoc.md` / `.json` (post-hoc, descriptive, file as of 23:42Z) | `c832da6f2fdcc2d5` / `82bdac71fac62570` |
 | `method/MANIFEST.json` / `configs/primary/MANIFEST.json` | `a611af04503c8922` / `f4e4288571b71790` |
 | D1 files (v3) | listed in the sources table of "Diagnostics (D1)" |
+| TTF-C files (v5) | listed in the sources table of "TTF-C: TTF on a causal decode" |
 
 ## 16. Changelog
 
@@ -606,3 +934,29 @@ One arm-shard (here ttf, libero_10 task 9 on GPU 6):
   - The headline, the §1 table, §2, the §3 labels and every C7 wording are unchanged.
   - v2 (`d770c4356953a3a3…`) and v1 (`d8b1a0be7a8c00bd…`) are kept unchanged in `results/`. This file cannot
     contain its own hash; the v3 sha256 is in the commit message and in `reports/conv-ttf-results-2.report.json`.
+- v4 (2026-11-06, conv-ttf-results-2, critic-ttf-docs-v3 F1/F2; no number, label or conclusion changed; diff
+  `results/ttf_vla_v3_to_v4.diff`):
+  - §8 and §9: the D1 update says that the native vs paper-baseline comparison is paired while the stock references and
+    the paper's rows stay unpaired, and adds native 74.0% in line with the unpaired stock references (75.4-75.5%).
+  - §11 and §12: the authority raised to ~92 GPU-h (authority-amendment-2), about 27.8 GPU-h left, TTF-C's cap per d11.
+  - v3 (`b868323ca39150c1…`) is kept unchanged in `results/`.
+- v5 (2026-11-06, conv-ttf-results-2, critic-ttfc-final CF-1..CF-8; no number, table, headline or label of the
+  primary changed; diff `results/ttf_vla_v4_to_v5.diff`):
+  - New section "TTF-C: TTF on a causal decode (separate decode-variant experiment)" after "Diagnostics (D1)": the
+    approved results sentence verbatim, the TTF-C headline and secondary block, the per-suite and baseline-row tables,
+    the null and fusion rates, the D1-b comparison quoted from the sealed `ttfc_labels_c1.json` per the critic's
+    ruling, every required disclosure, the run history (d14-d18, K-5, libero_goal_t2), cost with the holds separate,
+    seal notes, exposure, what TTF-C can and cannot support, and its sources table.
+  - Header: the source pointer is `results/ttf_vla.v5.md`; a v5 note; the numbers note names the TTF-C seal.
+  - Pointers that TTF-C ran, with no primary number changed: §9 (cannot conclude), §11 (TTF-C cap and the v5 cost
+    update: 14.30 GPU-h, holds of 2,054 s listed separately, session about 78.5 GPU-h of ~92), §12 (follow-up note and
+    status), "Diagnostics (D1)" (what D1 does not show).
+  - §14: critic-ttfc-final rows. §15: a pointer to the TTF-C sources. `results/v5_cf_checklist.md` maps each
+    condition and required disclosure to its lines.
+  - v4 (`af6b69ad5c88c207…`, the published `harnessstudio/docs/results/ttf_vla.md` before v5) is kept unchanged in
+    `results/`. This file cannot contain its own hash; the v5 sha256 is in the task report.
+- v6 (2026-11-06, conv-ttf-results-2, critic-ttf-docs-v5 `8fe68995…`; no number or label changed): FIX-1 rewords the
+  TTF-C shadow-null bullet in "What TTF-C can and cannot support" (160 shadow cases, init 0-3; init state 4 had no
+  shadow arm); FIX-2 corrects the TTF-C launch time 07:39:47Z to 07:39:46Z in the run history and in "Re-running
+  TTF-C". The header's source pointer is `results/ttf_vla.v6.md`. v5 (`a7121d91cb260e10…`) is kept unchanged in
+  `results/`.
